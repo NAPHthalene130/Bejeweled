@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug (MinGW)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "${env:QT_DIR}/bin;${env:MINGW_PATH};${env:PATH}"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "${env:MINGW_PATH}/gdb.exe",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "envFile": "${workspaceFolder}/.vscode/.env",
+            "visualizerFile": "c:\\Users\\13015\\AppData\\Roaming\\Trae\\User\\workspaceStorage\\16ebd72a88b602485af9471c5830e8d7\\tonka3000.qtvsctools\\qt.natvis.xml"
+        }
+    ]
+}

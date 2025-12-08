@@ -1,0 +1,10 @@
+{
+    "cmake.configureSettings": {
+        "CMAKE_PREFIX_PATH": "${env:QT_DIR}",
+        "BOOST_ROOT": "${env:BOOST_ROOT}"
+    },
+    "cmake.generator": "MinGW Makefiles",
+    "cmake.environment": {
+        "PATH": "${env:MINGW_PATH};${env:QT_DIR}/bin;${env:PATH}"
+    }
+}

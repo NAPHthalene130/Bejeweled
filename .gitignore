@@ -80,3 +80,19 @@ CMakeLists.txt.user*
 .rcc/
 .uic/
 /build*/
+
+# ENV
+.env
+.env.local
+.env.*.local
+
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/cmake-kits.json
+!.vscode/extensions.json
+!.vscode/.env.template
+# Explicitly ignore .vscode/.env
+.vscode/.env
