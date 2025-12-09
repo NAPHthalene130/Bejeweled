@@ -33,6 +33,16 @@ if(NOT DEFINED CMAKE_CXX_COMPILER AND DEFINED ENV{MINGW_PATH})
     endif()
 endif()
 
+# Set VCPKG Toolchain if VCPKG_DIR is provided in .env
+if(DEFINED ENV{VCPKG_DIR} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    if(EXISTS "$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
+        set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
+        message(STATUS "Using vcpkg toolchain from .env: ${CMAKE_TOOLCHAIN_FILE}")
+    else()
+        message(WARNING "VCPKG_DIR set in .env but scripts/buildsystems/vcpkg.cmake not found at $ENV{VCPKG_DIR}")
+    endif()
+endif()
+
 project(Bejeweled LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -59,11 +69,8 @@ if(DEFINED ENV{BOOST_ROOT})
 endif()
 find_package(Boost REQUIRED)
 
-# GLEW (Optional)
-if(DEFINED ENV{GLEW_DIR} AND NOT "$ENV{GLEW_DIR}" STREQUAL "")
-    list(APPEND CMAKE_PREFIX_PATH "$ENV{GLEW_DIR}")
-    find_package(GLEW REQUIRED)
-endif()
+# GLEW (via vcpkg)
+find_package(GLEW REQUIRED)
 
 # GLFW (Optional)
 if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
@@ -84,6 +91,8 @@ qt_add_executable(Bejeweled
     WIN32 MACOSX_BUNDLE
     ${SOURCES}
 )
+
+target_include_directories(Bejeweled PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
 target_link_libraries(Bejeweled
     PRIVATE

@@ -6,5 +6,6 @@
     "cmake.generator": "MinGW Makefiles",
     "cmake.environment": {
         "PATH": "${env:MINGW_PATH};${env:QT_DIR}/bin;${env:PATH}"
-    }
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
