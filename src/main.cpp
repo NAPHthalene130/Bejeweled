@@ -3,7 +3,7 @@
 
 int main() {
     try {
-        unsigned short port = 8080;
+        unsigned short port = 10086;
         LoginServer server(port);
         server.run();
     } catch (const std::exception& e) {
