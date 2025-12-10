@@ -53,6 +53,7 @@ endif()
 find_package(Boost REQUIRED)
 
 # Include directories
+include_directories(include)
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Gather source files

@@ -1,6 +1,8 @@
 #include "AuthServer.h"
+#include "AuthNetData.h"
 #include <functional>
-
+#include "json.hpp"
+using json = nlohmann::json;
 AuthServer::AuthServer(unsigned short port)
     : acceptor(ioContext, tcp::endpoint(tcp::v4(), port)) {
     // 设置套接字重用选项，避免端口占用问题
@@ -115,11 +117,12 @@ void AuthServer::handleReceive(std::shared_ptr<tcp::socket> socket,
     
     if (!error) {
         // 处理接收到的数据
-        std::string receivedData(buffer->data(), bytesTransferred);
+        std::string receivedStr(buffer->data(), bytesTransferred);
         std::cout << "Received " << bytesTransferred << " bytes: " 
-                  << receivedData << std::endl;
+                  << receivedStr << std::endl;
         
         //TODO:此处完成登录解析
+        AuthNetData receivedData = nlohmann::json::parse(receivedStr).get<AuthNetData>();
         
         std::string response;
         // 异步发送响应
