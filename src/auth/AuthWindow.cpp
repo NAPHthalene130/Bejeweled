@@ -2,6 +2,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <json.hpp>
 
 AuthWindow::AuthWindow(QWidget *parent)
     : QWidget(parent)
