@@ -25,8 +25,8 @@ private:
     string email;
     string data;
     
-    friend void toJson(nlohmann::json& j, const AuthNetData& p);
-    friend void fromJson(const nlohmann::json& j, AuthNetData& p);
+    friend void to_json(nlohmann::json& j, const AuthNetData& p);
+    friend void from_json(const nlohmann::json& j, AuthNetData& p);
 };
 
 #endif // AUTH_NET_DATA_H
