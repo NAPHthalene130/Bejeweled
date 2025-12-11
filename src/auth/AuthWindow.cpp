@@ -32,9 +32,9 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
     connect(loginWidget, &LoginWidget::loginClicked, this,
             [=](const QString& id, const QString& password) {
         AuthNetData* authData = new AuthNetData(this);
-        authData -> setType(1);// 登录类型
-        authData -> setId(id.toStdString()); // 账号
-        authData -> setPassword(password.toStdString()); // 密码
+        authData -> setType(1);
+        authData -> setId(id.toStdString());
+        authData -> setPassword(password.toStdString());
         // 连接登录结果信号，处理登录结果
         connect(authData, &AuthNetData::loginResult, this, [=](bool success, const QString& msg) {
             if (success) {// 登录成功弹窗
@@ -42,8 +42,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
 
                 MainInterface* mainUI = new MainInterface();
                 mainUI->show();
-                this->hide(); // 隐藏登录窗口
-
+                this->hide();
             } else {// 登录失败弹窗
                 QMessageBox::critical(this , "登录失败",
                     msg , QMessageBox::Ok);
@@ -57,11 +56,11 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
             [=](const QString& id, const QString& password, const QString& confirmPwd,
                 const QString& email, const QString& emailCode) {
         AuthNetData* authData = new AuthNetData(this);
-        authData -> setType(2);// 登录类型
-        authData -> setId(id.toStdString()); // 账号
-        authData -> setPassword(password.toStdString()); // 密码
-        authData -> setEmail(email.toStdString()); // 邮箱
-        authData -> setData(emailCode.toStdString()); // 邮箱验证码
+        authData -> setType(2);
+        authData -> setId(id.toStdString());
+        authData -> setPassword(password.toStdString());
+        authData -> setEmail(email.toStdString());
+        authData -> setData(emailCode.toStdString());
         // 连接登录结果信号，处理登录结果
         connect(authData, &AuthNetData::registerResult, this, [=](bool success, const QString& msg) {
             if (success) {
@@ -76,6 +75,21 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
         authData -> handleRegisterRequest(); // 处理登录请求
     });
 
+    // 连接请求邮箱验证码信号，处理验证码请求
+    connect(registerWidget, &RegisterWidget::requestEmailCode, this, [=](const QString& email) {
+        AuthNetData* authData = new AuthNetData(this);
+        authData->setType(3);
+        authData->setEmail(email.toStdString());
+        connect(authData, &AuthNetData::emailCodeResult, this, [=](bool success, const QString& msg) {
+            if (success) {
+                QMessageBox::information(this, "提示", msg);
+            } else {
+                QMessageBox::warning(this, "错误", msg);
+            }
+        });
+        authData->handleRequestEmailCode();
+    });
+    
     // 添加离线登录的信号处理
     connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
         MainInterface* mainUI = new MainInterface();
