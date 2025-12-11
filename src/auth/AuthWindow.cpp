@@ -1,5 +1,6 @@
 #include "AuthWindow.h"
 #include "../auth/AuthNetData.h"
+#include "../gamewidget/MainInterface.h"
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QString>
@@ -36,10 +37,13 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
         authData -> setPassword(password.toStdString()); // 密码
         // 连接登录结果信号，处理登录结果
         connect(authData, &AuthNetData::loginResult, this, [=](bool success, const QString& msg) {
-            if (success) {
-                QMessageBox::information(// 登录成功弹窗
-                    this , "登录成功",
-                    msg , QMessageBox::Ok );
+            if (success) {// 登录成功弹窗
+                QMessageBox::information(this , "登录成功" , msg , QMessageBox::Ok );
+
+                MainInterface* mainUI = new MainInterface();
+                mainUI->show();
+                this->hide(); // 隐藏登录窗口
+
             } else {// 登录失败弹窗
                 QMessageBox::critical(this , "登录失败",
                     msg , QMessageBox::Ok);
@@ -48,7 +52,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
         authData -> handleLoginRequest(); // 处理登录请求
     });
     
-    // 连接登录信号，处理登录数据
+    // 连接注册信号，处理注册数据
     connect(registerWidget, &RegisterWidget::registerClicked, this,
             [=](const QString& id, const QString& password, const QString& confirmPwd,
                 const QString& email, const QString& emailCode) {
@@ -70,6 +74,13 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
             }
         });
         authData -> handleRegisterRequest(); // 处理登录请求
+    });
+
+    // 添加离线登录的信号处理
+    connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
+        MainInterface* mainUI = new MainInterface();
+        mainUI->show();
+        this->hide(); // 隐藏登录窗口
     });
 }
 
