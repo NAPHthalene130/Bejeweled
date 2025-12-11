@@ -5,6 +5,8 @@
 #include <regex>
 #include <QString>
 #include <QObject>
+#include <boost/asio.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 class AuthNetData : public QObject {
     Q_OBJECT

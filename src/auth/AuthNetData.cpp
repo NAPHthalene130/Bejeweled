@@ -1,5 +1,9 @@
 #include "AuthNetData.h"
 
+namespace asio = boost::asio;
+using tcp = asio::ip::tcp;
+using json = nlohmann::json;
+
 AuthNetData::AuthNetData(QObject* parent) : QObject(parent)
 {
 }
@@ -101,15 +105,58 @@ void AuthNetData::handleLoginRequest()
         return;
     }
 
-    //2. 网络请求
-    
+    // 2. 创建网络连接并发送数据
+    try {
+        boost::asio::io_context io_context;
+        tcp::socket socket(io_context);
+        
+        // 连接到本地服务器（127.0.0.1:10086）
+        boost::system::error_code ec;
+        socket.connect(tcp::endpoint(asio::ip::make_address("127.0.0.1"), 10086), ec);
+        
+        if (ec) {
+            emit loginResult(false, "连接服务器失败: " + QString::fromStdString(ec.message()));
+            return;
+        }
 
-    // 示例：模拟网络发送成功后的逻辑
-    // 这里可以调用Qt的QNetworkAccessManager发送POST请求到后端接口
-    // 也可以调用第三方网络库（如libcurl）进行通信
-    
-    // 第三步：后续可扩展处理后端响应（如解析响应数据、返回登录结果）
-    emit loginResult(true, "登录成功");
+        // 3. 序列化登录数据
+        nlohmann::json j = *this;
+        std::string sendData = j.dump();
+
+        // 4. 发送数据到服务器
+        asio::write(socket, boost::asio::buffer(sendData), ec);
+        if (ec) {
+            emit loginResult(false, "发送数据失败: " + QString::fromStdString(ec.message()));
+            return;
+        }
+
+        // 5. 接收服务器响应
+        std::vector<char> buffer(4096);
+        size_t bytesRead = socket.read_some(boost::asio::buffer(buffer), ec);
+        if (ec) {
+            emit loginResult(false, "接收响应失败: " + QString::fromStdString(ec.message()));
+            return;
+        }
+
+        // 6. 解析响应数据
+        std::string responseStr(buffer.data(), bytesRead);
+        nlohmann::json responseJson = nlohmann::json::parse(responseStr);
+        AuthNetData responseData = responseJson.get<AuthNetData>();
+
+        // 7. 根据服务器返回结果发射信号
+        if (responseData.getType() == 1) {
+            if (responseData.getData() == "LOGIN_SUCCESS") {
+                emit loginResult(true, "登录成功");
+            } else {
+                emit loginResult(false, "账号或密码错误");
+            }
+        } else {
+            emit loginResult(false, "服务器返回异常");
+        }
+
+    } catch (const std::exception& e) {
+        emit loginResult(false, "网络错误: " + QString::fromStdString(e.what()));
+    }
 }
 
 // 注册请求处理
