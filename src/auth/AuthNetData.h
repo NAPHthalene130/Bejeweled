@@ -2,11 +2,19 @@
 #define AUTH_NET_DATA_H
 #include <string>
 #include <json.hpp>
+#include <regex>
+#include <QString>
+#include <QObject>
 
-class AuthNetData{
+class AuthNetData : public QObject {
+    Q_OBJECT
     using string = std::string;
+signals:
+    // 登录注册结果信号
+    void loginResult(bool success, const QString& msg);
+    void registerResult(bool success, const QString& msg);
 public:
-    AuthNetData();
+    AuthNetData(QObject* parent = nullptr);
     ~AuthNetData();
     int getType();
     string getId();
@@ -18,6 +26,10 @@ public:
     void setPassword(string password);
     void setEmail(string email);
     void setData(string data);
+    //处理两项请求
+    bool validate() const;// 校验账号密码合法性
+    void handleLoginRequest();
+    void handleRegisterRequest();
 private:
     int type; //1:登录 2:注册
     string id;

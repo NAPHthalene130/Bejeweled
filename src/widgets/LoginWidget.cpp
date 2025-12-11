@@ -3,10 +3,11 @@
 #include <QLabel>
 #include <QSpacerItem>
 #include <QSizePolicy>
+#include <QMessageBox>
 
 LoginWidget::LoginWidget(QWidget* parent) : QWidget(parent) {
     // 背景占位（预留图片位置）
-    setStyleSheet("background-color: #f5f5f5;");
+    setStyleSheet("background-color: #d14949ff;");
 
     // 标题
     QLabel* titleLabel = new QLabel("用户登录", this);
@@ -23,6 +24,7 @@ LoginWidget::LoginWidget(QWidget* parent) : QWidget(parent) {
 
     // 按钮
     loginBtn = new AuthButton("登录", this);
+    oflLoginBtn = new AuthButton("离线登录", this);
     toRegisterBtn = new AuthButton("没有账号？去注册", this);
     toRegisterBtn->setStyleSheet("background-color: #66c2a5; color: white; border-radius: 4px;");
 
@@ -37,6 +39,8 @@ LoginWidget::LoginWidget(QWidget* parent) : QWidget(parent) {
     mainLayout->addSpacing(40);
     mainLayout->addWidget(loginBtn);
     mainLayout->addSpacing(10);
+    mainLayout->addWidget(oflLoginBtn);
+    mainLayout->addSpacing(10);
     mainLayout->addWidget(toRegisterBtn);
     
     // 添加底部空白占位
@@ -47,5 +51,8 @@ LoginWidget::LoginWidget(QWidget* parent) : QWidget(parent) {
     connect(toRegisterBtn, &QPushButton::clicked, this, &LoginWidget::switchToRegister);
     connect(loginBtn, &QPushButton::clicked, this, [=]() {
         emit loginClicked(idEdit->text(), passwordEdit->text());
+    });
+    connect(oflLoginBtn, &QPushButton::clicked, this, [=]() {
+        emit oflLoginClicked();
     });
 }
