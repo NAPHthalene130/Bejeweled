@@ -1,6 +1,6 @@
 #include "AuthWindow.h"
 #include "../auth/AuthNetData.h"
-#include "../gamewidget/MainInterface.h"
+#include "../game/GameWindow.h"
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QString>
@@ -46,7 +46,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
             if (success) {// 登录成功弹窗
                 QMessageBox::information(this , "登录成功" , msg , QMessageBox::Ok );
 
-                MainInterface* mainUI = new MainInterface();
+                GameWindow* mainUI = new GameWindow();
                 mainUI->show();
                 this->hide();
             } else {// 登录失败弹窗
@@ -107,7 +107,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     
     // 离线登录处理
     connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
-        MainInterface* mainUI = new MainInterface();
+        GameWindow* mainUI = new GameWindow();
         mainUI->show();
         this->hide();
     });
