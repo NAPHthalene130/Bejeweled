@@ -8,7 +8,7 @@
 #include <regex>
 #include <json.hpp>
 
-AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
+AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket(this)) {
     resize(1600, 1000);
     setWindowTitle("登录注册");
 
@@ -34,19 +34,15 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
     // 连接登录信号，处理登录数据
     connect(loginWidget, &LoginWidget::loginClicked, this,
             [=](const QString& id, const QString& password) {
-        AuthNetData* authData = new AuthNetData(this);
-        authData->setType(1);
-        authData->setId(id.toStdString());
-        authData->setPassword(password.toStdString());
-        
-        // 连接socket信号
-        connect(authData->socket, &QTcpSocket::readyRead, this, 
-                [=]() { onReadyRead(authData); });
-        connect(authData->socket, &QTcpSocket::errorOccurred, this,
-                [=](QAbstractSocket::SocketError error) { onErrorOccurred(error, authData); });
+        AuthNetData authData;
+        authData.setType(1);
+        authData.setId(id.toStdString());
+        authData.setPassword(password.toStdString());
         
         // 连接登录结果信号，处理登录结果
-        connect(authData, &AuthNetData::loginResult, this, [=](bool success, const QString& msg) {
+        QMetaObject::Connection* conn = new QMetaObject::Connection;
+        *conn = 
+        connect(this, &AuthWindow::loginResult, this, [=](bool success, const QString& msg) {
             if (success) {// 登录成功弹窗
                 QMessageBox::information(this , "登录成功" , msg , QMessageBox::Ok );
 
@@ -57,6 +53,8 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
                 QMessageBox::critical(this , "登录失败",
                     msg , QMessageBox::Ok);
             }
+            disconnect(*conn);
+            delete conn;
         });
 
         handleLoginRequest(authData);
@@ -66,29 +64,22 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
     connect(registerWidget, &RegisterWidget::registerClicked, this,
             [=](const QString& id, const QString& password, const QString& confirmPwd,
                 const QString& email, const QString& emailCode) {
-        AuthNetData* authData = new AuthNetData(this);
-        authData->setType(2);
-        authData->setId(id.toStdString());
-        authData->setPassword(password.toStdString());
-        authData->setEmail(email.toStdString());
-        authData->setData(emailCode.toStdString());
+        AuthNetData authData;
+        authData.setType(2);
+        authData.setId(id.toStdString());
+        authData.setPassword(password.toStdString());
+        authData.setEmail(email.toStdString());
+        authData.setData(emailCode.toStdString());
         
-        // 连接socket信号
-        connect(authData->socket, &QTcpSocket::readyRead, this,
-                [=]() { onReadyRead(authData); });
-        connect(authData->socket, &QTcpSocket::errorOccurred, this,
-                [=](QAbstractSocket::SocketError error) { onErrorOccurred(error, authData); });
-        
-        // 连接注册结果信号，处理注册结果
-        connect(authData, &AuthNetData::registerResult, this, [=](bool success, const QString& msg) {
+        QMetaObject::Connection* conn = new QMetaObject::Connection;
+        *conn = connect(this, &AuthWindow::registerResult, this, [=](bool success, const QString& msg) {
             if (success) {
-                QMessageBox::information(// 登录成功弹窗
-                    this , "注册成功",
-                    msg , QMessageBox::Ok );
-            } else {// 登录失败弹窗
-                QMessageBox::critical(this , "注册失败，请检查信息格式",
-                    msg , QMessageBox::Ok);
+                QMessageBox::information(this , "注册成功", msg , QMessageBox::Ok );
+            } else {
+                QMessageBox::critical(this , "注册失败，请检查信息格式", msg , QMessageBox::Ok);
             }
+            disconnect(*conn);
+            delete conn;
         });
 
         handleRegisterRequest(authData);
@@ -96,22 +87,19 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
 
     // 连接请求邮箱验证码信号
     connect(registerWidget, &RegisterWidget::requestEmailCode, this, [=](const QString& email) {
-        AuthNetData* authData = new AuthNetData(this);
-        authData->setType(3);
-        authData->setEmail(email.toStdString());
+        AuthNetData authData;
+        authData.setType(3);
+        authData.setEmail(email.toStdString());
         
-        // 连接socket信号
-        connect(authData->socket, &QTcpSocket::readyRead, this,
-                [=]() { onReadyRead(authData); });
-        connect(authData->socket, &QTcpSocket::errorOccurred, this,
-                [=](QAbstractSocket::SocketError error) { onErrorOccurred(error, authData); });
-        
-        connect(authData, &AuthNetData::emailCodeResult, this, [=](bool success, const QString& msg) {
+        QMetaObject::Connection* conn = new QMetaObject::Connection;
+        *conn = connect(this, &AuthWindow::emailCodeResult, this, [=](bool success, const QString& msg) {
             if (success) {
-                QMessageBox::information(this, "提示", msg);
+                QMessageBox::information(this, "成功", msg);
             } else {
                 QMessageBox::warning(this, "错误", msg);
             }
+            disconnect(*conn);
+            delete conn;
         });
         
         handleRequestEmailCode(authData);
@@ -126,6 +114,10 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
 }
 
 AuthWindow::~AuthWindow() {
+    if (socket->isOpen()) {
+        socket->disconnectFromHost();
+        socket->waitForDisconnected(1000);
+    }
 }
 
 // 切换界面实现
@@ -155,86 +147,93 @@ bool AuthWindow::validate(AuthNetData& data) const {
 }
 
 // 处理登录请求
-void AuthWindow::handleLoginRequest(AuthNetData* data) {
-    if (!validate(*data)) {
-        emit data->loginResult(false, "账号密码格式错误（账号6-20位字母数字，密码8-20位含字母和数字）");
+void AuthWindow::handleLoginRequest(AuthNetData& data) {
+    if (!validate(data)) {
+        emit loginResult(false, "账号密码格式错误（账号6-20位字母数字，密码8-20位含字母和数字）");
         return;
     }
-    data->socket->connectToHost(QHostAddress("127.0.0.1"), 10086);
-    nlohmann::json j = *data;
-    data->socket->write(QByteArray::fromStdString(j.dump()));
+    // 连接socket信号
+    connect(socket, &QTcpSocket::readyRead, this, &AuthWindow::onReadyRead);
+    connect(socket, &QTcpSocket::errorOccurred, this, &AuthWindow::onErrorOccurred);
+
+    socket->connectToHost(QHostAddress("127.0.0.1"), 10086);
+    nlohmann::json j = data;
+    socket->write(QByteArray::fromStdString(j.dump()));
 }
 
 // 处理注册请求
-void AuthWindow::handleRegisterRequest(AuthNetData* data) {
-    if (!validate(*data)) {
-        emit data->registerResult(false, "账号密码格式错误");
+void AuthWindow::handleRegisterRequest(AuthNetData& data) {
+    if (!validate(data)) {
+        emit registerResult(false, "账号密码格式错误");
         return;
-    }
-    data->socket->connectToHost(QHostAddress("127.0.0.1"), 10086);
-    nlohmann::json j = *data;
-    data->socket->write(QByteArray::fromStdString(j.dump()));
+    } 
+    connect(socket, &QTcpSocket::readyRead, this, &AuthWindow::onReadyRead);
+    connect(socket, &QTcpSocket::errorOccurred, this, &AuthWindow::onErrorOccurred);
+    socket->connectToHost(QHostAddress("127.0.0.1"), 10086);
+    nlohmann::json j = data;
+    socket->write(QByteArray::fromStdString(j.dump()));
 }
 
 // 处理验证码请求
-void AuthWindow::handleRequestEmailCode(AuthNetData* data) {
-    const std::string& email = data->getEmail();
+void AuthWindow::handleRequestEmailCode(AuthNetData& data) {
+    const std::string& email = data.getEmail();
     if (email.empty() || !std::regex_match(email, std::regex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)"))) {
-        emit data->emailCodeResult(false, "邮箱格式错误");
+        emit emailCodeResult(false, "邮箱格式错误");
         return;
     }
-    data->setType(3); // 标记为验证码请求
-    data->socket->connectToHost(QHostAddress("127.0.0.1"), 10086);
-    nlohmann::json j = *data;
-    data->socket->write(QByteArray::fromStdString(j.dump()));
+    connect(socket, &QTcpSocket::readyRead, this, &AuthWindow::onReadyRead);
+    connect(socket, &QTcpSocket::errorOccurred, this, &AuthWindow::onErrorOccurred);
+    socket->connectToHost(QHostAddress("127.0.0.1"), 10086);
+    nlohmann::json j = data;
+    socket->write(QByteArray::fromStdString(j.dump()));
 }
 
 // 错误处理
-void AuthWindow::onErrorOccurred(QAbstractSocket::SocketError error, AuthNetData* data) {
+void AuthWindow::onErrorOccurred(QAbstractSocket::SocketError error) {
     QMetaEnum metaEnum = QMetaEnum::fromType<QAbstractSocket::SocketError>();
     QString errorStr = metaEnum.valueToKey(error);
-    emit data->loginResult(false, "网络错误: " + errorStr);
+    emit loginResult(false, "网络错误: " + errorStr);
 }
 
 // 数据接收处理
-void AuthWindow::onReadyRead(AuthNetData* data) {
-    QByteArray responseData = data->socket->readAll();
+void AuthWindow::onReadyRead() {
+    QByteArray responseData = socket->readAll();
     std::string responseStr = responseData.toStdString();
 
     try {
         nlohmann::json j = nlohmann::json::parse(responseStr);
-        AuthNetData response_data(this);
+        AuthNetData response_data;
         from_json(j, response_data);
 
         // 根据请求类型处理响应
         switch (response_data.getType()) {
             case 1: // 登录响应
                 if (response_data.getData() == "LOGIN_SUCCESS") {
-                    emit data->loginResult(true, "登录成功");
+                    emit loginResult(true, "登录成功");
                 } else {
-                    emit data->loginResult(false, "账号或密码错误");
+                    emit loginResult(false, "账号或密码错误");
                 }
                 break;
             case 2: // 注册响应
                 if (response_data.getData() == "REGISTER_SUCCESS") {
-                    emit data->registerResult(true, "注册成功");
+                    emit registerResult(true, "注册成功");
                 } else {
-                    emit data->registerResult(false, "注册失败：" + QString::fromStdString(response_data.getData()));
+                    emit registerResult(false, "注册失败：" + QString::fromStdString(response_data.getData()));
                 }
                 break;
             case 3: // 验证码响应
                 if (response_data.getData() == "CODE_SENT") {
-                    emit data->emailCodeResult(true, "验证码已发送至邮箱");
+                    emit emailCodeResult(true, "验证码已发送至邮箱");
                 } else {
-                    emit data->emailCodeResult(false, "验证码发送失败");
+                    emit emailCodeResult(false, "验证码发送失败");
                 }
                 break;
             default:
-                emit data->loginResult(false, "服务器响应类型错误");
+                emit loginResult(false, "服务器响应类型错误");
         }
     } catch (const std::exception& e) {
-        emit data->loginResult(false, "解析响应失败: " + QString::fromStdString(e.what()));
+        emit loginResult(false, "解析响应失败: " + QString::fromStdString(e.what()));
     }
 
-    data->socket->disconnectFromHost();
+    socket->disconnectFromHost();
 }

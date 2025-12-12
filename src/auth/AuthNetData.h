@@ -2,20 +2,13 @@
 #define AUTH_NET_DATA_H
 #include <string>
 #include <json.hpp>
-#include <QObject>
-#include <QTcpSocket>
 
-class AuthNetData : public QObject {
-    Q_OBJECT
+class AuthNetData {
     using string = std::string;
-signals:
-    void loginResult(bool success, const QString& msg);
-    void registerResult(bool success, const QString& msg);
-    void emailCodeResult(bool success, const QString& msg);
 
 public:
-    AuthNetData(QObject* parent = nullptr);
-    ~AuthNetData() override;
+    AuthNetData();
+    ~AuthNetData();
 
     int getType();
     string getId();
@@ -32,7 +25,6 @@ public:
     friend void to_json(nlohmann::json& j, const AuthNetData& p);
     friend void from_json(const nlohmann::json& j, AuthNetData& p);
 
-    QTcpSocket* socket; // 保留socket成员供外部使用
 private:
     int type; // 1:登录 2:注册 3:请求验证码
     string id;

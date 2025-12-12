@@ -1,14 +1,11 @@
 #include "AuthNetData.h"
-#include <QByteArray>
-#include <stdexcept>
 
-AuthNetData::AuthNetData(QObject* parent) : QObject(parent), socket(new QTcpSocket(this)) {}
+AuthNetData::AuthNetData() {
+
+}
 
 AuthNetData::~AuthNetData() {
-    if (socket->isOpen()) {
-        socket->disconnectFromHost();
-        socket->waitForDisconnected(1000);
-    }
+    
 }
 
 int AuthNetData::getType() { return type; }
