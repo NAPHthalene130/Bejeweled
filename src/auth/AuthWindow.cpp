@@ -45,6 +45,20 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
         connect(authData->socket, &QTcpSocket::errorOccurred, this,
                 [=](QAbstractSocket::SocketError error) { onErrorOccurred(error, authData); });
         
+        // 连接登录结果信号，处理登录结果
+        connect(authData, &AuthNetData::loginResult, this, [=](bool success, const QString& msg) {
+            if (success) {// 登录成功弹窗
+                QMessageBox::information(this , "登录成功" , msg , QMessageBox::Ok );
+
+                MainInterface* mainUI = new MainInterface();
+                mainUI->show();
+                this->hide();
+            } else {// 登录失败弹窗
+                QMessageBox::critical(this , "登录失败",
+                    msg , QMessageBox::Ok);
+            }
+        });
+
         handleLoginRequest(authData);
     });
     
@@ -65,6 +79,18 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
         connect(authData->socket, &QTcpSocket::errorOccurred, this,
                 [=](QAbstractSocket::SocketError error) { onErrorOccurred(error, authData); });
         
+        // 连接注册结果信号，处理注册结果
+        connect(authData, &AuthNetData::registerResult, this, [=](bool success, const QString& msg) {
+            if (success) {
+                QMessageBox::information(// 登录成功弹窗
+                    this , "注册成功",
+                    msg , QMessageBox::Ok );
+            } else {// 登录失败弹窗
+                QMessageBox::critical(this , "注册失败，请检查信息格式",
+                    msg , QMessageBox::Ok);
+            }
+        });
+
         handleRegisterRequest(authData);
     });
 
@@ -79,6 +105,14 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent) {
                 [=]() { onReadyRead(authData); });
         connect(authData->socket, &QTcpSocket::errorOccurred, this,
                 [=](QAbstractSocket::SocketError error) { onErrorOccurred(error, authData); });
+        
+        connect(authData, &AuthNetData::emailCodeResult, this, [=](bool success, const QString& msg) {
+            if (success) {
+                QMessageBox::information(this, "提示", msg);
+            } else {
+                QMessageBox::warning(this, "错误", msg);
+            }
+        });
         
         handleRequestEmailCode(authData);
     });

@@ -22,7 +22,6 @@ private:
     LoginWidget* loginWidget;    // 登录界面
     RegisterWidget* registerWidget; // 注册界面
 
-    // 从AuthNetData迁移的方法声明
     bool validate(AuthNetData& data) const;
     void handleLoginRequest(AuthNetData* data);
     void handleRegisterRequest(AuthNetData* data);

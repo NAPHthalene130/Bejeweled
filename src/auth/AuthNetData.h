@@ -28,7 +28,7 @@ public:
     void setEmail(string email);
     void setData(string data);
 
-    // 友元函数保留（JSON序列化）
+    // JSON序列化
     friend void to_json(nlohmann::json& j, const AuthNetData& p);
     friend void from_json(const nlohmann::json& j, AuthNetData& p);
 
