@@ -102,3 +102,4 @@ CMakeLists.txt.user*
 
 #Cache
 ./cache
+src/Config.h

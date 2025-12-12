@@ -6,7 +6,10 @@
 #include "../Config.h"
 
 bool SqlUtil::comparePassword(std::string passwordInDB, std::string password) {
-    //TODO: 密码比较逻辑
+    return true;
+}
+
+bool SqlUtil::authEmailCode(std::string emailCode, std::string email) {
     return true;
 }
 
@@ -20,9 +23,9 @@ int SqlUtil::authPasswordFromPlayerinfo(std::string playerID, std::string passwo
         conn = driver->connect(Config::sqlIP + ":" + std::to_string(Config::sqlPort), Config::sqlUsername, Config::sqlPassword);
         conn->setSchema("bejeweled");
         stmt = conn->createStatement();
-        res = stmt->executeQuery("SELECT password FROM playerinfo WHERE playerID = '" + playerID + "'");
+        res = stmt->executeQuery("SELECT playerPassword FROM playerinfo WHERE playerID = '" + playerID + "'");
         if (res->next()) {
-            std::string pwGetFromDB = res->getString("password");
+            std::string pwGetFromDB = res->getString("playerPassword");
             bool compareFlag = comparePassword(pwGetFromDB, password);
             delete res;
             delete stmt;
@@ -46,13 +49,46 @@ int SqlUtil::authPasswordFromPlayerinfo(std::string playerID, std::string passwo
 }
 
 int SqlUtil::registerFromPlayerinfo(std::string playerID, std::string password, std::string email, std::string styleSet, std::string emailCode) {
-    //1 注册成功
-    //2 邮箱验证码错误
-    //3 账号已存在
-    //4 邮箱已存在
-    //5 其它错误
-    //TODO 具体实现逻辑
-    return 1;
+    try {
+        if (!authEmailCode(emailCode, email)) {
+            return 2;
+        }
+        sql::mysql::MySQL_Driver *driver;
+        sql::Connection *conn;
+        sql::Statement *stmt;
+        sql::ResultSet *res;
+        driver = sql::mysql::get_mysql_driver_instance();
+        conn = driver->connect(Config::sqlIP + ":" + std::to_string(Config::sqlPort), Config::sqlUsername, Config::sqlPassword);
+        conn->setSchema("bejeweled");
+        stmt = conn->createStatement();
+
+        res = stmt->executeQuery("SELECT playerID FROM playerinfo WHERE playerID = '" + playerID + "'");
+        if (res->next()) {
+            delete res;
+            delete stmt;
+            delete conn;
+            return 3;
+        }
+        delete res;
+
+        res = stmt->executeQuery("SELECT email FROM playerinfo WHERE email = '" + email + "'");
+        if (res->next()) {
+            delete res;
+            delete stmt;
+            delete conn;
+            return 4;
+        }
+        delete res;
+
+        stmt->executeUpdate("INSERT INTO playerinfo (playerID, playerPassword, email, styleSet) VALUES ('" + playerID + "', '" + password + "', '" + email + "', '" + styleSet + "')");
+        delete stmt;
+        delete conn;
+        return 1;
+    } catch (sql::SQLException &e) {
+        return 5;
+    } catch (...) {
+        return 5;
+    }
 }
 
 std::string SqlUtil::getPlayerPasswordByPlayerIDfromPlayerinfo(std::string playerID) {
@@ -64,9 +100,9 @@ std::string SqlUtil::getPlayerPasswordByPlayerIDfromPlayerinfo(std::string playe
     conn = driver->connect(Config::sqlIP + ":" + std::to_string(Config::sqlPort), Config::sqlUsername, Config::sqlPassword);
     conn->setSchema("bejeweled");
     stmt = conn->createStatement();
-    res = stmt->executeQuery("SELECT password FROM playerinfo WHERE playerID = '" + playerID + "'");
+    res = stmt->executeQuery("SELECT playerPassword FROM playerinfo WHERE playerID = '" + playerID + "'");
     if (res->next()) {
-        return res->getString("password");
+        return res->getString("playerPassword");
     }
     return "";
 }
@@ -109,7 +145,7 @@ void SqlUtil::setPlayerPasswordByPlayerIDfromPlayerinfo(std::string playerID, st
     conn = driver->connect(Config::sqlIP + ":" + std::to_string(Config::sqlPort), Config::sqlUsername, Config::sqlPassword);
     conn->setSchema("bejeweled");
     stmt = conn->createStatement();
-    stmt->executeUpdate("UPDATE playerinfo SET password = '" + password + "' WHERE playerID = '" + playerID + "'");
+    stmt->executeUpdate("UPDATE playerinfo SET playerPassword = '" + password + "' WHERE playerID = '" + playerID + "'");
 }
 void SqlUtil::setEmailByPlayerIDfromPlayerinfo(std::string playerID, std::string email) {
     sql::mysql::MySQL_Driver *driver;

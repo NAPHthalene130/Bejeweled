@@ -15,5 +15,6 @@ public:
 std::string Config::sqlIP = "127.0.0.1";
 int Config::sqlPort = 3306;
 std::string Config::sqlUsername = "root";
+std::string Config::sqlPassword = "123456";
 
 #endif // CONFIG_H
