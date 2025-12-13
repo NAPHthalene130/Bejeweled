@@ -4,8 +4,8 @@
 #include <QWidget>
 #include <QTcpSocket>
 #include <QAbstractSocket>
-#include "../widgets/LoginWidget.h"
-#include "../widgets/RegisterWidget.h"
+#include "authWidgets/LoginWidget.h"
+#include "authWidgets/RegisterWidget.h"
 #include "AuthNetData.h"
 
 class AuthWindow : public QWidget {
@@ -33,8 +33,11 @@ private:
     void handleLoginRequest(AuthNetData& data);
     void handleRegisterRequest(AuthNetData& data);
     void handleRequestEmailCode(AuthNetData& data);
-    void onErrorOccurred(QAbstractSocket::SocketError error);
-    void onReadyRead();
+    
+    // 网络收发封装
+    void netDataSender(AuthNetData data);
+    AuthNetData AuthDataReceiver();
+
 };
 
 #endif // AUTHWINDOW_H
