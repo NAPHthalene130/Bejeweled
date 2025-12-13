@@ -7,7 +7,7 @@
 
 RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
     // 背景占位（预留图片位置）
-    setStyleSheet("background-color: #f5f5f5;");
+    setStyleSheet("background-color: #706bceff;");
 
     // 标题
     QLabel* titleLabel = new QLabel("用户注册", this);

@@ -60,7 +60,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 if(DEFINED ENV{QT_DIR})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
 endif()
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network)
 
 # Boost
 if(DEFINED ENV{BOOST_ROOT})
@@ -98,6 +98,7 @@ target_link_libraries(Bejeweled
     PRIVATE
     Qt::Core
     Qt::Widgets
+    Qt::Network
     Boost::headers
 )
 
