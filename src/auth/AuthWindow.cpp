@@ -10,6 +10,11 @@
 #include <stdexcept>
 #include <iostream>
 #include <QDialog>
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
 
 AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket(this)) {
     resize(1600, 1000);
@@ -233,6 +238,72 @@ void AuthWindow::handleRequestEmailCode(AuthNetData& data) {
 
 // 网络发送封装
 void AuthWindow::netDataSender(AuthNetData data) {
+    auto rsaEncryptBase64 = [](const std::string& plaintext, const std::string& publicKeyPem) -> std::string {
+        BIO* bio = BIO_new_mem_buf(publicKeyPem.data(), (int)publicKeyPem.size());
+        if (!bio) throw std::runtime_error("加密初始化失败");
+        EVP_PKEY* pkey = PEM_read_bio_PUBKEY(bio, nullptr, nullptr, nullptr);
+        if (!pkey) {
+            BIO_free(bio);
+            BIO* bio2 = BIO_new_mem_buf(publicKeyPem.data(), (int)publicKeyPem.size());
+            if (!bio2) throw std::runtime_error("加密初始化失败");
+            RSA* rsa = PEM_read_bio_RSA_PUBKEY(bio2, nullptr, nullptr, nullptr);
+            BIO_free(bio2);
+            if (!rsa) throw std::runtime_error("公钥解析失败");
+            pkey = EVP_PKEY_new();
+            if (!pkey) {
+                RSA_free(rsa);
+                throw std::runtime_error("加密初始化失败");
+            }
+            if (EVP_PKEY_assign_RSA(pkey, rsa) != 1) {
+                RSA_free(rsa);
+                EVP_PKEY_free(pkey);
+                throw std::runtime_error("公钥解析失败");
+            }
+        }
+        EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, nullptr);
+        if (!ctx) {
+            EVP_PKEY_free(pkey);
+            throw std::runtime_error("加密初始化失败");
+        }
+        if (EVP_PKEY_encrypt_init(ctx) <= 0) {
+            EVP_PKEY_CTX_free(ctx);
+            EVP_PKEY_free(pkey);
+            throw std::runtime_error("加密初始化失败");
+        }
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0) {
+            EVP_PKEY_CTX_free(ctx);
+            EVP_PKEY_free(pkey);
+            throw std::runtime_error("加密初始化失败");
+        }
+        if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha256()) <= 0) {
+            EVP_PKEY_CTX_free(ctx);
+            EVP_PKEY_free(pkey);
+            throw std::runtime_error("加密初始化失败");
+        }
+        if (EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, EVP_sha256()) <= 0) {
+            EVP_PKEY_CTX_free(ctx);
+            EVP_PKEY_free(pkey);
+            throw std::runtime_error("加密初始化失败");
+        }
+        size_t outlen = 0;
+        if (EVP_PKEY_encrypt(ctx, nullptr, &outlen, reinterpret_cast<const unsigned char*>(plaintext.data()), plaintext.size()) <= 0) {
+            EVP_PKEY_CTX_free(ctx);
+            EVP_PKEY_free(pkey);
+            throw std::runtime_error("加密失败");
+        }
+        std::string out;
+        out.resize(outlen);
+        if (EVP_PKEY_encrypt(ctx, reinterpret_cast<unsigned char*>(&out[0]), &outlen, reinterpret_cast<const unsigned char*>(plaintext.data()), plaintext.size()) <= 0) {
+            EVP_PKEY_CTX_free(ctx);
+            EVP_PKEY_free(pkey);
+            throw std::runtime_error("加密失败");
+        }
+        out.resize(outlen);
+        EVP_PKEY_CTX_free(ctx);
+        EVP_PKEY_free(pkey);
+        QByteArray b = QByteArray::fromRawData(out.data(), (int)out.size());
+        return b.toBase64().toStdString();
+    };
     if (socket->state() == QAbstractSocket::ConnectedState) {
         socket->disconnectFromHost();
     }
@@ -240,9 +311,28 @@ void AuthWindow::netDataSender(AuthNetData data) {
     if (!socket->waitForConnected(3000)) {
         throw std::runtime_error("无法连接到服务器");
     }
-
+    AuthNetData rsaAuthData;
+    rsaAuthData.setType(0);
+    rsaAuthData.setData("KEY_REQUEST");
+    nlohmann::json j0 = rsaAuthData;
+    socket->write(QByteArray::fromStdString(j0.dump()));
+    if (!socket->waitForBytesWritten(3000)) {
+        throw std::runtime_error("发送数据超时");
+    }
+    if (!socket->waitForReadyRead(5000)) {
+        throw std::runtime_error("服务器响应超时");
+    }
+    QByteArray keyResp = socket->readAll();
+    nlohmann::json jk = nlohmann::json::parse(keyResp.toStdString());
+    AuthNetData keyResponse;
+    from_json(jk, keyResponse);
+    if (keyResponse.getType() != 0) {
+        throw std::runtime_error("密钥响应类型错误");
+    }
+    std::string publicKey = keyResponse.getData();
     nlohmann::json j = data;
-    socket->write(QByteArray::fromStdString(j.dump()));
+    std::string cipher = rsaEncryptBase64(j.dump(), publicKey);
+    socket->write(QByteArray::fromStdString(cipher));
     if (!socket->waitForBytesWritten(3000)) {
         throw std::runtime_error("发送数据超时");
     }
