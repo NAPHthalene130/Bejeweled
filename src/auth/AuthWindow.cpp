@@ -71,6 +71,12 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     connect(registerWidget, &RegisterWidget::registerClicked, this,
             [=](const QString& id, const QString& password, const QString& confirmPwd,
                 const QString& email, const QString& emailCode) {
+        
+        if (password != confirmPwd) {
+            emit registerResult(false, "两次输入的密码不一致");
+            return;
+        }
+
         AuthNetData authData;
         authData.setType(2);
         authData.setId(id.toStdString());
@@ -158,6 +164,15 @@ bool AuthWindow::validate(AuthNetData& data) const {
     std::regex pwdRegex("^(?=.*[a-zA-Z])(?=.*[0-9]).+$");
     if (!std::regex_match(password, pwdRegex)) return false;
 
+    // 注册类型额外校验邮箱和验证码
+    if (data.getType() == 2) {
+        std::string email = data.getEmail();
+        if (email.empty() || !std::regex_match(email, std::regex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)"))) return false;
+
+        std::string code = data.getData();
+        if (code.empty()) return false;
+    }
+
     return true;
 }
 
@@ -187,7 +202,7 @@ void AuthWindow::handleLoginRequest(AuthNetData& data) {
 // 处理注册请求
 void AuthWindow::handleRegisterRequest(AuthNetData& data) {
     if (!validate(data)) {
-        emit registerResult(false, "账号密码格式错误");
+        emit registerResult(false, "注册信息格式错误（检查账号、密码、邮箱及验证码）");
         return;
     } 
     
@@ -205,7 +220,7 @@ void AuthWindow::handleRegisterRequest(AuthNetData& data) {
         } else if (res == "REGISTER_FAIL_EMAIL") {
             emit registerResult(false, "邮箱已存在");
         } else if (res == "REGISTER_FAIL_UNKNOWN") {
-            emit registerResult(false, "注册失败：未知错误");
+            emit registerResult(false, "注册失败：服务器内部错误");
         } else {
             emit registerResult(false, "注册失败：" + QString::fromStdString(res));
         }
