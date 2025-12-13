@@ -9,6 +9,9 @@ AuthServer::AuthServer(unsigned short port)
     // Generate RSA keys on startup
     generateKeys();
 
+    // Test DB connection
+    SqlUtil::testConnection();
+
     // 设置套接字重用选项，避免端口占用问题
     acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
     startAccept();
@@ -173,7 +176,8 @@ void AuthServer::handleReceive(std::shared_ptr<tcp::socket> socket,
                     }
                 } else if (receivedData.getType() == 2) { //注册逻辑
                     responseData.setType(2);
-                    int registerResult = SqlUtil::registerFromPlayerinfo(receivedData.getId(), receivedData.getPassword(), receivedData.getEmail(), receivedData.getData(), receivedData.getData());
+                    // styleSet 默认为空字符串，emailCode 从 data 获取
+                    int registerResult = SqlUtil::registerFromPlayerinfo(receivedData.getId(), receivedData.getPassword(), receivedData.getEmail(), "", receivedData.getData());
                     if (registerResult == 1) { //1 注册成功
                         responseData.setData("REGISTER_SUCCESS");
                     } else if (registerResult == 2) { //2 邮箱验证码错误
