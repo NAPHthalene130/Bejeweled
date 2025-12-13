@@ -72,6 +72,8 @@ find_package(Boost REQUIRED)
 # GLEW (via vcpkg)
 find_package(GLEW REQUIRED)
 
+# OpenSSL (via MSYS2)
+find_package(OpenSSL REQUIRED)
 # GLFW (Optional)
 if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
     # Use our custom FindGLFW3.cmake which uses ENV{GLFW_DIR} as hint
@@ -94,6 +96,8 @@ qt_add_executable(Bejeweled
 
 target_include_directories(Bejeweled PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
+target_include_directories(Bejeweled PRIVATE ${OPENSSL_INCLUDE_DIR})
+target_link_libraries(Bejeweled PRIVATE ${OPENSSL_LIBRARIES})
 target_link_libraries(Bejeweled
     PRIVATE
     Qt::Core
