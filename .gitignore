@@ -85,7 +85,7 @@ CMakeLists.txt.user*
 .env
 .env.local
 .env.*.local
-
+!.env.template
 # VS Code
 .vscode/*
 !.vscode/settings.json
