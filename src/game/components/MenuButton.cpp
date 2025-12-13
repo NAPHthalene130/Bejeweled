@@ -8,29 +8,44 @@ MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontCo
 
     QFont font = this->font();
     font.setPointSize(fontSize);
-    font.setBold(true); // 加粗让文字更显眼
+    font.setBold(true);
+    font.setFamily("Segoe UI"); // Use a clean modern font
     setFont(font);
 
-    // 构建样式表
-    QString colorStr = fontColor.name(QColor::HexArgb);
-    int radius = height / 2; // 圆角为高度的一半，呈现胶囊状
-
+    // Color string for the accent color
+    QString accentColor = fontColor.name(QColor::HexArgb);
+    // Semi-transparent version of accent for background? No, let's stick to dark theme.
+    
+    // Style: Sci-Fi / Modern Look
+    // Base: Dark semi-transparent background
+    // Border: Accent color
+    // Text: Accent color (or white)
+    // Hover: Fill with accent color, text turns dark
+    
     QString style = QString(
         "MenuButton {"
-        "   background-color: transparent;"
-        "   color: %1;"
-        "   border-radius: %2px;"
-        "   border: none;"
+        "   background-color: rgba(20, 30, 50, 180);"  // Dark blue-grey semi-transparent
+        "   color: white;"                             // White text by default
+        "   border: 2px solid %1;"                     // Colored border
+        "   border-radius: 15px;"                      // Rounded corners (but not fully round)
+        "   padding: 4px;"
         "}"
         "MenuButton:hover {"
-        "   background-color: rgba(200, 200, 200, 80);" // 浅灰色，半透明
+        "   background-color: %1;"                     // Fill with color on hover
+        "   color: black;"                             // Text turns black for contrast
+        "   border: 2px solid rgba(255, 255, 255, 200);" // White-ish border
         "}"
         "MenuButton:pressed {"
-        "   background-color: rgba(180, 180, 180, 100);" // 按下时稍微深一点
+        "   background-color: white;"
+        "   color: black;"
+        "   border: 2px solid %1;"
         "}"
-    ).arg(colorStr).arg(radius);
+    ).arg(accentColor);
 
     setStyleSheet(style);
+    
+    // Optional: Add a shadow effect if we wanted (requires QGraphicsDropShadowEffect), 
+    // but CSS is cleaner for now.
 }
 
 MenuButton::~MenuButton() {
