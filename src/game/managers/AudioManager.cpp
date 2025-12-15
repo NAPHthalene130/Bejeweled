@@ -2,18 +2,17 @@
 #include <QUrl>
 #include <QCoreApplication>
 #include <QDir>
+#include <QMediaDevices>
+#include <QAudioDevice>
+#include <QElapsedTimer>
 
 AudioManager& AudioManager::instance() {
     static AudioManager _instance;
     return _instance;
 }
 
-AudioManager::AudioManager() : QObject(nullptr) {
-    // Assuming PROJECT_SOURCE_DIR is defined via build system, 
-    // but if not, we might need a fallback or use relative paths.
-    // MenuButton used PROJECT_SOURCE_DIR, so we will use it too if available.
-    // If this file is compiled where PROJECT_SOURCE_DIR is not defined, we might have an issue.
-    // However, since it's in the same project, it should be fine.
+AudioManager::AudioManager() : QObject(nullptr), lastHoverPlayTime(0) {
+    throttleTimer.start();
     
     QString soundDir;
 #ifdef PROJECT_SOURCE_DIR
@@ -30,15 +29,34 @@ AudioManager::AudioManager() : QObject(nullptr) {
     clickSound = new QSoundEffect(this);
     clickSound->setSource(QUrl::fromLocalFile(soundDir + "MenuButtonClicked.wav"));
     clickSound->setVolume(0.5f);
+
+    // Monitor audio device changes
+    mediaDevices = new QMediaDevices(this);
+    connect(mediaDevices, &QMediaDevices::audioOutputsChanged, this, &AudioManager::updateAudioOutput);
+    
+    // Set initial device
+    updateAudioOutput();
 }
 
 AudioManager::~AudioManager() {
-    // Parent is nullptr, so we should delete children or let QObject handle it if we parented them.
-    // We parented them to 'this' in constructor.
-    // But since this is a singleton, it might be destroyed at app exit.
+}
+
+void AudioManager::updateAudioOutput() {
+    QAudioDevice device = QMediaDevices::defaultAudioOutput();
+    if (!device.isNull()) {
+        hoverSound->setAudioDevice(device);
+        clickSound->setAudioDevice(device);
+    }
 }
 
 void AudioManager::playHoverSound() {
+    // Throttle to prevent freezing on rapid events
+    qint64 now = throttleTimer.elapsed();
+    if (now - lastHoverPlayTime < 100) { // Limit to 10 sounds per second max
+        return;
+    }
+    lastHoverPlayTime = now;
+
     if (hoverSound->status() == QSoundEffect::Ready || hoverSound->status() == QSoundEffect::Loading) {
         hoverSound->play();
     }

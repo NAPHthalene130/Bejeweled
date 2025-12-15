@@ -3,6 +3,9 @@
 
 #include <QObject>
 #include <QSoundEffect>
+#include <QMediaDevices>
+#include <QAudioDevice>
+#include <QElapsedTimer>
 
 class AudioManager : public QObject {
     Q_OBJECT
@@ -12,12 +15,19 @@ public:
     void playHoverSound();
     void playClickSound();
 
+private slots:
+    void updateAudioOutput();
+
 private:
     AudioManager();
     ~AudioManager();
     
     QSoundEffect* hoverSound;
     QSoundEffect* clickSound;
+    
+    QMediaDevices* mediaDevices;
+    QElapsedTimer throttleTimer;
+    qint64 lastHoverPlayTime;
 };
 
 #endif // AUDIO_MANAGER_H
