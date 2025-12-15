@@ -13,26 +13,26 @@
 SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWindow) 
     : QWidget(parent), gameWindow(gameWindow), canOpe(true), nowTimeHave(0), mode(1) {
     
-    // Initialize Timer
+    // 初始化定时器
     timer = new QTimer(this);
     
-    // Initialize 3D Window
+    // 初始化3D窗口
     game3dWindow = new Qt3DExtras::Qt3DWindow();
     
-    // Setup 3D Scene
+    // 设置3D场景
     setup3DScene();
     
-    // Create container for 3D window
+    // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
     container3d->setFixedSize(960, 960); 
     
-    // Layout - Left Center
+    // 布局 - 左侧居中
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
-    mainLayout->setContentsMargins(50, 0, 50, 0); // Add some margin
+    mainLayout->setContentsMargins(50, 0, 50, 0); // 添加一些边距
     
-    // Align container to the left, vertically centered
+    // 将容器对齐到左侧，垂直居中
     mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    mainLayout->addStretch(1); // Push content to the left
+    mainLayout->addStretch(1); // 将内容推向左侧
     
     setLayout(mainLayout);
 }
@@ -47,17 +47,17 @@ SingleModeGameWidget::~SingleModeGameWidget() {
 }
 
 void SingleModeGameWidget::setup3DScene() {
-    // Root Entity
+    // 根实体
     rootEntity = new Qt3DCore::QEntity();
     game3dWindow->setRootEntity(rootEntity);
     
-    // Camera
+    // 相机
     cameraEntity = game3dWindow->camera();
     cameraEntity->lens()->setPerspectiveProjection(45.0f, 1.0f, 0.1f, 1000.0f);
     cameraEntity->setPosition(QVector3D(0.0f, 0.0f, 20.0f));
     cameraEntity->setViewCenter(QVector3D(0.0f, 0.0f, 0.0f));
     
-    // Light
+    // 灯光
     lightEntity = new Qt3DCore::QEntity(rootEntity);
     Qt3DRender::QPointLight* light = new Qt3DRender::QPointLight(lightEntity);
     light->setColor(Qt::white);
@@ -126,20 +126,20 @@ void SingleModeGameWidget::reset(int mode) {
     this->canOpe = true;
     this->nowTimeHave = 0;
     
-    // Clear existing gemstones if any
+    // 清除现有的宝石（如果有）
     for (auto& row : gemstoneContainer) {
         for (auto* gem : row) {
             if (gem) {
-                gem->setParent((Qt3DCore::QNode*)nullptr); // Detach from scene
+                gem->setParent((Qt3DCore::QNode*)nullptr); // 从场景中分离
                 delete gem;
             }
         }
     }
     gemstoneContainer.clear();
     
-    // Rebuild 8x8 Grid
+    // 重建8x8网格
     gemstoneContainer.resize(8);
-    float startX = -3.5f * 1.5f; // Center the grid
+    float startX = -3.5f * 1.5f; // 居中网格
     float startY = 3.5f * 1.5f;
     float spacing = 1.5f;
     
@@ -149,10 +149,10 @@ void SingleModeGameWidget::reset(int mode) {
             int type = QRandomGenerator::global()->bounded(8);
             Gemstone* gem = new Gemstone(type, "default", rootEntity);
             
-            // Set Position: [0][0] is Top-Left
-            // i is row (Y), j is col (X)
-            // In 3D: X increases to right, Y increases to up.
-            // So Col j maps to X, Row i maps to -Y (downwards)
+            // 设置位置：[0][0] 是左上角
+            // i 是行 (Y), j 是列 (X)
+            // 在3D中：X向右增加，Y向上增加。
+            // 所以列 j 映射到 X，行 i 映射到 -Y（向下）
             
             float x = startX + j * spacing;
             float y = startY - i * spacing;
@@ -163,7 +163,7 @@ void SingleModeGameWidget::reset(int mode) {
         }
     }
     
-    // Reset timer
+    // 重置定时器
     if (timer->isActive()) {
         timer->stop();
     }

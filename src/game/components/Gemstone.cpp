@@ -19,21 +19,21 @@ Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent)
     m_material = new Qt3DExtras::QPhongMaterial();
     addComponent(m_material);
 
-    m_mesh = nullptr; // Will be created in updateAppearance
+    m_mesh = nullptr; // 将在 updateAppearance 中创建
 
     updateAppearance();
 
-    // Setup Rotation Animation
+    // 设置旋转动画
     m_rotationAnimation = new QPropertyAnimation(m_transform, "rotationY");
     m_rotationAnimation->setStartValue(0.0f);
     m_rotationAnimation->setEndValue(360.0f);
-    m_rotationAnimation->setDuration(3000 + QRandomGenerator::global()->bounded(2000)); // Random speed
+    m_rotationAnimation->setDuration(3000 + QRandomGenerator::global()->bounded(2000)); // 随机速度
     m_rotationAnimation->setLoopCount(-1);
     m_rotationAnimation->start();
 }
 
 Gemstone::~Gemstone() {
-    // Qt3D nodes are automatically cleaned up when parent is destroyed
+    // 当父节点被销毁时，Qt3D 节点会自动清理
 }
 
 int Gemstone::getType() const {
@@ -75,14 +75,14 @@ void Gemstone::setupMesh() {
     }
 
     if (style == "XXXXX") {
-         // Placeholder for specific style - maybe a text mesh or specific shape
+         // 特定样式的占位符 - 可能是文本网格或特定形状
          Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh();
          mesh->setXExtent(0.8f); mesh->setYExtent(0.8f); mesh->setZExtent(0.8f);
          m_mesh = mesh;
     } else {
-        // Default style: 8 types of Geometric shapes
+        // 默认样式：8种几何形状
         switch (type % 8) {
-            case 0: // Sphere
+            case 0: // 球体
             {
                 Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh();
                 mesh->setRadius(0.45f);
@@ -90,14 +90,14 @@ void Gemstone::setupMesh() {
                 m_mesh = mesh;
                 break;
             }
-            case 1: // Cube
+            case 1: // 立方体
             {
                 Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh();
                 mesh->setXExtent(0.8f); mesh->setYExtent(0.8f); mesh->setZExtent(0.8f);
                 m_mesh = mesh;
                 break;
             }
-            case 2: // Cone
+            case 2: // 圆锥体
             {
                 Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh();
                 mesh->setBottomRadius(0.5f);
@@ -106,7 +106,7 @@ void Gemstone::setupMesh() {
                 m_mesh = mesh;
                 break;
             }
-            case 3: // Cylinder
+            case 3: // 圆柱体
             {
                 Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
                 mesh->setRadius(0.45f);
@@ -115,7 +115,7 @@ void Gemstone::setupMesh() {
                 m_mesh = mesh;
                 break;
             }
-            case 4: // Torus
+            case 4: // 圆环体
             {
                 Qt3DExtras::QTorusMesh* mesh = new Qt3DExtras::QTorusMesh();
                 mesh->setRadius(0.4f);
@@ -124,30 +124,30 @@ void Gemstone::setupMesh() {
                 m_mesh = mesh;
                 break;
             }
-            case 5: // Hexagonal Prism
+            case 5: // 六棱柱
             {
                 Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
                 mesh->setRadius(0.5f);
                 mesh->setLength(0.8f);
-                mesh->setRings(2); mesh->setSlices(6); // Hexagon
+                mesh->setRings(2); mesh->setSlices(6); // 六边形
                 m_mesh = mesh;
                 break;
             }
-            case 6: // Pyramid (4-sided cone)
+            case 6: // 金字塔（四棱锥）
             {
                 Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh();
                 mesh->setBottomRadius(0.5f);
                 mesh->setLength(0.9f);
-                mesh->setRings(2); mesh->setSlices(4); // Square base
+                mesh->setRings(2); mesh->setSlices(4); // 正方形底座
                 m_mesh = mesh;
                 break;
             }
-            case 7: // Triangular Prism
+            case 7: // 三棱柱
             {
                 Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
                 mesh->setRadius(0.5f);
                 mesh->setLength(0.8f);
-                mesh->setRings(2); mesh->setSlices(3); // Triangle
+                mesh->setRings(2); mesh->setSlices(3); // 三角形
                 m_mesh = mesh;
                 break;
             }
@@ -168,16 +168,16 @@ void Gemstone::setupMesh() {
 
 void Gemstone::setupMaterial() {
     QColor color;
-    // Define colors for 8 types
+    // 定义8种类型的颜色
     switch (type % 8) {
-        case 0: color = QColor(255, 50, 50); break;   // Red
-        case 1: color = QColor(50, 255, 50); break;   // Green
-        case 2: color = QColor(50, 50, 255); break;   // Blue
-        case 3: color = QColor(255, 255, 50); break;  // Yellow
-        case 4: color = QColor(255, 50, 255); break;  // Magenta
-        case 5: color = QColor(50, 255, 255); break;  // Cyan
-        case 6: color = QColor(255, 150, 50); break;  // Orange
-        case 7: color = QColor(200, 200, 200); break; // Grey/White
+        case 0: color = QColor(255, 50, 50); break;   // 红色
+        case 1: color = QColor(50, 255, 50); break;   // 绿色
+        case 2: color = QColor(50, 50, 255); break;   // 蓝色
+        case 3: color = QColor(255, 255, 50); break;  // 黄色
+        case 4: color = QColor(255, 50, 255); break;  // 品红色
+        case 5: color = QColor(50, 255, 255); break;  // 青色
+        case 6: color = QColor(255, 150, 50); break;  // 橙色
+        case 7: color = QColor(200, 200, 200); break; // 灰色/白色
         default: color = Qt::white; break;
     }
 

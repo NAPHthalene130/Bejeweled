@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.19)
 
 # ==============================================================================
-# Environment Configuration (Pre-Project)
+# 环境配置（项目前）
 # ==============================================================================
-# Read .vscode/.env file to set environment variables for dependencies
-# We do this BEFORE project() so we can set compilers if needed.
+# 读取 .vscode/.env 文件以设置依赖项的环境变量
+# 我们在 project() 之前执行此操作，以便根据需要设置编译器。
 if(EXISTS "${CMAKE_SOURCE_DIR}/.vscode/.env")
     message(STATUS "Loading configuration from .vscode/.env file...")
     file(STRINGS "${CMAKE_SOURCE_DIR}/.vscode/.env" ConfigContents)
     foreach(line ${ConfigContents})
-        # Ignore comments and empty lines
+        # 忽略注释和空行
         if(line MATCHES "^[ \t]*[^#=]+=.+$")
             string(REGEX REPLACE "^[ \t]*([^=]+)=(.*)$" "\\1;\\2" key_value "${line}")
             list(GET key_value 0 key)
@@ -24,7 +24,7 @@ else()
     message(WARNING ".vscode/.env file not found! Please copy .vscode/.env.template to .vscode/.env and configure your paths.")
 endif()
 
-# Set Compiler from MINGW_PATH if provided and not already set
+# 如果提供了 MINGW_PATH 且尚未设置，则设置编译器
 if(NOT DEFINED CMAKE_CXX_COMPILER AND DEFINED ENV{MINGW_PATH})
     if(EXISTS "$ENV{MINGW_PATH}/g++.exe")
         set(CMAKE_CXX_COMPILER "$ENV{MINGW_PATH}/g++.exe")
@@ -33,7 +33,7 @@ if(NOT DEFINED CMAKE_CXX_COMPILER AND DEFINED ENV{MINGW_PATH})
     endif()
 endif()
 
-# Set VCPKG Toolchain if VCPKG_DIR is provided in .env
+# 如果 .env 中提供了 VCPKG_DIR，则设置 VCPKG 工具链
 if(DEFINED ENV{VCPKG_DIR} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     if(EXISTS "$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
         set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
@@ -47,49 +47,49 @@ project(Bejeweled LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Helps VS Code IntelliSense
-
-# Add cmake/ folder to module path for custom Find modules (like FindGLFW3.cmake)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-# ==============================================================================
-# Dependencies
-# ==============================================================================
-
-# Qt6
-if(DEFINED ENV{QT_DIR})
-    list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
-endif()
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras Multimedia)
-
-# Boost
-if(DEFINED ENV{BOOST_ROOT})
-    set(BOOST_ROOT "$ENV{BOOST_ROOT}")
-    set(Boost_INCLUDE_DIR "$ENV{BOOST_ROOT}")
-endif()
-find_package(Boost REQUIRED)
-
-# GLEW (via vcpkg)
-find_package(GLEW REQUIRED)
-
-# OpenSSL (via MSYS2)
-find_package(OpenSSL REQUIRED)
-# GLFW (Optional)
-if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
-    # Use our custom FindGLFW3.cmake which uses ENV{GLFW_DIR} as hint
-    find_package(GLFW3 REQUIRED)
-endif()
-
-# ==============================================================================
-# Project Targets
-# ==============================================================================
-
-qt_standard_project_setup()
-
-# Collect sources from src directory
-# Note: Re-run CMake if you add new files, or touch this file.
-# Added new widgets and components need to be detected
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # 帮助 VS Code IntelliSense
+ 
+ # 将 cmake/ 文件夹添加到模块路径，以便使用自定义查找模块（如 FindGLFW3.cmake）
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+ 
+ # ==============================================================================
+ # 依赖项
+ # ==============================================================================
+ 
+ # Qt6
+ if(DEFINED ENV{QT_DIR})
+     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
+ endif()
+ find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras Multimedia)
+ 
+ # Boost
+ if(DEFINED ENV{BOOST_ROOT})
+     set(BOOST_ROOT "$ENV{BOOST_ROOT}")
+     set(Boost_INCLUDE_DIR "$ENV{BOOST_ROOT}")
+ endif()
+ find_package(Boost REQUIRED)
+ 
+ # GLEW (via vcpkg)
+ find_package(GLEW REQUIRED)
+ 
+ # OpenSSL (via MSYS2)
+ find_package(OpenSSL REQUIRED)
+ # GLFW (可选)
+ if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
+     # 使用我们的自定义 FindGLFW3.cmake，它使用 ENV{GLFW_DIR} 作为提示
+     find_package(GLFW3 REQUIRED)
+ endif()
+ 
+ # ==============================================================================
+ # 项目目标
+ # ==============================================================================
+ 
+ qt_standard_project_setup()
+ 
+ # 从 src 目录收集源文件
+ # 注意：如果添加新文件，请重新运行 CMake 或修改此文件。
+ # 需要检测新添加的窗口部件和组件
+ file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
 
 qt_add_executable(Bejeweled

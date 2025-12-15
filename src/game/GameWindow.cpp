@@ -35,14 +35,14 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         switchWidget(menuWidget);
     });
 
-    // Connect PlayMenuWidget signals to SingleModeGameWidget
+    // 连接 PlayMenuWidget 信号到 SingleModeGameWidget
     connect(playMenuWidget, &PlayMenuWidget::startNormalMode, [this]() {
-        singleModeGameWidget->reset(1); // Normal Mode
+        singleModeGameWidget->reset(1); // 普通模式
         switchWidget(singleModeGameWidget);
     });
 
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
-        singleModeGameWidget->reset(2); // Rotate Mode
+        singleModeGameWidget->reset(2); // 旋风模式
         switchWidget(singleModeGameWidget);
     });
 
@@ -64,7 +64,7 @@ void GameWindow::setUserID(std::string userID) {
 
 void GameWindow::switchWidget(QWidget* widget)
 {
-    // Prevent QMainWindow from deleting the previous central widget
+    // 防止 QMainWindow 删除之前的中央部件
     if (centralWidget()) {
         takeCentralWidget();
     }

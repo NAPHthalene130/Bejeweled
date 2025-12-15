@@ -31,33 +31,33 @@ PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
 void PlayMenuWidget::setupUI() {
     setMinimumSize(1600, 1000);
     
-    // Main layout with center alignment
+    // 居中对齐的主布局
     mainLayout = new QVBoxLayout(this);
     mainLayout->setAlignment(Qt::AlignCenter);
     mainLayout->setSpacing(30);
 
-    // Button Configuration
+    // 按钮配置
     int btnW = 300;
     int btnH = 70;
     int fontSize = 22;
 
-    // Button 1: Normal Mode
-    normalModeButton = new MenuButton(btnW, btnH, fontSize, QColor(100, 149, 237), "单人模式-原版", this); // CornflowerBlue
+    // 按钮 1：普通模式
+    normalModeButton = new MenuButton(btnW, btnH, fontSize, QColor(100, 149, 237), "单人模式-原版", this); // 矢车菊蓝
     normalModeButton->setAttribute(Qt::WA_NativeWindow);
 
-    // Button 2: Rotate Mode
-    rotateModeButton = new MenuButton(btnW, btnH, fontSize, QColor(147, 112, 219), "单人模式-旋风", this); // MediumPurple
+    // 按钮 2：旋转模式
+    rotateModeButton = new MenuButton(btnW, btnH, fontSize, QColor(147, 112, 219), "单人模式-旋风", this); // 中紫色
     rotateModeButton->setAttribute(Qt::WA_NativeWindow);
 
-    // Button 3: Multi Mode
-    multiModeButton = new MenuButton(btnW, btnH, fontSize, QColor(255, 127, 80), "多人模式-对战", this); // Coral
+    // 按钮 3：多人模式
+    multiModeButton = new MenuButton(btnW, btnH, fontSize, QColor(255, 127, 80), "多人模式-对战", this); // 珊瑚色
     multiModeButton->setAttribute(Qt::WA_NativeWindow);
 
-    // Back Button (Small, Top Left or Bottom)
+    // 返回按钮（小型，左上角或底部）
     backButton = new MenuButton(150, 50, 16, QColor(200, 200, 200), "返回", this);
     backButton->setAttribute(Qt::WA_NativeWindow);
 
-    // Add buttons to layout
+    // 将按钮添加到布局
     mainLayout->addStretch(1);
     mainLayout->addWidget(normalModeButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(rotateModeButton, 0, Qt::AlignCenter);
@@ -83,8 +83,8 @@ void PlayMenuWidget::setupUI() {
 void PlayMenuWidget::setup3DView() {
     view3D = new Qt3DExtras::Qt3DWindow();
     
-    // Gray Theme Background
-    view3D->defaultFrameGraph()->setClearColor(QColor(40, 40, 45)); // Dark Gray
+    // 灰色主题背景
+    view3D->defaultFrameGraph()->setClearColor(QColor(40, 40, 45)); // 深灰色
     rootEntity = new Qt3DCore::QEntity();
     view3D->setRootEntity(rootEntity);
 
@@ -93,7 +93,7 @@ void PlayMenuWidget::setup3DView() {
     camera->setPosition(QVector3D(0.0f, 0.0f, 20.0f));
     camera->setViewCenter(QVector3D(0.0f, 0.0f, 0.0f));
 
-    // Lights
+    // 灯光
     Qt3DCore::QEntity* lightEntity = new Qt3DCore::QEntity(rootEntity);
     Qt3DRender::QPointLight* light = new Qt3DRender::QPointLight(lightEntity);
     light->setColor(Qt::white);
@@ -103,14 +103,14 @@ void PlayMenuWidget::setup3DView() {
     lightTransform->setTranslation(QVector3D(0.0f, 10.0f, 10.0f));
     lightEntity->addComponent(lightTransform);
 
-    // --- Cool Effect: Rotating Rings of Cubes ---
+    // --- 炫酷效果：旋转的立方体环 ---
     
     auto createRing = [&](float radius, int count, float speed, float yOffset, const QColor& color) {
         auto ringRoot = new Qt3DCore::QEntity(rootEntity);
         auto ringRootTransform = new Qt3DCore::QTransform();
         ringRoot->addComponent(ringRootTransform);
 
-        // Animate the whole ring rotating
+        // 动画整个环旋转
         auto anim = new QPropertyAnimation(ringRootTransform, "rotationY");
         anim->setStartValue(0.0f);
         anim->setEndValue(360.0f);
@@ -118,7 +118,7 @@ void PlayMenuWidget::setup3DView() {
         anim->setLoopCount(-1);
         anim->start();
 
-        // Add cubes
+        // 添加立方体
         auto mesh = new Qt3DExtras::QCuboidMesh();
         mesh->setXExtent(1.0f); mesh->setYExtent(1.0f); mesh->setZExtent(1.0f);
 
@@ -138,7 +138,7 @@ void PlayMenuWidget::setup3DView() {
             float z = radius * sin(rad);
 
             transform->setTranslation(QVector3D(x, yOffset, z));
-            // Random tumbling
+            // 随机翻滚
             transform->setRotationX(QRandomGenerator::global()->bounded(360));
             transform->setRotationZ(QRandomGenerator::global()->bounded(360));
 
@@ -148,12 +148,12 @@ void PlayMenuWidget::setup3DView() {
         }
     };
 
-    // Create a few rings
-    createRing(8.0f, 12, 8000, 0.0f, QColor(0, 255, 255)); // Outer Cyan Ring
-    createRing(5.0f, 8, -6000, 2.0f, QColor(255, 0, 255)); // Middle Magenta Ring
-    createRing(3.0f, 6, 4000, -2.0f, QColor(255, 165, 0));   // Inner Orange Ring
+    // 创建几个环
+    createRing(8.0f, 12, 8000, 0.0f, QColor(0, 255, 255)); // 外层青色环
+    createRing(5.0f, 8, -6000, 2.0f, QColor(255, 0, 255)); // 中层品红色环
+    createRing(3.0f, 6, 4000, -2.0f, QColor(255, 165, 0));   // 内层橙色环
 
-    // Central Object - Large Rotating Icosahedron/Sphere
+    // 中心物体 - 旋转的大二十面体/球体
     auto centerEntity = new Qt3DCore::QEntity(rootEntity);
     auto centerMesh = new Qt3DExtras::QSphereMesh();
     centerMesh->setRadius(1.5f);
@@ -161,7 +161,7 @@ void PlayMenuWidget::setup3DView() {
     centerMesh->setSlices(20);
 
     auto centerMat = new Qt3DExtras::QPhongMaterial();
-    centerMat->setDiffuse(QColor(0, 200, 255)); // Light Blue
+    centerMat->setDiffuse(QColor(0, 200, 255)); // 浅蓝色
     centerMat->setAmbient(QColor(0, 50, 100));
     centerMat->setSpecular(QColor(255, 255, 255));
     
@@ -170,7 +170,7 @@ void PlayMenuWidget::setup3DView() {
     centerEntity->addComponent(centerMat);
     centerEntity->addComponent(centerTransform);
 
-    // Animate center
+    // 动画中心
     auto centerAnim = new QPropertyAnimation(centerTransform, "scale3D");
     centerAnim->setStartValue(QVector3D(1.0f, 1.0f, 1.0f));
     centerAnim->setEndValue(QVector3D(1.2f, 1.2f, 1.2f));
@@ -179,7 +179,7 @@ void PlayMenuWidget::setup3DView() {
     centerAnim->setEasingCurve(QEasingCurve::SineCurve);
     centerAnim->start();
 
-    // Container
+    // 容器
     view3DContainer = QWidget::createWindowContainer(view3D, this);
     view3DContainer->setMinimumSize(0, 0);
     view3DContainer->lower();
