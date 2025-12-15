@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <Qt3DExtras/Qt3DWindow>
+#include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DCore/QEntity>
 #include <Qt3DRender/QCamera>
 #include <Qt3DRender/QPointLight>
@@ -16,8 +17,12 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     // 初始化定时器
     timer = new QTimer(this);
     
+    // 设置主背景颜色
+    setStyleSheet("background-color: rgb(40, 40, 45);");
+
     // 初始化3D窗口
     game3dWindow = new Qt3DExtras::Qt3DWindow();
+    game3dWindow->defaultFrameGraph()->setClearColor(QColor(40, 40, 45)); // 深灰色背景
     
     // 设置3D场景
     setup3DScene();

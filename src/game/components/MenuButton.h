@@ -14,7 +14,6 @@ protected:
     void enterEvent(QEnterEvent* event) override;
 
 private:
-    QSoundEffect* hoverSound;
-    QSoundEffect* clickSound;
+    // Sounds are now handled by AudioManager
 };
 #endif // MENU_BUTTON_H
