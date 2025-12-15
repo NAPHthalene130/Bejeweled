@@ -88,6 +88,7 @@ qt_standard_project_setup()
 
 # Collect sources from src directory
 # Note: Re-run CMake if you add new files, or touch this file.
+# Added new widgets and components need to be detected
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
 

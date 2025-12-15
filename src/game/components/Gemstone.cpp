@@ -1,19 +1,39 @@
 #include "Gemstone.h"
-#include <QPainter>
-#include <QPaintEvent>
-#include <QPolygon>
-#include <QPoint>
-#include <QBrush>
-#include <QPen>
+#include <Qt3DExtras/QSphereMesh>
+#include <Qt3DExtras/QCuboidMesh>
+#include <Qt3DExtras/QConeMesh>
+#include <Qt3DExtras/QCylinderMesh>
+#include <Qt3DExtras/QTorusMesh>
+#include <Qt3DExtras/QExtrudedTextMesh>
 #include <QColor>
-#include <QPainterPath>
+#include <QVector3D>
+#include <QQuaternion>
+#include <QRandomGenerator>
 
-Gemstone::Gemstone(int type, std::string style, QWidget* parent) 
-    : QPushButton(parent), type(type), style(style) {
-    setFixedSize(100, 100);
+Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent) 
+    : Qt3DCore::QEntity(parent), type(type), style(style) {
+    
+    m_transform = new Qt3DCore::QTransform();
+    addComponent(m_transform);
+
+    m_material = new Qt3DExtras::QPhongMaterial();
+    addComponent(m_material);
+
+    m_mesh = nullptr; // Will be created in updateAppearance
+
+    updateAppearance();
+
+    // Setup Rotation Animation
+    m_rotationAnimation = new QPropertyAnimation(m_transform, "rotationY");
+    m_rotationAnimation->setStartValue(0.0f);
+    m_rotationAnimation->setEndValue(360.0f);
+    m_rotationAnimation->setDuration(3000 + QRandomGenerator::global()->bounded(2000)); // Random speed
+    m_rotationAnimation->setLoopCount(-1);
+    m_rotationAnimation->start();
 }
 
 Gemstone::~Gemstone() {
+    // Qt3D nodes are automatically cleaned up when parent is destroyed
 }
 
 int Gemstone::getType() const {
@@ -23,7 +43,7 @@ int Gemstone::getType() const {
 void Gemstone::setType(int type) {
     if (this->type != type) {
         this->type = type;
-        update();
+        updateAppearance();
     }
 }
 
@@ -34,42 +54,120 @@ std::string Gemstone::getStyle() const {
 void Gemstone::setStyle(const std::string& style) {
     if (this->style != style) {
         this->style = style;
-        update();
+        updateAppearance();
     }
 }
 
-void Gemstone::paintEvent(QPaintEvent* event) {
-    Q_UNUSED(event);
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
+Qt3DCore::QTransform* Gemstone::transform() const {
+    return m_transform;
+}
 
-    // Draw button background/border if needed, or just custom shape
-    // Since we are inheriting QPushButton, we might want to let base class draw?
-    // But user asked for custom shapes. Let's draw custom shapes.
-    // If user wants button behavior (hover/press), we can handle that.
-    
-    // Optional: Draw standard button background if style requires it
-    // QPushButton::paintEvent(event); 
+void Gemstone::updateAppearance() {
+    setupMesh();
+    setupMaterial();
+}
+
+void Gemstone::setupMesh() {
+    if (m_mesh) {
+        removeComponent(m_mesh);
+        delete m_mesh;
+        m_mesh = nullptr;
+    }
 
     if (style == "XXXXX") {
-        // Placeholder for specific style
-        painter.fillRect(rect(), Qt::black);
-        painter.setPen(Qt::white);
-        painter.drawText(rect(), Qt::AlignCenter, "X");
+         // Placeholder for specific style - maybe a text mesh or specific shape
+         Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh();
+         mesh->setXExtent(0.8f); mesh->setYExtent(0.8f); mesh->setZExtent(0.8f);
+         m_mesh = mesh;
     } else {
-        // Default style: 8 types of 2D patterns
-        drawDefaultStyle(painter);
+        // Default style: 8 types of Geometric shapes
+        switch (type % 8) {
+            case 0: // Sphere
+            {
+                Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh();
+                mesh->setRadius(0.45f);
+                mesh->setRings(20); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 1: // Cube
+            {
+                Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh();
+                mesh->setXExtent(0.8f); mesh->setYExtent(0.8f); mesh->setZExtent(0.8f);
+                m_mesh = mesh;
+                break;
+            }
+            case 2: // Cone
+            {
+                Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh();
+                mesh->setBottomRadius(0.5f);
+                mesh->setLength(1.0f);
+                mesh->setRings(10); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 3: // Cylinder
+            {
+                Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
+                mesh->setRadius(0.45f);
+                mesh->setLength(0.9f);
+                mesh->setRings(10); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 4: // Torus
+            {
+                Qt3DExtras::QTorusMesh* mesh = new Qt3DExtras::QTorusMesh();
+                mesh->setRadius(0.4f);
+                mesh->setMinorRadius(0.15f);
+                mesh->setRings(20); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 5: // Hexagonal Prism
+            {
+                Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
+                mesh->setRadius(0.5f);
+                mesh->setLength(0.8f);
+                mesh->setRings(2); mesh->setSlices(6); // Hexagon
+                m_mesh = mesh;
+                break;
+            }
+            case 6: // Pyramid (4-sided cone)
+            {
+                Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh();
+                mesh->setBottomRadius(0.5f);
+                mesh->setLength(0.9f);
+                mesh->setRings(2); mesh->setSlices(4); // Square base
+                m_mesh = mesh;
+                break;
+            }
+            case 7: // Triangular Prism
+            {
+                Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
+                mesh->setRadius(0.5f);
+                mesh->setLength(0.8f);
+                mesh->setRings(2); mesh->setSlices(3); // Triangle
+                m_mesh = mesh;
+                break;
+            }
+            default:
+            {
+                Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh();
+                mesh->setRadius(0.4f);
+                m_mesh = mesh;
+                break;
+            }
+        }
+    }
+
+    if (m_mesh) {
+        addComponent(m_mesh);
     }
 }
 
-void Gemstone::drawDefaultStyle(QPainter& painter) {
-    // Common setup
-    QRect r = rect().adjusted(10, 10, -10, -10); // Padding
-    int cx = width() / 2;
-    int cy = height() / 2;
-
+void Gemstone::setupMaterial() {
     QColor color;
-    
     // Define colors for 8 types
     switch (type % 8) {
         case 0: color = QColor(255, 50, 50); break;   // Red
@@ -83,86 +181,8 @@ void Gemstone::drawDefaultStyle(QPainter& painter) {
         default: color = Qt::white; break;
     }
 
-    // Hover effect
-    if (underMouse()) {
-        color = color.lighter(120);
-    }
-    if (isDown()) {
-        color = color.darker(120);
-    }
-
-    painter.setBrush(QBrush(color));
-    painter.setPen(QPen(Qt::white, 2));
-
-    switch (type % 8) {
-        case 0: // Circle
-            painter.drawEllipse(r);
-            break;
-        
-        case 1: // Square (Rounded)
-            painter.drawRoundedRect(r, 10, 10);
-            break;
-        
-        case 2: // Triangle
-        {
-            QPolygon triangle;
-            triangle << QPoint(cx, r.top()) << QPoint(r.right(), r.bottom()) << QPoint(r.left(), r.bottom());
-            painter.drawPolygon(triangle);
-            break;
-        }
-
-        case 3: // Diamond
-        {
-            QPolygon diamond;
-            diamond << QPoint(cx, r.top()) << QPoint(r.right(), cy) << QPoint(cx, r.bottom()) << QPoint(r.left(), cy);
-            painter.drawPolygon(diamond);
-            break;
-        }
-
-        case 4: // Hexagon
-        {
-            QPolygon hexagon;
-            int w = r.width();
-            int h = r.height();
-            hexagon << QPoint(cx - w/4, r.top()) << QPoint(cx + w/4, r.top())
-                    << QPoint(r.right(), cy) << QPoint(cx + w/4, r.bottom())
-                    << QPoint(cx - w/4, r.bottom()) << QPoint(r.left(), cy);
-            painter.drawPolygon(hexagon);
-            break;
-        }
-
-        case 5: // Star (4 points / concave diamond)
-        {
-            QPolygon star;
-            star << QPoint(cx, r.top()) << QPoint(cx + 10, cy - 10) 
-                    << QPoint(r.right(), cy) << QPoint(cx + 10, cy + 10)
-                    << QPoint(cx, r.bottom()) << QPoint(cx - 10, cy + 10)
-                    << QPoint(r.left(), cy) << QPoint(cx - 10, cy - 10);
-            painter.drawPolygon(star);
-            break;
-        }
-
-        case 6: // Cross
-        {
-            QPainterPath path;
-            int thick = 20;
-            path.addRect(cx - thick/2, r.top(), thick, r.height());
-            path.addRect(r.left(), cy - thick/2, r.width(), thick);
-            painter.drawPath(path.simplified());
-            break;
-        }
-
-        case 7: // Ring / Donut
-        {
-            painter.drawEllipse(r);
-            painter.setBrush(QBrush(QColor(30, 30, 30))); 
-            painter.drawEllipse(r.adjusted(20, 20, -20, -20));
-            break;
-        }
-    }
-    
-    // Add a "shine" effect
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(QColor(255, 255, 255, 100));
-    painter.drawEllipse(cx - 20, cy - 20, 20, 15);
+    m_material->setDiffuse(color);
+    m_material->setAmbient(color.darker(150));
+    m_material->setSpecular(Qt::white);
+    m_material->setShininess(50.0f);
 }

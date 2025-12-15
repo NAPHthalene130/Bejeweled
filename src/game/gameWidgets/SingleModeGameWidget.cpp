@@ -3,6 +3,12 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <Qt3DExtras/Qt3DWindow>
+#include <Qt3DCore/QEntity>
+#include <Qt3DRender/QCamera>
+#include <Qt3DRender/QPointLight>
+#include <Qt3DCore/QTransform>
+#include <QRandomGenerator>
+#include <QVector3D>
 
 SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWindow) 
     : QWidget(parent), gameWindow(gameWindow), canOpe(true), nowTimeHave(0), mode(1) {
@@ -13,28 +19,54 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     // Initialize 3D Window
     game3dWindow = new Qt3DExtras::Qt3DWindow();
     
+    // Setup 3D Scene
+    setup3DScene();
+    
     // Create container for 3D window
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(720, 720); 
+    container3d->setFixedSize(960, 960); 
     
     // Layout - Left Center
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(50, 0, 50, 0); // Add some margin
     
-    // Create a vertical layout to center the 3D container vertically if needed, 
-    // or just add it to HBox. QHBoxLayout aligns items vertically center by default usually, 
-    // but let's be explicit if needed.
-    
-    mainLayout->addWidget(container3d);
+    // Align container to the left, vertically centered
+    mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
     mainLayout->addStretch(1); // Push content to the left
     
     setLayout(mainLayout);
 }
 
 SingleModeGameWidget::~SingleModeGameWidget() {
+    if (rootEntity) {
+        delete rootEntity;
+    }
     if (game3dWindow) {
         delete game3dWindow;
     }
+}
+
+void SingleModeGameWidget::setup3DScene() {
+    // Root Entity
+    rootEntity = new Qt3DCore::QEntity();
+    game3dWindow->setRootEntity(rootEntity);
+    
+    // Camera
+    cameraEntity = game3dWindow->camera();
+    cameraEntity->lens()->setPerspectiveProjection(45.0f, 1.0f, 0.1f, 1000.0f);
+    cameraEntity->setPosition(QVector3D(0.0f, 0.0f, 20.0f));
+    cameraEntity->setViewCenter(QVector3D(0.0f, 0.0f, 0.0f));
+    
+    // Light
+    lightEntity = new Qt3DCore::QEntity(rootEntity);
+    Qt3DRender::QPointLight* light = new Qt3DRender::QPointLight(lightEntity);
+    light->setColor(Qt::white);
+    light->setIntensity(1.0f);
+    lightEntity->addComponent(light);
+    
+    Qt3DCore::QTransform* lightTransform = new Qt3DCore::QTransform();
+    lightTransform->setTranslation(QVector3D(0.0f, 0.0f, 20.0f));
+    lightEntity->addComponent(lightTransform);
 }
 
 Qt3DExtras::Qt3DWindow* SingleModeGameWidget::getGame3dWindow() const {
@@ -98,16 +130,41 @@ void SingleModeGameWidget::reset(int mode) {
     for (auto& row : gemstoneContainer) {
         for (auto* gem : row) {
             if (gem) {
-                gem->deleteLater();
+                gem->setParent((Qt3DCore::QNode*)nullptr); // Detach from scene
+                delete gem;
             }
         }
     }
     gemstoneContainer.clear();
     
+    // Rebuild 8x8 Grid
+    gemstoneContainer.resize(8);
+    float startX = -3.5f * 1.5f; // Center the grid
+    float startY = 3.5f * 1.5f;
+    float spacing = 1.5f;
+    
+    for (int i = 0; i < 8; ++i) {
+        gemstoneContainer[i].resize(8);
+        for (int j = 0; j < 8; ++j) {
+            int type = QRandomGenerator::global()->bounded(8);
+            Gemstone* gem = new Gemstone(type, "default", rootEntity);
+            
+            // Set Position: [0][0] is Top-Left
+            // i is row (Y), j is col (X)
+            // In 3D: X increases to right, Y increases to up.
+            // So Col j maps to X, Row i maps to -Y (downwards)
+            
+            float x = startX + j * spacing;
+            float y = startY - i * spacing;
+            
+            gem->transform()->setTranslation(QVector3D(x, y, 0.0f));
+            
+            gemstoneContainer[i][j] = gem;
+        }
+    }
+    
     // Reset timer
     if (timer->isActive()) {
         timer->stop();
     }
-    
-    // Additional reset logic can be added here
 }

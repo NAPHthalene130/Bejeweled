@@ -6,6 +6,9 @@
 #include <string>
 #include <QTimer>
 #include <Qt3DExtras/Qt3DWindow>
+#include <Qt3DCore/QEntity>
+#include <Qt3DRender/QCamera>
+#include <Qt3DRender/QPointLight>
 
 class Gemstone;
 class GameWindow;
@@ -48,6 +51,13 @@ private:
     int mode; // 1: Normal, 2: Rotate
     
     GameWindow* gameWindow;
+
+    // Qt3D Members
+    Qt3DCore::QEntity* rootEntity;
+    Qt3DRender::QCamera* cameraEntity;
+    Qt3DCore::QEntity* lightEntity;
+
+    void setup3DScene();
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H
