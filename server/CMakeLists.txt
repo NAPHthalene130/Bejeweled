@@ -53,6 +53,10 @@ project(Bejeweled_Server)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Option to enable/disable MySQL support (useful when vcpkg or MySQL libraries are unavailable)
+option(ENABLE_MYSQL "Enable MySQL support" ON)
+option(ENABLE_OPENSSL "Enable OpenSSL support" ON)
+
 # Set Boost root if defined
 if(DEFINED BOOST_ROOT)
     set(Boost_ROOT "${BOOST_ROOT}")
@@ -61,7 +65,9 @@ if(DEFINED BOOST_ROOT)
 endif()
 
 # ==================== MySQL配置部分 ====================
-if(MSVC)
+if(ENABLE_MYSQL)
+    # MySQL support requested
+    if(MSVC)
     # 对于MSVC，使用预编译的MySQL Connector/C++ 9.5.0
     if(NOT DEFINED MYSQL_ROOT_DIR)
         message(FATAL_ERROR "MYSQL_ROOT_DIR is not defined in .env file.")
@@ -136,6 +142,12 @@ elseif(MINGW)
     
 else()
     message(FATAL_ERROR "Unsupported compiler. Only MSVC and MinGW are supported.")
+    endif()
+else()
+    message(STATUS "MySQL support disabled via ENABLE_MYSQL=OFF; using stub implementations")
+    set(MySQL_FOUND FALSE)
+    set(MYSQL_LIBRARIES "")
+    set(MYSQL_STATIC FALSE)
 endif()
 
 message(STATUS "MySQL found: ${MySQL_FOUND}")
@@ -150,13 +162,64 @@ if(MySQL_FOUND)
 endif()
 # ==================== MySQL配置结束 ====================
 
-# Find Boost
-find_package(Boost REQUIRED)
+# Find Boost (prefer config mode when using vcpkg)
+## Prefer vcpkg-provided Boost only if it appears installed for the triplet
+set(BOOST_POSSIBLE_INSTALLED FALSE)
+if(DEFINED VCPKG_DIR)
+    set(VCPKG_TRIPLET_DIR "${VCPKG_DIR}/installed/${VCPKG_TARGET_TRIPLET}")
+    if(EXISTS "${VCPKG_TRIPLET_DIR}/include/boost/version.hpp")
+        set(BOOST_POSSIBLE_INSTALLED TRUE)
+    endif()
+endif()
 
-# Find OpenSSL via vcpkg
-find_package(OpenSSL REQUIRED)
-message(STATUS "OpenSSL found: ${OPENSSL_FOUND}")
-message(STATUS "OpenSSL version: ${OPENSSL_VERSION}")
+if(BOOST_POSSIBLE_INSTALLED)
+    find_package(Boost CONFIG QUIET)
+endif()
+
+if(NOT Boost_FOUND)
+    message(STATUS "Boost not found via vcpkg; will attempt standalone Asio fallback")
+endif()
+
+# Fallback: if FindBoost couldn't locate headers, try common vcpkg installed paths
+if(NOT Boost_FOUND)
+    set(POSSIBLE_VCPKG_INSTALLED_DIRS
+        "${VCPKG_DIR}/installed/x64-windows"
+        "$ENV{VCPKG_ROOT}/installed/x64-windows"
+        "D:/vcpkg/installed/x64-windows"
+    )
+    foreach(dir IN LISTS POSSIBLE_VCPKG_INSTALLED_DIRS)
+        if(EXISTS "${dir}/include/boost/version.hpp")
+            set(Boost_FOUND TRUE)
+            set(Boost_INCLUDE_DIRS "${dir}/include")
+            message(STATUS "Using Boost from vcpkg: ${Boost_INCLUDE_DIRS}")
+            break()
+        endif()
+    endforeach()
+endif()
+
+if(NOT Boost_FOUND)
+    message(STATUS "Boost not found via find_package; falling back to standalone Asio (header-only)")
+    include(FetchContent)
+    FetchContent_Declare(asio
+        GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+        GIT_TAG master
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(asio)
+    set(ASIO_FALLBACK TRUE)
+endif()
+
+# Find OpenSSL via vcpkg (only if requested)
+if(ENABLE_OPENSSL)
+    find_package(OpenSSL REQUIRED)
+    message(STATUS "OpenSSL found: ${OPENSSL_FOUND}")
+    message(STATUS "OpenSSL version: ${OPENSSL_VERSION}")
+    if(OPENSSL_FOUND)
+        add_compile_definitions(ENABLE_OPENSSL=1)
+    endif()
+else()
+    message(STATUS "OpenSSL support disabled via ENABLE_OPENSSL=OFF")
+endif()
 
 # Include directories
 include_directories(include)
@@ -167,9 +230,25 @@ endif()
 if(MSVC)
     include_directories(${MySQL_INCLUDE_DIRS})
 endif()
+if(ASIO_FALLBACK)
+    include_directories(${asio_SOURCE_DIR}/include)
+    message(STATUS "Using standalone Asio from FetchContent: ${asio_SOURCE_DIR}/include")
+endif()
 
 # Gather source files
 file(GLOB_RECURSE SOURCES "src/*.cpp")
+
+# If MySQL is disabled, replace the real SqlUtil implementation with a stub
+if(NOT ENABLE_MYSQL)
+    list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/util/SqlUtil.cpp")
+    list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/util/SqlUtil_stub.cpp")
+endif()
+
+# If OpenSSL is disabled, replace the real AuthServer implementation with a stub
+if(NOT ENABLE_OPENSSL)
+    list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/authServer/AuthServer.cpp")
+    list(APPEND SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/authServer/AuthServer_stub.cpp")
+endif()
 
 # Create executable
 add_executable(Bejeweled_Server ${SOURCES})

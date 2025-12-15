@@ -7,10 +7,12 @@
 #include <atomic>
 #include <string>
 #include <boost/asio.hpp>
+#ifdef ENABLE_OPENSSL
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+#endif
 
 class AuthServer {
     using tcp = boost::asio::ip::tcp;
