@@ -96,6 +96,9 @@ qt_add_executable(Bejeweled
 
 target_include_directories(Bejeweled PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
+# Define PROJECT_SOURCE_DIR for resource loading
+target_compile_definitions(Bejeweled PRIVATE PROJECT_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\")
+
 target_include_directories(Bejeweled PRIVATE ${OPENSSL_INCLUDE_DIR})
 target_link_libraries(Bejeweled PRIVATE ${OPENSSL_LIBRARIES})
 target_link_libraries(Bejeweled

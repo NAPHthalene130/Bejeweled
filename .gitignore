@@ -99,3 +99,5 @@ CMakeLists.txt.user*
 
 # Cache
 .cache/*
+.VSCodeCounter
+
