@@ -17,6 +17,13 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     settingWidget = new SettingWidget(this, this);
     storeWidget = new StoreWidget(this, this);
     rankListWidget = new RankListWidget(this, this);
+
+    achievementsWidget->hide();
+    playMenuWidget->hide();
+    settingWidget->hide();
+    storeWidget->hide();
+    rankListWidget->hide();
+
     switchWidget(menuWidget);
     
     resize(1600, 1000);

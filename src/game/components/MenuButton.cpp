@@ -1,5 +1,7 @@
 #include "MenuButton.h"
 #include <QFont>
+#include <QUrl>
+#include <QEnterEvent>
 
 MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontColor, const QString& text, QWidget* parent)
     : QPushButton(text, parent)
@@ -27,7 +29,7 @@ MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontCo
         "   background-color: rgba(20, 30, 50, 180);"  // Dark blue-grey semi-transparent
         "   color: white;"                             // White text by default
         "   border: 2px solid %1;"                     // Colored border
-        "   border-radius: 15px;"                      // Rounded corners (but not fully round)
+        "   border-radius: 0px;"                       // No rounded corners
         "   padding: 4px;"
         "}"
         "MenuButton:hover {"
@@ -46,7 +48,25 @@ MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontCo
     
     // Optional: Add a shadow effect if we wanted (requires QGraphicsDropShadowEffect), 
     // but CSS is cleaner for now.
+
+    // Sounds
+    hoverSound = new QSoundEffect(this);
+    hoverSound->setSource(QUrl::fromLocalFile(QString(PROJECT_SOURCE_DIR) + "/resources/sounds/MenuButtonHover.wav"));
+    hoverSound->setVolume(0.5f);
+
+    clickSound = new QSoundEffect(this);
+    clickSound->setSource(QUrl::fromLocalFile(QString(PROJECT_SOURCE_DIR) + "/resources/sounds/MenuButtonClicked.wav"));
+    clickSound->setVolume(0.5f);
+
+    connect(this, &QPushButton::clicked, clickSound, &QSoundEffect::play);
 }
 
 MenuButton::~MenuButton() {
+}
+
+void MenuButton::enterEvent(QEnterEvent* event) {
+    if (hoverSound->status() == QSoundEffect::Ready || hoverSound->status() == QSoundEffect::Loading) {
+        hoverSound->play();
+    }
+    QPushButton::enterEvent(event);
 }

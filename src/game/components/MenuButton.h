@@ -2,6 +2,7 @@
 #define MENU_BUTTON_H
 #include <QPushButton>
 #include <QColor>
+#include <QSoundEffect>
 
 class MenuButton : public QPushButton {
     Q_OBJECT
@@ -9,5 +10,11 @@ public:
     MenuButton(int width, int height, int fontSize, const QColor& fontColor, const QString& text = "", QWidget* parent = nullptr);
     ~MenuButton();
 
+protected:
+    void enterEvent(QEnterEvent* event) override;
+
+private:
+    QSoundEffect* hoverSound;
+    QSoundEffect* clickSound;
 };
 #endif // MENU_BUTTON_H

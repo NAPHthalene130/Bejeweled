@@ -60,7 +60,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 if(DEFINED ENV{QT_DIR})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
 endif()
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras Multimedia)
 
 # Boost
 if(DEFINED ENV{BOOST_ROOT})
@@ -109,6 +109,7 @@ target_link_libraries(Bejeweled
     Qt6::3DCore
     Qt6::3DRender
     Qt6::3DExtras
+    Qt6::Multimedia
     Boost::headers
 )
 
