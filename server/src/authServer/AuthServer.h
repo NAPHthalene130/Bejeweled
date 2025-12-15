@@ -1,0 +1,46 @@
+#ifndef AUTH_SERVER_H
+#define AUTH_SERVER_H
+
+#include <iostream>
+#include <thread>
+#include <vector>
+#include <atomic>
+#include <string>
+#include <boost/asio.hpp>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+
+class AuthServer {
+    using tcp = boost::asio::ip::tcp;
+public:
+    AuthServer(unsigned short port);
+    ~AuthServer();
+    void run();
+    void stop();
+
+private:
+    void startAccept();
+    void handleAccept(std::shared_ptr<tcp::socket> socket,
+                       const boost::system::error_code& error);
+    void startReceive(std::shared_ptr<tcp::socket> socket);
+    void handleReceive(std::shared_ptr<tcp::socket> socket,
+                        std::shared_ptr<std::vector<char>> buffer,
+                        const boost::system::error_code& error,
+                        std::size_t bytesTransferred);
+
+    boost::asio::io_context ioContext;
+    tcp::acceptor acceptor;
+    std::vector<std::thread> workerThreads;
+    std::atomic<bool> stopped{false};
+    bool emailCodeSend(std::string email);
+
+    // RSA related
+    std::string publicKey;
+    std::string privateKey;
+    void generateKeys();
+    std::string rsaDecryptBase64(const std::string& cipherTextBase64);
+};
+
+#endif // AUTH_SERVER_H
