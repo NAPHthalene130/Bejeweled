@@ -11,6 +11,7 @@ class PlayMenuWidget;
 class SettingWidget;
 class StoreWidget;
 class RankListWidget;
+class SingleModeGameWidget;
 
 class GameWindow : public QMainWindow {
     Q_OBJECT
@@ -20,6 +21,10 @@ public:
     std::string getUserID();
     void setUserID(std::string userID);
     void switchWidget(QWidget* widget);
+    
+    // Public getter for singleModeGameWidget if needed, or just make it public/accessible via switch
+    SingleModeGameWidget* getSingleModeGameWidget() const { return singleModeGameWidget; }
+
 private:
     std::string userID;
     QWidget* currentWidget = nullptr;
@@ -30,7 +35,7 @@ private:
     SettingWidget* settingWidget = nullptr;
     StoreWidget* storeWidget = nullptr;
     RankListWidget* rankListWidget = nullptr;
-
+    SingleModeGameWidget* singleModeGameWidget = nullptr;
 
 };
 

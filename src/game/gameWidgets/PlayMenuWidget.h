@@ -38,6 +38,8 @@ private:
 
 signals:
     void backToMenu();
+    void startNormalMode();
+    void startRotateMode();
 };
 
 #endif // PLAY_MENU_WIDGET_H

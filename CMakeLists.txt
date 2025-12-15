@@ -90,6 +90,7 @@ qt_standard_project_setup()
 # Note: Re-run CMake if you add new files, or touch this file.
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
+
 qt_add_executable(Bejeweled
     WIN32 MACOSX_BUNDLE
     ${SOURCES}

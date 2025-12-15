@@ -70,6 +70,14 @@ void PlayMenuWidget::setupUI() {
     connect(backButton, &QPushButton::clicked, this, [this]() {
         emit backToMenu();
     });
+
+    connect(normalModeButton, &QPushButton::clicked, this, [this]() {
+        emit startNormalMode();
+    });
+
+    connect(rotateModeButton, &QPushButton::clicked, this, [this]() {
+        emit startRotateMode();
+    });
 }
 
 void PlayMenuWidget::setup3DView() {
