@@ -24,6 +24,14 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     storeWidget->hide();
     rankListWidget->hide();
 
+    connect(menuWidget, &MenuWidget::startGame, [this]() {
+        switchWidget(playMenuWidget);
+    });
+
+    connect(playMenuWidget, &PlayMenuWidget::backToMenu, [this]() {
+        switchWidget(menuWidget);
+    });
+
     switchWidget(menuWidget);
     
     resize(1600, 1000);
@@ -42,6 +50,11 @@ void GameWindow::setUserID(std::string userID) {
 
 void GameWindow::switchWidget(QWidget* widget)
 {
+    // Prevent QMainWindow from deleting the previous central widget
+    if (centralWidget()) {
+        takeCentralWidget();
+    }
+
     if (currentWidget) {
         currentWidget->hide();
     }
