@@ -16,6 +16,7 @@ class GameWindow : public QMainWindow {
     Q_OBJECT
 public:
     explicit GameWindow(QWidget* parent = nullptr, std::string userID = "");
+    ~GameWindow(); // Added destructor
     std::string getUserID();
     void setUserID(std::string userID);
     void switchWidget(QWidget* widget);

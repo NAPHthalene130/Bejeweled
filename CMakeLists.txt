@@ -87,6 +87,7 @@ endif()
 qt_standard_project_setup()
 
 # Collect sources from src directory
+# Note: Re-run CMake if you add new files, or touch this file.
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
 qt_add_executable(Bejeweled

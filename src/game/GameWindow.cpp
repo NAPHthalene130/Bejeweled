@@ -28,8 +28,11 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     
     resize(1600, 1000);
     setWindowTitle("宝石迷阵");
-    
 }
+
+GameWindow::~GameWindow() {
+}
+
 std::string GameWindow::getUserID() {
     return userID;
 }

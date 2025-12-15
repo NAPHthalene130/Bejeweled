@@ -1,6 +1,7 @@
 #include "AuthWindow.h"
 #include "../auth/AuthNetData.h"
 #include "../game/GameWindow.h"
+#include "../game/TestWindow.h"
 #include "components/AuthNoticeDialog.h"
 #include <QVBoxLayout>
 #include <QString>
@@ -54,6 +55,11 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
             if (success) {// 登录成功
                 GameWindow* mainUI = new GameWindow();
                 mainUI->show();
+                
+                // Show TestWindow
+                TestWindow* testWindow = new TestWindow();
+                testWindow->show();
+
                 this->hide();
             } else {// 登录失败弹窗
                 AuthNoticeDialog* dlg = new AuthNoticeDialog("登录失败", msg, 3, this);
@@ -130,6 +136,11 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
         GameWindow* mainUI = new GameWindow();
         mainUI->show();
+        
+        // Show TestWindow
+        TestWindow* testWindow = new TestWindow();
+        testWindow->show();
+
         this->hide();
     });
 }
