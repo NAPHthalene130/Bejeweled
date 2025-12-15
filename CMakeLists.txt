@@ -70,7 +70,26 @@ endif()
 find_package(Boost REQUIRED)
 
 # GLEW (via vcpkg)
-find_package(GLEW REQUIRED)
+# Ensure CMake can find the vcpkg-installed glew config
+# Support multiple triplets by searching in VCPKG_DIR/installed
+if(DEFINED ENV{VCPKG_DIR})
+    # If VCPKG_TARGET_TRIPLET is set, use it; otherwise auto-detect common triplets
+    if(DEFINED VCPKG_TARGET_TRIPLET)
+        set(_vcpkg_triplet ${VCPKG_TARGET_TRIPLET})
+        set(glew_DIR "$ENV{VCPKG_DIR}/installed/${_vcpkg_triplet}/share/glew")
+    else()
+        # Try common triplets in order of preference
+        set(_triplet_candidates "x64-mingw-dynamic" "x64-mingw-static" "x64-windows" "x64-windows-static" "x86-mingw-dynamic" "x86-windows")
+        foreach(_triplet ${_triplet_candidates})
+            if(EXISTS "$ENV{VCPKG_DIR}/installed/${_triplet}/share/glew")
+                set(glew_DIR "$ENV{VCPKG_DIR}/installed/${_triplet}/share/glew")
+                message(STATUS "Found GLEW in vcpkg triplet: ${_triplet}")
+                break()
+            endif()
+        endforeach()
+    endif()
+endif()
+find_package(glew CONFIG REQUIRED)
 
 # GLFW (Optional)
 if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
@@ -84,8 +103,8 @@ endif()
 
 qt_standard_project_setup()
 
-# Collect sources from src directory
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+# Collect sources from src and include directories (so AUTOMOC picks up Q_OBJECT headers)
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h" "include/**/*.h")
 
 qt_add_executable(Bejeweled
     WIN32 MACOSX_BUNDLE
@@ -129,3 +148,5 @@ qt_generate_deploy_app_script(
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
+
+
