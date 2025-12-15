@@ -7,6 +7,7 @@
 #include <QPropertyAnimation>
 #include <QResizeEvent>
 #include <QApplication>
+#ifdef HAVE_QT3D
 #include <Qt3DExtras/QCuboidMesh>
 #include <Qt3DExtras/QCylinderMesh>
 #include <Qt3DExtras/QConeMesh>
@@ -25,6 +26,7 @@
 #include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DRender/QDirectionalLight>
 #include <Qt3DRender/QPointLight>
+#endif
 #include <QVector3D>
 #include <QByteArray>
 #include <QSurfaceFormat>
@@ -88,6 +90,7 @@ void MenuWidget::setupUI() {
 }
 
 void MenuWidget::setup3DView() {
+#ifdef HAVE_QT3D
     view3D = new Qt3DExtras::Qt3DWindow();
     
     // Dark Space Background
@@ -352,6 +355,17 @@ void MenuWidget::setup3DView() {
     view3DContainer = QWidget::createWindowContainer(view3D, this);
     view3DContainer->setMinimumSize(0, 0);
     view3DContainer->lower();
+#else
+    view3D = nullptr;
+    rootEntity = nullptr;
+    octahedronEntity = nullptr;
+    octahedronTransform = nullptr;
+    rotationAnim = nullptr;
+    view3DContainer = new QWidget(this);
+    view3DContainer->setStyleSheet("background: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0 rgba(10,10,25,255), stop:1 rgba(30,30,60,255));");
+    view3DContainer->setMinimumSize(0, 0);
+    view3DContainer->lower();
+#endif
 }
 
 void MenuWidget::resizeEvent(QResizeEvent* event) {

@@ -1,0 +1,5 @@
+find_package(Qt6 COMPONENTS 3DCore 3DRender 3DExtras QUIET)
+message("Qt6_3DCore_FOUND=${Qt6_3DCore_FOUND}")
+message("Qt6_3DRender_FOUND=${Qt6_3DRender_FOUND}")
+message("Qt6_3DExtras_FOUND=${Qt6_3DExtras_FOUND}")
+message("Qt6_DIR=${Qt6_DIR}")
