@@ -40,7 +40,17 @@ public:
     void setMode(int mode);
     void reset(int mode);
 
+    void eliminate();
+    void drop();
+    void resetGemstoneTable();
+    void eliminateAnime(Gemstone* gemstone);
+    void switchGemstoneAnime(Gemstone* gemstone1, Gemstone* gemstone2);
+
+    void syncGemstonePositions();
+
 private:
+    QVector3D getPosition(int row, int col) const;
+
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;
     std::vector<std::vector<Gemstone*>> gemstoneContainer;
