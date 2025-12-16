@@ -13,6 +13,9 @@ class StoreWidget;
 class RankListWidget;
 class SingleModeGameWidget;
 
+#include <vector>
+#include "data/AchievementData.h"
+
 class GameWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -25,6 +28,10 @@ public:
     // Public getter for singleModeGameWidget if needed, or just make it public/accessible via switch
     SingleModeGameWidget* getSingleModeGameWidget() const { return singleModeGameWidget; }
 
+    // Achievements access
+    std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
+    void addAchievement(const AchievementData& a) { achievementsContainer.push_back(a); }
+
 private:
     std::string userID;
     QWidget* currentWidget = nullptr;
@@ -36,6 +43,8 @@ private:
     StoreWidget* storeWidget = nullptr;
     RankListWidget* rankListWidget = nullptr;
     SingleModeGameWidget* singleModeGameWidget = nullptr;
+
+    std::vector<AchievementData> achievementsContainer;
 
 };
 

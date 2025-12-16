@@ -9,11 +9,15 @@
 #include "components/MenuButton.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
+#include <QString>
+#include <QDateTime>
 #include <string>
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
+    connect(menuWidget, &MenuWidget::openAchievements, this, [this]() { this->switchWidget(achievementsWidget); });
+    connect(achievementsWidget, &AchievementsWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
     playMenuWidget = new PlayMenuWidget(this, this);
     settingWidget = new SettingWidget(this, this);
     storeWidget = new StoreWidget(this, this);
@@ -71,6 +75,10 @@ void GameWindow::switchWidget(QWidget* widget)
 
     if (currentWidget) {
         currentWidget->hide();
+        // 不要让 setCentralWidget 删除之前的 widget
+        if (currentWidget->parent() == this) {
+            currentWidget->setParent(nullptr);
+        }
     }
     setCentralWidget(widget);
     widget->show();
