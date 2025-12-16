@@ -10,8 +10,7 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
     // 现代渐变背景
     setStyleSheet(R"(
         RegisterWidget {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #f093fb, stop:1 #f5576c);
+            background: transparent;
         }
     )");
 
@@ -20,7 +19,7 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
     cardWidget->setMinimumWidth(600);
     cardWidget->setStyleSheet(R"(
         QWidget {
-            background-color: rgba(255, 255, 255, 0.98);
+            background-color: rgba(255, 255, 255, 0.85);
             border-radius: 20px;
         }
     )");

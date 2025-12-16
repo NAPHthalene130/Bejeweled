@@ -11,6 +11,12 @@
 #include <stdexcept>
 #include <iostream>
 #include <QDialog>
+#include <QPainter>
+#include <QPaintEvent>
+#include <QDir>
+#include <QCoreApplication>
+#include <QFile>
+#include "../utils/ResourceUtils.h"
 #if HAVE_OPENSSL
 #include <openssl/conf.h>
 #include <openssl/evp.h>
@@ -24,6 +30,33 @@
 AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket(this)) {
     resize(1600, 1000);
     setWindowTitle("登录注册");
+
+    // Load background image
+    QString bgPath = QString::fromStdString(ResourceUtils::getPath("images/auth_bg.png"));
+    std::cout << "[AuthWindow] Attempting to load background from: " << bgPath.toStdString() << std::endl;
+    
+    if (!backgroundPixmap.load(bgPath)) {
+        std::cerr << "[AuthWindow] Failed to load background image: " << bgPath.toStdString() << std::endl;
+        
+        // Fallback 1: Try absolute path relative to project root (assuming standard layout)
+        // Check if we are in build directory
+        QDir dir(QCoreApplication::applicationDirPath());
+        // Go up until we find resources
+        QString candidate = dir.filePath("../resources/images/auth_bg.png");
+        if (QFile::exists(candidate)) {
+             std::cout << "[AuthWindow] Found image at fallback 1: " << candidate.toStdString() << std::endl;
+             backgroundPixmap.load(candidate);
+        } else {
+             // Fallback 2: Hardcoded path provided by user (as last resort for local dev)
+             candidate = "h:/CODE/Trae/Bejeweled/resources/images/auth_bg.png";
+             if (QFile::exists(candidate)) {
+                 std::cout << "[AuthWindow] Found image at fallback 2: " << candidate.toStdString() << std::endl;
+                 backgroundPixmap.load(candidate);
+             }
+        }
+    } else {
+        std::cout << "[AuthWindow] Successfully loaded background image." << std::endl;
+    }
 
     // 初始化子界面
     loginWidget = new LoginWidget(this);
@@ -162,6 +195,17 @@ void AuthWindow::switchWidget(QWidget* widget) {
     registerWidget->hide();
     if (widget) {
         widget->show();
+    }
+}
+
+void AuthWindow::paintEvent(QPaintEvent *event) {
+    Q_UNUSED(event);
+    QPainter painter(this);
+    if (!backgroundPixmap.isNull()) {
+        painter.drawPixmap(0, 0, width(), height(), backgroundPixmap);
+    } else {
+        // Fallback color if image fails to load
+        painter.fillRect(rect(), QColor(40, 40, 45));
     }
 }
 
