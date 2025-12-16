@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./vcpkg/vcpkg list:*)",
+      "Bash(./vcpkg/vcpkg.exe install:*)",
+      "Bash(./build/Bejeweled.exe)",
+      "Bash(cmake:*)",
+      "Bash(cmake --build:*)",
+      "Bash(./Bejeweled.exe)",
+      "Bash(ldd:*)",
+      "Bash(\"D:/Qt/6.9.3/mingw_64/bin/windeployqt.exe\" --release --no-translations build/Bejeweled.exe)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
