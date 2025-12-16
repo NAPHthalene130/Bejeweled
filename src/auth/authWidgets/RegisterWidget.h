@@ -2,6 +2,7 @@
 #define REGISTER_WIDGET_H
 
 #include <QWidget>
+#include <QLabel>
 #include "../components/AuthLineEdit.h"
 #include "../components/AuthButton.h"
 
@@ -29,6 +30,11 @@ private:
     AuthButton* registerBtn;      // 注册按钮
     AuthButton* toLoginBtn;       // 切换登录按钮
     AuthButton* getCodeBtn;       // 获取验证码按钮
+
+    QLabel* idHintLabel;          // 账号提示标签
+    QLabel* passwordHintLabel;    // 密码提示标签
+    QLabel* emailHintLabel;       // 邮箱提示标签
 };
 
 #endif // REGISTER_WIDGET_H
+

@@ -2,8 +2,10 @@
 #define LOGIN_WIDGET_H
 
 #include <QWidget>
+#include <QLabel>
 #include "../components/AuthLineEdit.h"
 #include "../components/AuthButton.h"
+
 class LoginWidget : public QWidget {
     Q_OBJECT
 signals:
@@ -22,6 +24,10 @@ private:
     AuthButton* loginBtn;      // 登录按钮
     AuthButton* oflLoginBtn;   // 离线登录按钮
     AuthButton* toRegisterBtn; // 切换注册按钮
+
+    QLabel* idHintLabel;       // 账号提示标签
+    QLabel* oflHintLabel;      // 离线登录提示标签
 };
 
 #endif // LOGIN_WIDGET_H
+

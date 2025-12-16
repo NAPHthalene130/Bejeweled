@@ -47,55 +47,55 @@ project(Bejeweled LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # 帮助 VS Code IntelliSense
- 
- # 将 cmake/ 文件夹添加到模块路径，以便使用自定义查找模块（如 FindGLFW3.cmake）
- list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
- 
- 
- 
- # ==============================================================================
- # 依赖项
- # ==============================================================================
- 
- # Qt6
- if(DEFINED ENV{QT_DIR})
-     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
- endif()
- find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras Multimedia)
- 
- # Boost
- if(DEFINED ENV{BOOST_ROOT})
-     set(BOOST_ROOT "$ENV{BOOST_ROOT}")
-     set(Boost_INCLUDE_DIR "$ENV{BOOST_ROOT}")
- endif()
- find_package(Boost REQUIRED)
- 
- # GLEW (via vcpkg)
- find_package(GLEW REQUIRED)
- 
- # OpenSSL (via MSYS2)
- find_package(OpenSSL REQUIRED)
- # GLFW (可选)
- if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
-     # 使用我们的自定义 FindGLFW3.cmake，它使用 ENV{GLFW_DIR} 作为提示
-     find_package(GLFW3 REQUIRED)
- endif()
- 
- # ==============================================================================
- # 项目目标
- # ==============================================================================
- 
- qt_standard_project_setup()
- 
- # 从 src 目录收集源文件
- # 注意：如果添加新文件，请重新运行 CMake 或修改此文件。
- # 需要检测新添加的窗口部件和组件
- file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Helps VS Code IntelliSense
 
+# Add cmake/ folder to module path for custom Find modules (like FindGLFW3.cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-# 传递源码根目录给代码
-add_definitions(-DCODE_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\")
+# ==============================================================================
+# Dependencies
+# ==============================================================================
+
+# Qt6
+if(DEFINED ENV{QT_DIR})
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
+endif()
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras)
+
+# Boost
+if(DEFINED ENV{BOOST_ROOT})
+    set(BOOST_ROOT "$ENV{BOOST_ROOT}")
+    set(Boost_INCLUDE_DIR "$ENV{BOOST_ROOT}")
+endif()
+find_package(Boost REQUIRED)
+
+# GLEW (via vcpkg)
+find_package(GLEW REQUIRED)
+
+# OpenSSL (via vcpkg)
+if(DEFINED ENV{OPENSSL_ROOT_DIR})
+    set(OPENSSL_ROOT_DIR "$ENV{OPENSSL_ROOT_DIR}")
+endif()
+find_package(OpenSSL REQUIRED)
+# GLFW (Optional)
+if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
+    # Use our custom FindGLFW3.cmake which uses ENV{GLFW_DIR} as hint
+    find_package(GLFW3 REQUIRED)
+endif()
+
+# ==============================================================================
+# Project Targets
+# ==============================================================================
+
+qt_standard_project_setup()
+
+# Collect sources from src directory
+file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+
+qt_add_executable(Bejeweled
+    WIN32 MACOSX_BUNDLE
+    ${SOURCES}
+)
 
 target_include_directories(Bejeweled PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
