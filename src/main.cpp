@@ -2,6 +2,7 @@
 #include <QApplication>
 #include <iostream>
 #include "utils/ResourceUtils.h"
+#include "Game/GameWindow.h"
 
 extern "C" {
     __declspec(dllimport) int __stdcall WSAStartup(unsigned short, void*);
@@ -16,7 +17,9 @@ int main(int argc, char *argv[])
     // Verify resource path
     std::cout << "Current Resource Path: " << ResourceUtils::getResourcesDir() << std::endl;
 
-    AuthWindow w;
-    w.show();
+    GameWindow* mainUI = new GameWindow();
+    mainUI->show();
+    // AuthWindow w;
+    // w.show();
     return a.exec();
 }
