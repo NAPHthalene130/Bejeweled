@@ -17,9 +17,9 @@ int main(int argc, char *argv[])
     // Verify resource path
     std::cout << "Current Resource Path: " << ResourceUtils::getResourcesDir() << std::endl;
 
-    GameWindow* mainUI = new GameWindow();
-    mainUI->show();
-    // AuthWindow w;
-    // w.show();
+    // GameWindow* mainUI = new GameWindow();
+    // mainUI->show();
+    AuthWindow w;
+    w.show();
     return a.exec();
 }

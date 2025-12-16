@@ -60,7 +60,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 if(DEFINED ENV{QT_DIR})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
 endif()
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras 3DInput Multimedia)
 
 # Boost
 if(DEFINED ENV{BOOST_ROOT})
@@ -90,6 +90,7 @@ endif()
 qt_standard_project_setup()
 
 # Collect sources from src directory
+# AudioManager moved to src/utils
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
 qt_add_executable(Bejeweled
@@ -116,11 +117,11 @@ target_link_libraries(Bejeweled
     Boost::headers
 )
 
-# 链接Qt3D及其所有常用子模块，确保动画和3D功能完整
+# Link necessary Qt modules
 if(BUILD_SHARED_LIB)
-    target_link_libraries(BejeweledLib PUBLIC Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput Qt6::3DLogic Qt6::3DAnimation Qt6::3DQuick Qt6::3DQuickAnimation Qt6::3DQuickExtras Qt6::3DQuickInput Qt6::3DQuickLogic Qt6::3DQuickRender Qt6::3DQuickScene2D Qt6::3DQuickScene3D)
+    target_link_libraries(BejeweledLib PUBLIC Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput)
 else()
-    target_link_libraries(Bejeweled PRIVATE Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput Qt6::3DLogic Qt6::3DAnimation Qt6::3DQuick Qt6::3DQuickAnimation Qt6::3DQuickExtras Qt6::3DQuickInput Qt6::3DQuickLogic Qt6::3DQuickRender Qt6::3DQuickScene2D Qt6::3DQuickScene3D)
+    target_link_libraries(Bejeweled PRIVATE Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput)
 endif()
 
 
@@ -135,17 +136,7 @@ if (WIN32)
         Qt63DCore.dll
         Qt63DRender.dll
         Qt63DExtras.dll
-        Qt63DAnimation.dll
         Qt63DInput.dll
-        Qt63DLogic.dll
-        Qt63DQuick.dll
-        Qt63DQuickAnimation.dll
-        Qt63DQuickExtras.dll
-        Qt63DQuickInput.dll
-        Qt63DQuickLogic.dll
-        Qt63DQuickRender.dll
-        Qt63DQuickScene2D.dll
-        Qt63DQuickScene3D.dll
         Qt6OpenGL.dll
         Qt6OpenGLWidgets.dll
         Qt6Quick.dll
@@ -189,7 +180,11 @@ if (WIN32)
         opengl32sw.dll
     )
     # 请根据你的实际Qt安装路径修改下方路径
-    set(QT_BIN_DIR "C:/Qt/6.10.1/mingw_64/bin")
+    if(DEFINED ENV{QT_DIR})
+        set(QT_BIN_DIR "$ENV{QT_DIR}/bin")
+    else()
+        set(QT_BIN_DIR "C:/Qt/6.10.1/mingw_64/bin")
+    endif()
     foreach(DLL ${QT_DLLS})
         # Always copy Qt DLLs to the executable output directory after build.
         # Bind to the executable target to avoid creating a strong dependency
@@ -202,9 +197,7 @@ if (WIN32)
 endif()
 
 # 资源文件夹复制（如有）
-add_custom_command(TARGET Bejeweled POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:Bejeweled>/assets)
+# Assets folder moved to resources, removed legacy copy command
 
 # 如果存在 resources 目录则一并复制到输出目录，供运行时读取
 if(EXISTS "${CMAKE_SOURCE_DIR}/resources")

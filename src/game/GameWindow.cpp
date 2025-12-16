@@ -50,6 +50,19 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         switchWidget(singleModeGameWidget);
     });
 
+    // Add test achievements
+    for (int i = 1; i <= 15; ++i) {
+        AchievementData ad;
+        ad.setTitle(QString("TITLE%1").arg(i));
+        ad.setDescription(QString("CONTENTS%1").arg(i));
+        ad.setUnlocked(i % 2 == 0);
+        if (ad.isUnlocked()) {
+            ad.setCompletedAt(QDateTime::currentDateTime());
+        }
+        addAchievement(ad);
+    }
+    if (achievementsWidget) achievementsWidget->updateView();
+
     switchWidget(menuWidget);
     
     resize(1600, 1000);

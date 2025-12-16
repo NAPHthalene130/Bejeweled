@@ -182,6 +182,7 @@ void PlayMenuWidget::setup3DView() {
     // 容器
     view3DContainer = QWidget::createWindowContainer(view3D, this);
     view3DContainer->setMinimumSize(0, 0);
+    view3DContainer->show(); // Ensure it is shown
     view3DContainer->lower();
 }
 

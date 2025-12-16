@@ -167,7 +167,7 @@ AchievementsWidget::AchievementsWidget(QWidget* parent, GameWindow* gameWindow)
     audioOutput->setVolume(0.5); // 音量 50%
     
     // 加载背景音乐文件
-    QString musicPath = QString::fromStdString(ResourceUtils::getPath("ambient.ogg"));
+    QString musicPath = QString::fromStdString(ResourceUtils::getPath("sounds/ambient.ogg"));
     qDebug() << "Music path:" << musicPath << "exists:" << QFile::exists(musicPath);
     if (QFile::exists(musicPath)) {
         bgMusic->setSource(QUrl::fromLocalFile(musicPath));
@@ -404,7 +404,7 @@ AchievementsBackgroundDecoration::AchievementsBackgroundDecoration(QWidget* pare
     setAttribute(Qt::WA_TranslucentBackground);
     userBg = QPixmap();
     // 加载成就背景图片
-    QString bgPath = QString::fromStdString(ResourceUtils::getPath("user_bg.png"));
+    QString bgPath = QString::fromStdString(ResourceUtils::getPath("images/user_bg.png"));
     if (QFile::exists(bgPath)) {
         bgImage.load(bgPath);
     }
