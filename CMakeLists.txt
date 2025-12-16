@@ -1,142 +1,160 @@
-cmake_minimum_required(VERSION 3.19)
-
-# ==============================================================================
-# Environment Configuration (Pre-Project)
-# ==============================================================================
-# Read .vscode/.env file to set environment variables for dependencies
-# We do this BEFORE project() so we can set compilers if needed.
-if(EXISTS "${CMAKE_SOURCE_DIR}/.vscode/.env")
-    message(STATUS "Loading configuration from .vscode/.env file...")
-    file(STRINGS "${CMAKE_SOURCE_DIR}/.vscode/.env" ConfigContents)
-    foreach(line ${ConfigContents})
-        # Ignore comments and empty lines
-        if(line MATCHES "^[ \t]*[^#=]+=.+$")
-            string(REGEX REPLACE "^[ \t]*([^=]+)=(.*)$" "\\1;\\2" key_value "${line}")
-            list(GET key_value 0 key)
-            list(GET key_value 1 value)
-            string(STRIP "${key}" key)
-            string(STRIP "${value}" value)
-            set(ENV{${key}} "${value}")
-            message(STATUS "  Set ${key}=${value}")
-        endif()
-    endforeach()
-else()
-    message(WARNING ".vscode/.env file not found! Please copy .vscode/.env.template to .vscode/.env and configure your paths.")
-endif()
-
-# Set Compiler from MINGW_PATH if provided and not already set
-if(NOT DEFINED CMAKE_CXX_COMPILER AND DEFINED ENV{MINGW_PATH})
-    if(EXISTS "$ENV{MINGW_PATH}/g++.exe")
-        set(CMAKE_CXX_COMPILER "$ENV{MINGW_PATH}/g++.exe")
-        set(CMAKE_C_COMPILER "$ENV{MINGW_PATH}/gcc.exe")
-        message(STATUS "Using MinGW from .env: $ENV{MINGW_PATH}")
-    endif()
-endif()
-
-# Set VCPKG Toolchain if VCPKG_DIR is provided in .env
-if(DEFINED ENV{VCPKG_DIR} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    if(EXISTS "$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
-        set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
-        message(STATUS "Using vcpkg toolchain from .env: ${CMAKE_TOOLCHAIN_FILE}")
-    else()
-        message(WARNING "VCPKG_DIR set in .env but scripts/buildsystems/vcpkg.cmake not found at $ENV{VCPKG_DIR}")
-    endif()
-endif()
-
+cmake_minimum_required(VERSION 3.16)
 project(Bejeweled LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # Helps VS Code IntelliSense
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
-# Add cmake/ folder to module path for custom Find modules (like FindGLFW3.cmake)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+# Qt
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Multimedia 3DCore 3DRender 3DExtras 3DInput 3DLogic 3DAnimation 3DQuick 3DQuickAnimation 3DQuickExtras 3DQuickInput 3DQuickLogic 3DQuickRender 3DQuickScene2D 3DQuickScene3D)
 
-# ==============================================================================
-# Dependencies
-# ==============================================================================
+# Boost（如有需要可取消注释并配置路径）
+# set(BOOST_ROOT "${CMAKE_SOURCE_DIR}/3rdparty/boost")
+# set(Boost_NO_SYSTEM_PATHS ON)
+# find_package(Boost REQUIRED)
 
-# Qt6
-if(DEFINED ENV{QT_DIR})
-    list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
-endif()
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras)
+# GLEW、OpenSSL、GLFW等可按需添加
 
-# Boost
-if(DEFINED ENV{BOOST_ROOT})
-    set(BOOST_ROOT "$ENV{BOOST_ROOT}")
-    set(Boost_INCLUDE_DIR "$ENV{BOOST_ROOT}")
-endif()
-find_package(Boost REQUIRED)
-
-# GLEW (via vcpkg)
-find_package(GLEW REQUIRED)
-
-# OpenSSL (via MSYS2)
-find_package(OpenSSL REQUIRED)
-# GLFW (Optional)
-if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
-    # Use our custom FindGLFW3.cmake which uses ENV{GLFW_DIR} as hint
-    find_package(GLFW3 REQUIRED)
-endif()
-
-# ==============================================================================
-# Project Targets
-# ==============================================================================
-
-qt_standard_project_setup()
-
-# Collect sources from src directory
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
-
-qt_add_executable(Bejeweled
-    WIN32 MACOSX_BUNDLE
-    ${SOURCES}
+# 源文件收集
+file(GLOB_RECURSE SOURCES
+    src/*.cpp
+)
+file(GLOB_RECURSE HEADERS
+    include/*.h
+    src/*.h
 )
 
-target_include_directories(Bejeweled PRIVATE "${CMAKE_SOURCE_DIR}/include")
+option(BUILD_SHARED_LIB "Build core as shared library (DLL)" ON)
 
-# Define PROJECT_SOURCE_DIR for resource loading
-target_compile_definitions(Bejeweled PRIVATE PROJECT_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\")
+set(MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main.cpp")
+list(REMOVE_ITEM SOURCES ${MAIN_SRC})
 
-target_include_directories(Bejeweled PRIVATE ${OPENSSL_INCLUDE_DIR})
-target_link_libraries(Bejeweled PRIVATE ${OPENSSL_LIBRARIES})
-target_link_libraries(Bejeweled
-    PRIVATE
-    Qt::Core
-    Qt::Widgets
-    Qt::Network
-    Qt6::3DCore
-    Qt6::3DRender
-    Qt6::3DExtras
-    Boost::headers
-)
-
-if(TARGET GLEW::GLEW)
-    target_link_libraries(Bejeweled PRIVATE GLEW::GLEW)
+if(BUILD_SHARED_LIB)
+    add_library(BejeweledLib SHARED ${SOURCES} ${HEADERS})
+    add_executable(Bejeweled ${MAIN_SRC})
+    target_link_libraries(Bejeweled PRIVATE BejeweledLib)
+    # expose include dirs for consumers
+    target_include_directories(BejeweledLib PUBLIC
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+    )
+else()
+    add_executable(Bejeweled ${SOURCES} ${HEADERS})
 endif()
 
-if(TARGET GLFW3::GLFW3)
-    target_link_libraries(Bejeweled PRIVATE GLFW3::GLFW3)
-elseif(TARGET glfw)
-    target_link_libraries(Bejeweled PRIVATE glfw)
+if(BUILD_SHARED_LIB)
+    target_include_directories(Bejeweled PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+    )
+else()
+    target_include_directories(Bejeweled PRIVATE
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/src
+    )
 endif()
 
-# ==============================================================================
-# Installation & Deployment
-# ==============================================================================
+# 传递源码根目录给代码
+add_definitions(-DCODE_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\")
 
-include(GNUInstallDirs)
 
-install(TARGETS Bejeweled
-    BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
+# 链接Qt3D及其所有常用子模块，确保动画和3D功能完整
+if(BUILD_SHARED_LIB)
+    target_link_libraries(BejeweledLib PUBLIC Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput Qt6::3DLogic Qt6::3DAnimation Qt6::3DQuick Qt6::3DQuickAnimation Qt6::3DQuickExtras Qt6::3DQuickInput Qt6::3DQuickLogic Qt6::3DQuickRender Qt6::3DQuickScene2D Qt6::3DQuickScene3D)
+else()
+    target_link_libraries(Bejeweled PRIVATE Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput Qt6::3DLogic Qt6::3DAnimation Qt6::3DQuick Qt6::3DQuickAnimation Qt6::3DQuickExtras Qt6::3DQuickInput Qt6::3DQuickLogic Qt6::3DQuickRender Qt6::3DQuickScene2D Qt6::3DQuickScene3D)
+endif()
 
-qt_generate_deploy_app_script(
-    TARGET Bejeweled
-    OUTPUT_SCRIPT deploy_script
-    NO_UNSUPPORTED_PLATFORM_ERROR
-)
-install(SCRIPT ${deploy_script})
+
+# 自动复制Qt DLL到输出目录（仅Windows，需本地Qt bin目录）
+if (WIN32)
+    set(QT_DLLS
+        Qt6Widgets.dll
+        Qt6Network.dll
+        Qt6Core.dll
+        Qt6Gui.dll
+        Qt6Multimedia.dll
+        Qt63DCore.dll
+        Qt63DRender.dll
+        Qt63DExtras.dll
+        Qt63DAnimation.dll
+        Qt63DInput.dll
+        Qt63DLogic.dll
+        Qt63DQuick.dll
+        Qt63DQuickAnimation.dll
+        Qt63DQuickExtras.dll
+        Qt63DQuickInput.dll
+        Qt63DQuickLogic.dll
+        Qt63DQuickRender.dll
+        Qt63DQuickScene2D.dll
+        Qt63DQuickScene3D.dll
+        Qt6OpenGL.dll
+        Qt6OpenGLWidgets.dll
+        Qt6Quick.dll
+        Qt6Quick3D.dll
+        Qt6Quick3DAssetImport.dll
+        Qt6Quick3DAssetUtils.dll
+        Qt6Quick3DEffects.dll
+        Qt6Quick3DGlslParser.dll
+        Qt6Quick3DHelpers.dll
+        Qt6Quick3DHelpersImpl.dll
+        Qt6Quick3DIblBaker.dll
+        Qt6Quick3DParticleEffects.dll
+        Qt6Quick3DParticles.dll
+        Qt6Quick3DRuntimeRender.dll
+        Qt6Quick3DSpatialAudio.dll
+        Qt6Quick3DUtils.dll
+        Qt6Quick3DXr.dll
+        Qt6QuickWidgets.dll
+        Qt6Qml.dll
+        Qt6QmlCore.dll
+        Qt6QmlModels.dll
+        Qt6QmlWorkerScript.dll
+        Qt6QmlNetwork.dll
+        Qt6QmlXmlListModel.dll
+        Qt6QuickControls2.dll
+        Qt6QuickLayouts.dll
+        Qt6QuickShapes.dll
+        Qt6QuickTemplates2.dll
+        Qt6Gui.dll
+        Qt6PrintSupport.dll
+        Qt6Sql.dll
+        Qt6Svg.dll
+        Qt6SvgWidgets.dll
+        Qt6Test.dll
+        Qt6UiTools.dll
+        Qt6Xml.dll
+        libgcc_s_seh-1.dll
+        libstdc++-6.dll
+        libwinpthread-1.dll
+        d3dcompiler_47.dll
+        opengl32sw.dll
+    )
+    # 请根据你的实际Qt安装路径修改下方路径
+    set(QT_BIN_DIR "C:/Qt/6.10.1/mingw_64/bin")
+    foreach(DLL ${QT_DLLS})
+        # Always copy Qt DLLs to the executable output directory after build.
+        # Bind to the executable target to avoid creating a strong dependency
+        # from the shared library back to the executable (which creates a cycle).
+        add_custom_command(TARGET Bejeweled POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${QT_BIN_DIR}/${DLL}
+                $<TARGET_FILE_DIR:Bejeweled>/${DLL})
+    endforeach()
+endif()
+
+# 资源文件夹复制（如有）
+add_custom_command(TARGET Bejeweled POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:Bejeweled>/assets)
+
+# 如果存在 resources 目录则一并复制到输出目录，供运行时读取
+if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
+    add_custom_command(TARGET Bejeweled POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:Bejeweled>/resources)
+endif()
+
+# 确保代码可以使用项目源目录宏（ResourceUtils 使用 PROJECT_SOURCE_DIR）
+add_definitions(-DPROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")

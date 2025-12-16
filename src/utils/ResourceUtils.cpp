@@ -15,6 +15,11 @@ std::string ResourceUtils::getResourcesDir() {
     if (fs::exists(resourceDir)) {
         return resourceDir.string();
     }
+    // 如果没有 resources，优先使用项目内的 assets 目录（便于开发环境）
+    fs::path assetsDir = sourceDir / "assets";
+    if (fs::exists(assetsDir) && fs::is_directory(assetsDir)) {
+        return assetsDir.string();
+    }
 #endif
 
     // 2. Fallback: Search relative to the executable/working directory
@@ -24,10 +29,15 @@ std::string ResourceUtils::getResourcesDir() {
     
     // Check up to 3 levels up
     std::vector<fs::path> candidates;
+    // 在可执行目录及上级目录查找 resources 或 assets
     candidates.push_back(currentPath / "resources");
+    candidates.push_back(currentPath / "assets");
     candidates.push_back(currentPath.parent_path() / "resources");
+    candidates.push_back(currentPath.parent_path() / "assets");
     candidates.push_back(currentPath.parent_path().parent_path() / "resources");
+    candidates.push_back(currentPath.parent_path().parent_path() / "assets");
     candidates.push_back(currentPath.parent_path().parent_path().parent_path() / "resources");
+    candidates.push_back(currentPath.parent_path().parent_path().parent_path() / "assets");
 
     for (const auto& path : candidates) {
         // We use exists() and is_directory() to ensure it's valid

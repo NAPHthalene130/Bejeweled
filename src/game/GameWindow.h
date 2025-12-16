@@ -12,6 +12,9 @@ class SettingWidget;
 class StoreWidget;
 class RankListWidget;
 
+#include <vector>
+#include "data/AchievementData.h"
+
 class GameWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -19,6 +22,11 @@ public:
     std::string getUserID();
     void setUserID(std::string userID);
     void switchWidget(QWidget* widget);
+
+    // Achievements access
+    std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
+    void addAchievement(const AchievementData& a) { achievementsContainer.push_back(a); }
+
 private:
     std::string userID;
     QWidget* currentWidget = nullptr;
@@ -30,6 +38,7 @@ private:
     StoreWidget* storeWidget = nullptr;
     RankListWidget* rankListWidget = nullptr;
 
+    std::vector<AchievementData> achievementsContainer;
 
 };
 
