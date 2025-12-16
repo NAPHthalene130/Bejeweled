@@ -9,8 +9,15 @@
 #include <Qt3DCore/QEntity>
 #include <Qt3DRender/QCamera>
 #include <Qt3DRender/QPointLight>
+#include <Qt3DInput/QInputAspect>
+
+class QTextEdit;
+class QLabel;
+class QShowEvent;
+class QEvent;
 
 class Gemstone;
+class SelectedCircle;
 class GameWindow;
 
 class SingleModeGameWidget : public QWidget {
@@ -48,8 +55,16 @@ public:
 
     void syncGemstonePositions();
 
+protected:
+    void mousePressEvent(QMouseEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    bool eventFilter(QObject* obj, QEvent* event) override;
+
 private:
     QVector3D getPosition(int row, int col) const;
+    void handleGemstoneClicked(Gemstone* gem);
+    void appendDebug(const QString& text);
+    void refreshDebugStatus();
 
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;
@@ -67,7 +82,21 @@ private:
     Qt3DRender::QCamera* cameraEntity;
     Qt3DCore::QEntity* lightEntity;
 
+    // Selection State
+    Gemstone* firstSelectedGemstone;
+    Gemstone* secondSelectedGemstone;
+    
+    SelectedCircle* selectionRing1;
+    SelectedCircle* selectionRing2;
+    
+    int selectedNum;
+
     void setup3DScene();
+
+    // Debug UI
+    QTextEdit* debugText;
+    QLabel* focusInfoLabel;
+    QTimer* debugTimer;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H

@@ -6,6 +6,7 @@
 #include <Qt3DCore/QTransform>
 #include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DRender/QGeometryRenderer>
+#include <Qt3DRender/QObjectPicker>
 #include <QPropertyAnimation>
 
 class Gemstone : public Qt3DCore::QEntity {
@@ -22,6 +23,10 @@ public:
 
     Qt3DCore::QTransform* transform() const;
 
+signals:
+    void clicked(Gemstone* self);
+    void pickEvent(const QString& info);
+
 private:
     int type;
     std::string style;
@@ -29,6 +34,7 @@ private:
     Qt3DCore::QTransform* m_transform;
     Qt3DExtras::QPhongMaterial* m_material;
     Qt3DRender::QGeometryRenderer* m_mesh;
+    Qt3DRender::QObjectPicker* m_picker;
     QPropertyAnimation* m_rotationAnimation;
 
     void updateAppearance();

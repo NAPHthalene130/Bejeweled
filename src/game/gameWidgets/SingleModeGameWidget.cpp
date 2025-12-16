@@ -1,5 +1,6 @@
 #include "SingleModeGameWidget.h"
 #include "../components/Gemstone.h"
+#include "../components/SelectedCircle.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -13,9 +14,15 @@
 #include <Qt3DCore/QTransform>
 #include <QRandomGenerator>
 #include <QVector3D>
+#include <QMouseEvent>
+#include <QTextEdit>
+#include <QLabel>
+#include <QDateTime>
+#include <QApplication>
 
 SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWindow) 
-    : QWidget(parent), gameWindow(gameWindow), canOpe(true), nowTimeHave(0), mode(1) {
+    : QWidget(parent), gameWindow(gameWindow), canOpe(true), nowTimeHave(0), mode(1),
+      firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0) {
     
     // 初始化定时器
     timer = new QTimer(this);
@@ -27,12 +34,15 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     game3dWindow = new Qt3DExtras::Qt3DWindow();
     game3dWindow->defaultFrameGraph()->setClearColor(QColor(40, 40, 45)); // 深灰色背景
     
+    // 不重复注册 InputAspect，Qt3DWindow 已默认注册
+
     // 设置3D场景
     setup3DScene();
     
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
     container3d->setFixedSize(960, 960); 
+    container3d->setFocusPolicy(Qt::StrongFocus);
     
     // 布局 - 左侧居中
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
@@ -48,9 +58,21 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     QPushButton* testEliminateButton = new QPushButton("消除测试", this);
     QPushButton* testSwitchButton = new QPushButton("交换测试", this);
     
+    focusInfoLabel = new QLabel(this);
+    debugText = new QTextEdit(this);
+    debugText->setReadOnly(true);
+    debugText->setMinimumHeight(300);
+    debugText->setMinimumWidth(400);
+    debugTimer = new QTimer(this);
+    connect(debugTimer, &QTimer::timeout, this, &SingleModeGameWidget::refreshDebugStatus);
+    debugTimer->start(500);
+
     rightLayout->addWidget(backButton);
     rightLayout->addWidget(testEliminateButton);
     rightLayout->addWidget(testSwitchButton);
+    rightLayout->addSpacing(10);
+    rightLayout->addWidget(focusInfoLabel);
+    rightLayout->addWidget(debugText);
     rightLayout->addStretch(1);
     
     mainLayout->addLayout(rightLayout);
@@ -102,6 +124,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     });
     
     setLayout(mainLayout);
+    container3d->installEventFilter(this);
 }
 
 void SingleModeGameWidget::eliminate() {
@@ -160,6 +183,78 @@ void SingleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     group->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
+void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
+    if (mode != 1 || !canOpe) return;
+
+    // 如果已经选中了两个，不再接受新的选择，等待逻辑处理（虽然题目说超过2不再添加，但通常意味着不处理）
+    // 或者如果点击的是已经选中的，可能需要取消选择？题目没说，先假设只处理添加。
+    
+    // 避免重复选择同一个
+    if (gem == firstSelectedGemstone || gem == secondSelectedGemstone) return;
+
+    if (selectedNum == 0) {
+        selectedNum = 1;
+        firstSelectedGemstone = gem;
+        // 显示第一个选择框
+        selectionRing1->setPosition(gem->transform()->translation());
+        selectionRing1->setVisible(true);
+    } else if (selectedNum == 1) {
+        selectedNum = 2;
+        secondSelectedGemstone = gem;
+        // 显示第二个选择框
+        selectionRing2->setPosition(gem->transform()->translation());
+        selectionRing2->setVisible(true);
+        
+        // 这里可以触发交换逻辑，但题目只要求选中状态
+    }
+    // selectedNum >= 2 时不做任何事
+}
+
+void SingleModeGameWidget::mousePressEvent(QMouseEvent* event) {
+    if (event->button() == Qt::RightButton) {
+        if (mode == 1) {
+            // 取消选择
+            if (firstSelectedGemstone) {
+                firstSelectedGemstone = nullptr;
+                selectionRing1->setVisible(false);
+            }
+            if (secondSelectedGemstone) {
+                secondSelectedGemstone = nullptr;
+                selectionRing2->setVisible(false);
+            }
+            selectedNum = 0;
+            this->setWindowTitle("Selection Cleared");
+        }
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void SingleModeGameWidget::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    if (container3d) {
+        container3d->setFocus(Qt::OtherFocusReason);
+        container3d->raise();
+    }
+    refreshDebugStatus();
+    appendDebug("showEvent");
+}
+
+bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
+    if (obj == container3d) {
+        if (event->type() == QEvent::FocusIn) {
+            refreshDebugStatus();
+            appendDebug("container3d FocusIn");
+        } else if (event->type() == QEvent::FocusOut) {
+            refreshDebugStatus();
+            appendDebug("container3d FocusOut");
+        } else if (event->type() == QEvent::MouseButtonPress) {
+            refreshDebugStatus();
+            appendDebug("container3d MouseButtonPress");
+        }
+    }
+    return QWidget::eventFilter(obj, event);
+}
+
 SingleModeGameWidget::~SingleModeGameWidget() {
     if (rootEntity) {
         delete rootEntity;
@@ -167,12 +262,28 @@ SingleModeGameWidget::~SingleModeGameWidget() {
     if (game3dWindow) {
         delete game3dWindow;
     }
+    if (debugTimer && debugTimer->isActive()) {
+        debugTimer->stop();
+    }
 }
+
+#include <Qt3DRender/QPickingSettings>
+#include <Qt3DRender/QRenderSettings>
 
 void SingleModeGameWidget::setup3DScene() {
     // 根实体
     rootEntity = new Qt3DCore::QEntity();
     game3dWindow->setRootEntity(rootEntity);
+    
+    // 配置 Picking 设置
+    // 获取 Active FrameGraph 的 RenderSettings (如果存在)
+    // 通常 Qt3DWindow 会自动设置一个默认的 RenderSettings，但我们需要确保 PickingSettings 正确
+    Qt3DRender::QRenderSettings *renderSettings = game3dWindow->renderSettings();
+    if (renderSettings) {
+        renderSettings->pickingSettings()->setPickMethod(Qt3DRender::QPickingSettings::TrianglePicking);
+        renderSettings->pickingSettings()->setFaceOrientationPickingMode(Qt3DRender::QPickingSettings::FrontAndBackFace);
+        renderSettings->pickingSettings()->setPickResultMode(Qt3DRender::QPickingSettings::NearestPick);
+    }
     
     // 相机
     cameraEntity = game3dWindow->camera();
@@ -190,6 +301,10 @@ void SingleModeGameWidget::setup3DScene() {
     Qt3DCore::QTransform* lightTransform = new Qt3DCore::QTransform();
     lightTransform->setTranslation(QVector3D(0.0f, 0.0f, 20.0f));
     lightEntity->addComponent(lightTransform);
+
+    // 初始化选择框
+    selectionRing1 = new SelectedCircle(rootEntity);
+    selectionRing2 = new SelectedCircle(rootEntity);
 }
 
 QVector3D SingleModeGameWidget::getPosition(int row, int col) const {
@@ -281,6 +396,7 @@ void SingleModeGameWidget::reset(int mode) {
     this->mode = mode;
     this->canOpe = true;
     this->nowTimeHave = 0;
+    appendDebug(QString("reset mode=%1").arg(mode));
     
     // 清除现有的宝石（如果有）
     for (auto& row : gemstoneContainer) {
@@ -304,12 +420,35 @@ void SingleModeGameWidget::reset(int mode) {
             
             gem->transform()->setTranslation(getPosition(i, j));
             
+            // 连接点击信号
+            connect(gem, &Gemstone::clicked, this, &SingleModeGameWidget::handleGemstoneClicked);
+            connect(gem, &Gemstone::pickEvent, this, [this](const QString& info) { appendDebug(QString("Gemstone %1").arg(info)); });
+
             gemstoneContainer[i][j] = gem;
         }
     }
+    appendDebug("created 8x8 gemstones");
     
+    // 重置选择状态
+    selectedNum = 0;
+    firstSelectedGemstone = nullptr;
+    secondSelectedGemstone = nullptr;
+
     // 重置定时器
     if (timer->isActive()) {
         timer->stop();
     }
+}
+
+void SingleModeGameWidget::appendDebug(const QString& text) {
+    if (!debugText) return;
+    debugText->append(QString("[%1] %2").arg(QDateTime::currentDateTime().toString("hh:mm:ss")).arg(text));
+}
+
+void SingleModeGameWidget::refreshDebugStatus() {
+    if (!focusInfoLabel) return;
+    bool hasFocusContainer = container3d ? container3d->hasFocus() : false;
+    QWidget* active = QApplication::activeWindow();
+    QString activeTitle = active ? active->windowTitle() : QString("null");
+    focusInfoLabel->setText(QString("ContainerFocus=%1 | ActiveWindow=%2").arg(hasFocusContainer ? "true" : "false").arg(activeTitle));
 }

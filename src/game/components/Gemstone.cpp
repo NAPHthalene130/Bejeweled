@@ -9,6 +9,9 @@
 #include <QVector3D>
 #include <QQuaternion>
 #include <QRandomGenerator>
+#include <Qt3DRender/QPickingSettings>
+#include <QString>
+#include "../../auth/components/AuthNoticeDialog.h"
 
 Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent) 
     : Qt3DCore::QEntity(parent), type(type), style(style) {
@@ -30,6 +33,45 @@ Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent)
     m_rotationAnimation->setDuration(3000 + QRandomGenerator::global()->bounded(2000)); // 随机速度
     m_rotationAnimation->setLoopCount(-1);
     m_rotationAnimation->start();
+
+    // 设置对象选择器
+    m_picker = new Qt3DRender::QObjectPicker();
+    m_picker->setHoverEnabled(true);
+    m_picker->setDragEnabled(false); 
+    m_picker->setEnabled(true);
+    // 确保使用 TrianglePicking 以获得更精确的点击
+    // 如果没有设置 RenderSettings，这里的设置可能无效，但为了保险起见还是保留默认
+    addComponent(m_picker);
+    connect(m_picker, &Qt3DRender::QObjectPicker::pressed, this, [this](Qt3DRender::QPickEvent* event) {
+        auto pos = m_transform->translation();
+        QString content = QString("测试信息：\n类型: %1\n位置: (%.2f, %.2f, %.2f)")
+            .arg(getType())
+            .arg(pos.x()).arg(pos.y()).arg(pos.z());
+        QWidget* parent = QApplication::activeWindow();
+        AuthNoticeDialog* dlg = new AuthNoticeDialog("宝石点击", content, 1, parent);
+        dlg->exec();
+        delete dlg;
+        emit pickEvent("pressed");
+        emit clicked(this);
+    });
+    connect(m_picker, &Qt3DRender::QObjectPicker::clicked, this, [this](Qt3DRender::QPickEvent* event) {
+        auto pos = m_transform->translation();
+        QString content = QString("测试信息：\n类型: %1\n位置: (%.2f, %.2f, %.2f)")
+            .arg(getType())
+            .arg(pos.x()).arg(pos.y()).arg(pos.z());
+        QWidget* parent = QApplication::activeWindow();
+        AuthNoticeDialog* dlg = new AuthNoticeDialog("宝石点击", content, 1, parent);
+        dlg->exec();
+        delete dlg;
+        emit pickEvent("clicked");
+        emit clicked(this);
+    });
+    connect(m_picker, &Qt3DRender::QObjectPicker::entered, this, [this]() {
+        emit pickEvent("entered");
+    });
+    connect(m_picker, &Qt3DRender::QObjectPicker::exited, this, [this]() {
+        emit pickEvent("exited");
+    });
 }
 
 Gemstone::~Gemstone() {
