@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 #include <QVBoxLayout>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <string>
 
 class AchievementsWidget;
@@ -26,10 +28,23 @@ public:
     // Achievements access
     std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
     void addAchievement(const AchievementData& a) { achievementsContainer.push_back(a); }
+    void clearAchievements() { achievementsContainer.clear(); }
+    
+    // 从云端获取成就数据
+    void fetchAchievementsFromCloud();
+    
+signals:
+    void achievementsLoaded(); // 成就数据加载完成信号
+
+private slots:
+    void onAchievementsReplyFinished(QNetworkReply* reply);
 
 private:
+    void loadDefaultAchievements(); // 加载默认成就（网络失败时使用）
+    
     std::string userID;
     QWidget* currentWidget = nullptr;
+    QNetworkAccessManager* networkManager = nullptr;
 
     AchievementsWidget* achievementsWidget = nullptr;
     MenuWidget* menuWidget = nullptr;

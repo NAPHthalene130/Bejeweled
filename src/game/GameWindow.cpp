@@ -10,19 +10,155 @@
 #include <QVBoxLayout>
 #include <QString>
 #include <QDateTime>
+#include <QNetworkRequest>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QUrl>
 #include <string>
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
+    
+    // 初始化网络管理器
+    networkManager = new QNetworkAccessManager(this);
+    connect(networkManager, &QNetworkAccessManager::finished, this, &GameWindow::onAchievementsReplyFinished);
+    
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
-    connect(menuWidget, &MenuWidget::openAchievements, this, [this]() { this->switchWidget(achievementsWidget); });
+    // 点击成就按钮时，先从云端获取数据，再切换界面
+    connect(menuWidget, &MenuWidget::openAchievements, this, [this]() { 
+        this->fetchAchievementsFromCloud();
+    });
+    // 成就数据加载完成后，切换到成就界面
+    connect(this, &GameWindow::achievementsLoaded, this, [this]() {
+        this->switchWidget(achievementsWidget);
+    });
     connect(achievementsWidget, &AchievementsWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
     playMenuWidget = new PlayMenuWidget(this, this);
     settingWidget = new SettingWidget(this, this);
     storeWidget = new StoreWidget(this, this);
     rankListWidget = new RankListWidget(this, this);
 
-    // Define 60 achievements with names and descriptions
+    switchWidget(menuWidget);
+    
+    resize(1600, 1000);
+    setWindowTitle("宝石迷阵");
+    
+}
+std::string GameWindow::getUserID() {
+    return userID;
+}
+void GameWindow::setUserID(std::string userID) {
+    this->userID = userID;
+}
+
+void GameWindow::switchWidget(QWidget* widget)
+{
+    if (currentWidget) {
+        currentWidget->hide();
+        // 不要让 setCentralWidget 删除之前的 widget
+        if (currentWidget->parent() == this) {
+            currentWidget->setParent(nullptr);
+        }
+    }
+    setCentralWidget(widget);
+    widget->show();
+    currentWidget = widget;
+
+    // If showing achievements, refresh the list
+    if (widget == achievementsWidget && achievementsWidget) {
+        achievementsWidget->updateView();
+    }
+}
+
+void GameWindow::fetchAchievementsFromCloud() {
+    // 清空当前成就数组
+    clearAchievements();
+    
+    // 构建请求 URL（根据用户ID获取成就）
+    // TODO: 替换为实际的服务器地址
+    QString serverUrl = QString("http://your-server.com/api/achievements?userId=%1")
+                            .arg(QString::fromStdString(userID));
+    
+    QUrl url(serverUrl);
+    QNetworkRequest request;
+    request.setUrl(url);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    
+    qDebug() << "Fetching achievements from:" << serverUrl;
+    
+    // 发起 GET 请求
+    networkManager->get(request);
+}
+
+void GameWindow::onAchievementsReplyFinished(QNetworkReply* reply) {
+    if (reply->error() != QNetworkReply::NoError) {
+        qDebug() << "Network error:" << reply->errorString();
+        // 网络错误时，使用默认/本地成就数据
+        loadDefaultAchievements();
+        emit achievementsLoaded();
+        reply->deleteLater();
+        return;
+    }
+    
+    QByteArray responseData = reply->readAll();
+    qDebug() << "Received achievements data:" << responseData;
+    
+    // 解析 JSON 响应
+    QJsonDocument doc = QJsonDocument::fromJson(responseData);
+    if (doc.isNull() || !doc.isArray()) {
+        qDebug() << "Invalid JSON response, using default achievements";
+        loadDefaultAchievements();
+        emit achievementsLoaded();
+        reply->deleteLater();
+        return;
+    }
+    
+    QJsonArray achievementsArray = doc.array();
+    
+    // 遍历 JSON 数组，填充成就数据
+    for (const QJsonValue& val : achievementsArray) {
+        if (!val.isObject()) continue;
+        
+        QJsonObject obj = val.toObject();
+        QString title = obj["title"].toString();
+        QString description = obj["description"].toString();
+        bool unlocked = obj["unlocked"].toBool(false);
+        QString difficultyStr = obj["difficulty"].toString("Easy");
+        QString completedAtStr = obj["completedAt"].toString();
+        
+        AchievementData ad(title, description, unlocked);
+        
+        // 设置难度
+        if (difficultyStr == "Easy") {
+            ad.setDifficulty(AchievementData::Difficulty::Easy);
+        } else if (difficultyStr == "Medium") {
+            ad.setDifficulty(AchievementData::Difficulty::Medium);
+        } else if (difficultyStr == "Hard") {
+            ad.setDifficulty(AchievementData::Difficulty::Hard);
+        } else if (difficultyStr == "Ultimate") {
+            ad.setDifficulty(AchievementData::Difficulty::Ultimate);
+        }
+        
+        // 设置完成时间
+        if (!completedAtStr.isEmpty()) {
+            ad.setCompletedAt(QDateTime::fromString(completedAtStr, Qt::ISODate));
+        }
+        
+        addAchievement(ad);
+    }
+    
+    qDebug() << "Loaded" << achievementsContainer.size() << "achievements from cloud";
+    
+    emit achievementsLoaded();
+    reply->deleteLater();
+}
+
+void GameWindow::loadDefaultAchievements() {
+    // 清空已有数据
+    clearAchievements();
+    
+    // 定义 60 个默认成就
     const std::vector<std::pair<QString, QString>> infos = {
         {"初学者", "完成第一局游戏"},
         {"熟练玩家", "累计玩 10 局游戏"},
@@ -89,11 +225,11 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     for (size_t i = 0; i < infos.size(); ++i) {
         QString t = infos[i].first;
         QString d = infos[i].second;
-        // Only the first achievement is initially unlocked; others locked.
+        // 默认只有第一个成就解锁
         bool unlocked = (i == 0);
         AchievementData ad(t, d, unlocked);
         if (unlocked) ad.setCompletedAt(QDateTime::currentDateTime());
-        // set difficulty distribution: 1-25 easy, 26-40 medium, 41-49 hard, 50 ultimate
+        // 难度分布: 1-25 简单, 26-40 中等, 41-49 困难, 50+ 终极
         int idx = (int)i + 1;
         if (idx <= 25) ad.setDifficulty(AchievementData::Difficulty::Easy);
         else if (idx <= 40) ad.setDifficulty(AchievementData::Difficulty::Medium);
@@ -101,35 +237,6 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         else ad.setDifficulty(AchievementData::Difficulty::Ultimate);
         addAchievement(ad);
     }
-
-    switchWidget(menuWidget);
     
-    resize(1600, 1000);
-    setWindowTitle("宝石迷阵");
-    
-}
-std::string GameWindow::getUserID() {
-    return userID;
-}
-void GameWindow::setUserID(std::string userID) {
-    this->userID = userID;
-}
-
-void GameWindow::switchWidget(QWidget* widget)
-{
-    if (currentWidget) {
-        currentWidget->hide();
-        // 不要让 setCentralWidget 删除之前的 widget
-        if (currentWidget->parent() == this) {
-            currentWidget->setParent(nullptr);
-        }
-    }
-    setCentralWidget(widget);
-    widget->show();
-    currentWidget = widget;
-
-    // If showing achievements, refresh the list
-    if (widget == achievementsWidget && achievementsWidget) {
-        achievementsWidget->updateView();
-    }
+    qDebug() << "Loaded" << achievementsContainer.size() << "default achievements";
 }
