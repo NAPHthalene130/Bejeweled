@@ -1,9 +1,10 @@
 #include "MenuButton.h"
+#include "../managers/AudioManager.h"
 #include <QFont>
+#include <QEnterEvent>
 
-MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontColor, const QString& text, QWidget* parent)
-    : QPushButton(text, parent)
-{
+MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontColor, const QString& text, QWidget* parent) 
+    : QPushButton(text, parent) {
     setFixedSize(width, height);
 
     QFont font = this->font();
@@ -27,7 +28,7 @@ MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontCo
         "   background-color: rgba(20, 30, 50, 180);"  // Dark blue-grey semi-transparent
         "   color: white;"                             // White text by default
         "   border: 2px solid %1;"                     // Colored border
-        "   border-radius: 15px;"                      // Rounded corners (but not fully round)
+        "   border-radius: 0px;"                       // No rounded corners
         "   padding: 4px;"
         "}"
         "MenuButton:hover {"
@@ -46,7 +47,16 @@ MenuButton::MenuButton(int width, int height, int fontSize, const QColor& fontCo
     
     // Optional: Add a shadow effect if we wanted (requires QGraphicsDropShadowEffect), 
     // but CSS is cleaner for now.
+
+    connect(this, &QPushButton::clicked, this, []() {
+        AudioManager::instance().playClickSound();
+    });
 }
 
 MenuButton::~MenuButton() {
+}
+
+void MenuButton::enterEvent(QEnterEvent* event) {
+    AudioManager::instance().playHoverSound();
+    QPushButton::enterEvent(event);
 }
