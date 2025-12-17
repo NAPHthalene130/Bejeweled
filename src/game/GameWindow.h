@@ -31,6 +31,7 @@ public:
     // Achievements access
     std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
     void addAchievement(const AchievementData& a) { achievementsContainer.push_back(a); }
+    MenuWidget* getMenuWidget() const { return menuWidget; }
 
 private:
     std::string userID;

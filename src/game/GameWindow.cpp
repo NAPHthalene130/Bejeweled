@@ -45,6 +45,18 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         switchWidget(singleModeGameWidget);
     });
 
+    // GameWindow.cpp 构造函数中
+    connect(settingWidget, &SettingWidget::backgroundImageChanged, [this](const QString& imagePath) {
+        menuWidget->setBackgroundImage(QPixmap(imagePath));
+    });
+     // 初始化菜单背景图（从设置中读取）
+    QString initBgPath = SettingWidget::getMenuBackgroundImage();
+    menuWidget->setBackgroundImage(QPixmap(initBgPath));
+    
+    connect(menuWidget, &MenuWidget::openSettings, this, [this]() {
+    switchWidget(settingWidget); // 点击设置时切换到设置界面
+    });
+    
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
         singleModeGameWidget->reset(2); // 旋风模式
         switchWidget(singleModeGameWidget);

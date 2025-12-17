@@ -153,13 +153,13 @@ if (WIN32)
         Qt6Quick3DRuntimeRender.dll
         Qt6Quick3DSpatialAudio.dll
         Qt6Quick3DUtils.dll
-        Qt6Quick3DXr.dll
+        
         Qt6QuickWidgets.dll
         Qt6Qml.dll
         Qt6QmlCore.dll
         Qt6QmlModels.dll
         Qt6QmlWorkerScript.dll
-        Qt6QmlNetwork.dll
+        
         Qt6QmlXmlListModel.dll
         Qt6QuickControls2.dll
         Qt6QuickLayouts.dll

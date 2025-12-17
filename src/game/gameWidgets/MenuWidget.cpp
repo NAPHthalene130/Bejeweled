@@ -85,6 +85,7 @@ void MenuWidget::setupUI() {
 
     mainLayout->addLayout(leftLayout, 0);
     mainLayout->addStretch(1); // Push everything else to the right
+   
 }
 
 void MenuWidget::setup3DView() {
@@ -370,11 +371,13 @@ void MenuWidget::setBackgroundImage(const QPixmap& pixmap) {
 
 void MenuWidget::paintEvent(QPaintEvent* event) {
     Q_UNUSED(event);
+    QPainter p(this);
     if (hasBackground) {
-        QPainter p(this);
-        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        // 背景图自适应拉伸，保持透明度
         QPixmap scaled = backgroundPixmap.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        p.setOpacity(0.8); // 背景图透明度，避免遮挡3D元素
         p.drawPixmap(0, 0, scaled);
+        p.setOpacity(1.0);
     }
 }
 
