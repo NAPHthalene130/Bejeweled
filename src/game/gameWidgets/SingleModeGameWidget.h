@@ -53,6 +53,10 @@ public:
     void eliminateAnime(Gemstone* gemstone);
     void switchGemstoneAnime(Gemstone* gemstone1, Gemstone* gemstone2);
 
+    // 消除相关的辅助方法
+    std::vector<std::pair<int, int>> findMatches();
+    void removeMatches(const std::vector<std::pair<int, int>>& matches);
+
     void syncGemstonePositions();
 
 protected:

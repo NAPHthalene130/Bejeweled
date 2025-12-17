@@ -87,18 +87,8 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     mainLayout->addStretch(1); // 将内容推向左侧
 
     connect(testEliminateButton, &QPushButton::clicked, [this]() {
-        // 随机找一个存在的宝石进行消除
-        if (gemstoneContainer.empty()) return;
-        
-        int r = QRandomGenerator::global()->bounded((int)gemstoneContainer.size());
-        if (gemstoneContainer[r].empty()) return;
-        int c = QRandomGenerator::global()->bounded((int)gemstoneContainer[r].size());
-        
-        Gemstone* gem = gemstoneContainer[r][c];
-        if (gem) {
-            eliminateAnime(gem);
-            gemstoneContainer[r][c] = nullptr; // 从容器中移除引用，防止野指针
-        }
+        appendDebug("Manual eliminate test triggered");
+        eliminate();
     });
 
     connect(testSwitchButton, &QPushButton::clicked, [this]() {
@@ -138,16 +128,245 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     appendDebug("SingleModeGameWidget initialized - EventFilter installed on both container and 3D window");
 }
 
+// 查找所有需要消除的宝石（三连或更多）
+std::vector<std::pair<int, int>> SingleModeGameWidget::findMatches() {
+    std::vector<std::pair<int, int>> matches;
+    std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
+
+    // 检查水平方向
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 6; ++j) {  // 最多检查到j=5，这样j+2不会越界
+            Gemstone* gem1 = gemstoneContainer[i][j];
+            Gemstone* gem2 = gemstoneContainer[i][j+1];
+            Gemstone* gem3 = gemstoneContainer[i][j+2];
+
+            if (gem1 && gem2 && gem3 &&
+                gem1->getType() == gem2->getType() &&
+                gem2->getType() == gem3->getType()) {
+
+                // 标记这三个位置
+                marked[i][j] = true;
+                marked[i][j+1] = true;
+                marked[i][j+2] = true;
+
+                // 继续检查是否有更多连续的
+                int k = j + 3;
+                while (k < 8 && gemstoneContainer[i][k] &&
+                       gemstoneContainer[i][k]->getType() == gem1->getType()) {
+                    marked[i][k] = true;
+                    k++;
+                }
+            }
+        }
+    }
+
+    // 检查垂直方向
+    for (int j = 0; j < 8; ++j) {
+        for (int i = 0; i < 6; ++i) {  // 最多检查到i=5
+            Gemstone* gem1 = gemstoneContainer[i][j];
+            Gemstone* gem2 = gemstoneContainer[i+1][j];
+            Gemstone* gem3 = gemstoneContainer[i+2][j];
+
+            if (gem1 && gem2 && gem3 &&
+                gem1->getType() == gem2->getType() &&
+                gem2->getType() == gem3->getType()) {
+
+                // 标记这三个位置
+                marked[i][j] = true;
+                marked[i+1][j] = true;
+                marked[i+2][j] = true;
+
+                // 继续检查是否有更多连续的
+                int k = i + 3;
+                while (k < 8 && gemstoneContainer[k][j] &&
+                       gemstoneContainer[k][j]->getType() == gem1->getType()) {
+                    marked[k][j] = true;
+                    k++;
+                }
+            }
+        }
+    }
+
+    // 收集所有被标记的位置
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            if (marked[i][j]) {
+                matches.push_back({i, j});
+            }
+        }
+    }
+
+    return matches;
+}
+
+// 移除匹配的宝石
+void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>& matches) {
+    if (matches.empty()) {
+        appendDebug("No matches to remove");
+        return;
+    }
+
+    appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
+
+    for (const auto& pos : matches) {
+        int row = pos.first;
+        int col = pos.second;
+        Gemstone* gem = gemstoneContainer[row][col];
+
+        if (gem) {
+            // 播放消除动画
+            eliminateAnime(gem);
+            // 从容器中移除
+            gemstoneContainer[row][col] = nullptr;
+        }
+    }
+}
+
 void SingleModeGameWidget::eliminate() {
-    // TODO
+    // 查找所有匹配
+    std::vector<std::pair<int, int>> matches = findMatches();
+
+    if (!matches.empty()) {
+        appendDebug(QString("Found %1 matches to eliminate").arg(matches.size()));
+
+        // 禁止操作
+        canOpe = false;
+
+        // 移除匹配的宝石
+        removeMatches(matches);
+
+        // 等待消除动画完成后执行下落（500ms）
+        QTimer::singleShot(600, this, [this]() {
+            drop();
+        });
+    } else {
+        // 没有匹配了，恢复操作
+        canOpe = true;
+        appendDebug("No matches found, game can continue");
+    }
 }
 
 void SingleModeGameWidget::drop() {
-    // TODO
+    appendDebug("Starting drop animation");
+
+    QParallelAnimationGroup* dropAnimGroup = new QParallelAnimationGroup();
+    bool hasDrops = false;
+
+    // 遍历每一列
+    for (int col = 0; col < 8; ++col) {
+        // 从下往上扫描这一列
+        int writePos = 7; // 从底部开始写入
+
+        for (int row = 7; row >= 0; --row) {
+            if (gemstoneContainer[row][col] != nullptr) {
+                // 如果这个位置有宝石，并且它需要下落
+                if (row < writePos) {
+                    Gemstone* gem = gemstoneContainer[row][col];
+
+                    // 移动到容器的新位置
+                    gemstoneContainer[writePos][col] = gem;
+                    gemstoneContainer[row][col] = nullptr;
+
+                    // 创建下落动画
+                    QVector3D targetPos = getPosition(writePos, col);
+                    QPropertyAnimation* dropAnim = new QPropertyAnimation(gem->transform(), "translation");
+                    dropAnim->setDuration(500);
+                    dropAnim->setStartValue(gem->transform()->translation());
+                    dropAnim->setEndValue(targetPos);
+                    dropAnimGroup->addAnimation(dropAnim);
+
+                    hasDrops = true;
+                }
+                writePos--;
+            }
+        }
+    }
+
+    if (hasDrops) {
+        appendDebug("Drop animation started");
+        connect(dropAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
+            appendDebug("Drop animation finished, filling new gemstones");
+            resetGemstoneTable();
+        });
+        dropAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
+    } else {
+        appendDebug("No drops needed, filling new gemstones");
+        resetGemstoneTable();
+    }
 }
 
 void SingleModeGameWidget::resetGemstoneTable() {
-    // TODO
+    appendDebug("Filling empty positions with new gemstones");
+
+    QParallelAnimationGroup* fillAnimGroup = new QParallelAnimationGroup();
+    bool hasFills = false;
+
+    // 遍历所有位置，找到空位并填充新宝石
+    for (int col = 0; col < 8; ++col) {
+        for (int row = 0; row < 8; ++row) {
+            if (gemstoneContainer[row][col] == nullptr) {
+                // 创建新宝石，避免立即形成三连
+                int type = QRandomGenerator::global()->bounded(8);
+
+                // 检查左边两个
+                if (col >= 2 && gemstoneContainer[row][col-1] && gemstoneContainer[row][col-2]) {
+                    int type1 = gemstoneContainer[row][col-1]->getType();
+                    int type2 = gemstoneContainer[row][col-2]->getType();
+                    if (type1 == type2 && type == type1) {
+                        type = (type + 1) % 8;
+                    }
+                }
+
+                // 检查上边两个
+                if (row >= 2 && gemstoneContainer[row-1][col] && gemstoneContainer[row-2][col]) {
+                    int type1 = gemstoneContainer[row-1][col]->getType();
+                    int type2 = gemstoneContainer[row-2][col]->getType();
+                    if (type1 == type2 && type == type1) {
+                        type = (type + 1) % 8;
+                    }
+                }
+
+                Gemstone* gem = new Gemstone(type, "default", rootEntity);
+
+                // 从上方一个位置开始（制造下落效果）
+                QVector3D startPos = getPosition(row - 3, col); // 从更高的位置开始
+                QVector3D targetPos = getPosition(row, col);
+
+                gem->transform()->setTranslation(startPos);
+
+                // 连接点击信号
+                connect(gem, &Gemstone::clicked, this, &SingleModeGameWidget::handleGemstoneClicked);
+                connect(gem, &Gemstone::pickEvent, this, [this](const QString& info) {
+                    appendDebug(QString("Gemstone %1").arg(info));
+                });
+
+                gemstoneContainer[row][col] = gem;
+
+                // 创建下落动画
+                QPropertyAnimation* fillAnim = new QPropertyAnimation(gem->transform(), "translation");
+                fillAnim->setDuration(500);
+                fillAnim->setStartValue(startPos);
+                fillAnim->setEndValue(targetPos);
+                fillAnimGroup->addAnimation(fillAnim);
+
+                hasFills = true;
+            }
+        }
+    }
+
+    if (hasFills) {
+        appendDebug("Fill animation started");
+        connect(fillAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
+            appendDebug("Fill animation finished, checking for new matches");
+            // 填充完成后，递归检查是否有新的匹配
+            eliminate();
+        });
+        fillAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
+    } else {
+        appendDebug("No fills needed, checking for new matches");
+        // 没有填充，直接检查匹配
+        eliminate();
+    }
 }
 
 void SingleModeGameWidget::eliminateAnime(Gemstone* gemstone) {
@@ -479,15 +698,37 @@ void SingleModeGameWidget::reset(int mode) {
     
     // 重建8x8网格
     gemstoneContainer.resize(8);
-    
+
     for (int i = 0; i < 8; ++i) {
         gemstoneContainer[i].resize(8);
         for (int j = 0; j < 8; ++j) {
             int type = QRandomGenerator::global()->bounded(8);
+
+            // 避免在初始化时创建三连
+            // 检查左边两个
+            if (j >= 2 && gemstoneContainer[i][j-1] && gemstoneContainer[i][j-2]) {
+                int type1 = gemstoneContainer[i][j-1]->getType();
+                int type2 = gemstoneContainer[i][j-2]->getType();
+                if (type1 == type2 && type == type1) {
+                    // 会形成三连，换一个类型
+                    type = (type + 1) % 8;
+                }
+            }
+
+            // 检查上边两个
+            if (i >= 2 && gemstoneContainer[i-1][j] && gemstoneContainer[i-2][j]) {
+                int type1 = gemstoneContainer[i-1][j]->getType();
+                int type2 = gemstoneContainer[i-2][j]->getType();
+                if (type1 == type2 && type == type1) {
+                    // 会形成三连，换一个类型
+                    type = (type + 1) % 8;
+                }
+            }
+
             Gemstone* gem = new Gemstone(type, "default", rootEntity);
-            
+
             gem->transform()->setTranslation(getPosition(i, j));
-            
+
             // 连接点击信号
             connect(gem, &Gemstone::clicked, this, &SingleModeGameWidget::handleGemstoneClicked);
             connect(gem, &Gemstone::pickEvent, this, [this](const QString& info) { appendDebug(QString("Gemstone %1").arg(info)); });
@@ -495,7 +736,7 @@ void SingleModeGameWidget::reset(int mode) {
             gemstoneContainer[i][j] = gem;
         }
     }
-    appendDebug("created 8x8 gemstones");
+    appendDebug("created 8x8 gemstones with no initial matches");
     
     // 重置选择状态
     selectedNum = 0;
@@ -555,9 +796,72 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
     gemstoneContainer[row2][col2] = gem1;
 
     // 播放交换动画
-    switchGemstoneAnime(gem1, gem2);
+    QVector3D pos1 = gem1->transform()->translation();
+    QVector3D pos2 = gem2->transform()->translation();
 
-    // 清除选择状态（动画结束后会调用 syncGemstonePositions）
+    QParallelAnimationGroup* group = new QParallelAnimationGroup();
+
+    QPropertyAnimation* anim1 = new QPropertyAnimation(gem1->transform(), "translation");
+    anim1->setDuration(500);
+    anim1->setStartValue(pos1);
+    anim1->setEndValue(pos2);
+
+    QPropertyAnimation* anim2 = new QPropertyAnimation(gem2->transform(), "translation");
+    anim2->setDuration(500);
+    anim2->setStartValue(pos2);
+    anim2->setEndValue(pos1);
+
+    group->addAnimation(anim1);
+    group->addAnimation(anim2);
+
+    connect(group, &QParallelAnimationGroup::finished, this, [this, gem1, gem2, row1, col1, row2, col2]() {
+        appendDebug("Swap animation finished, checking for matches");
+
+        // 检查是否有匹配
+        std::vector<std::pair<int, int>> matches = findMatches();
+
+        if (!matches.empty()) {
+            // 有匹配，触发消除
+            appendDebug(QString("Found matches after swap, starting elimination"));
+            eliminate();
+        } else {
+            // 没有匹配，交换回来
+            appendDebug("No matches found, swapping back");
+
+            // 在逻辑容器中交换回来
+            gemstoneContainer[row1][col1] = gem1;
+            gemstoneContainer[row2][col2] = gem2;
+
+            // 播放交换回来的动画
+            QVector3D pos1 = gem1->transform()->translation();
+            QVector3D pos2 = gem2->transform()->translation();
+
+            QParallelAnimationGroup* swapBackGroup = new QParallelAnimationGroup();
+
+            QPropertyAnimation* backAnim1 = new QPropertyAnimation(gem1->transform(), "translation");
+            backAnim1->setDuration(500);
+            backAnim1->setStartValue(pos1);
+            backAnim1->setEndValue(pos2);
+
+            QPropertyAnimation* backAnim2 = new QPropertyAnimation(gem2->transform(), "translation");
+            backAnim2->setDuration(500);
+            backAnim2->setStartValue(pos2);
+            backAnim2->setEndValue(pos1);
+
+            swapBackGroup->addAnimation(backAnim1);
+            swapBackGroup->addAnimation(backAnim2);
+
+            connect(swapBackGroup, &QParallelAnimationGroup::finished, this, [this]() {
+                canOpe = true; // 恢复操作
+            });
+
+            swapBackGroup->start(QAbstractAnimation::DeleteWhenStopped);
+        }
+    });
+
+    group->start(QAbstractAnimation::DeleteWhenStopped);
+
+    // 清除选择状态
     firstSelectedGemstone = nullptr;
     secondSelectedGemstone = nullptr;
     selectedNum = 0;

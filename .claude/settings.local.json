@@ -12,7 +12,9 @@
       "Bash(taskkill:*)",
       "Bash(pkill:*)",
       "Bash(tasklist:*)",
-      "Bash(timeout 30:*)"
+      "Bash(timeout 30:*)",
+      "Bash(cmd /c \"taskkill /F /IM Bejeweled.exe\")",
+      "Bash(powershell -Command \"Stop-Process -Name Bejeweled -Force\")"
     ],
     "deny": [],
     "ask": []
