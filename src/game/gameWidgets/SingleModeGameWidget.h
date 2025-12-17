@@ -53,6 +53,10 @@ public:
     void eliminateAnime(Gemstone* gemstone);
     void switchGemstoneAnime(Gemstone* gemstone1, Gemstone* gemstone2);
 
+    // 消除相关的辅助方法
+    std::vector<std::pair<int, int>> findMatches();
+    void removeMatches(const std::vector<std::pair<int, int>>& matches);
+
     void syncGemstonePositions();
 
 protected:
@@ -63,8 +67,16 @@ protected:
 private:
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
+    void handleManualClick(const QPoint& screenPos); // 手动处理点击
     void appendDebug(const QString& text);
     void refreshDebugStatus();
+
+    // 辅助函数：找到宝石在容器中的位置
+    bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;
+    // 检查两个位置是否相邻
+    bool areAdjacent(int row1, int col1, int row2, int col2) const;
+    // 执行交换
+    void performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2);
 
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;

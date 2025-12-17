@@ -11,7 +11,6 @@
 #include <QRandomGenerator>
 #include <Qt3DRender/QPickingSettings>
 #include <QString>
-#include "../../auth/components/AuthNoticeDialog.h"
 
 Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent) 
     : Qt3DCore::QEntity(parent), type(type), style(style) {
@@ -34,44 +33,36 @@ Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent)
     m_rotationAnimation->setLoopCount(-1);
     m_rotationAnimation->start();
 
-    // 设置对象选择器
-    m_picker = new Qt3DRender::QObjectPicker();
+    // 设置对象选择器 - 用于响应鼠标点击
+    m_picker = new Qt3DRender::QObjectPicker(this);
     m_picker->setHoverEnabled(true);
-    m_picker->setDragEnabled(false); 
+    m_picker->setDragEnabled(false);
     m_picker->setEnabled(true);
-    // 确保使用 TrianglePicking 以获得更精确的点击
-    // 如果没有设置 RenderSettings，这里的设置可能无效，但为了保险起见还是保留默认
     addComponent(m_picker);
+
+    // 连接所有 picker 信号以便调试
     connect(m_picker, &Qt3DRender::QObjectPicker::pressed, this, [this](Qt3DRender::QPickEvent* event) {
-        auto pos = m_transform->translation();
-        QString content = QString("测试信息：\n类型: %1\n位置: (%.2f, %.2f, %.2f)")
-            .arg(getType())
-            .arg(pos.x()).arg(pos.y()).arg(pos.z());
-        QWidget* parent = QApplication::activeWindow();
-        AuthNoticeDialog* dlg = new AuthNoticeDialog("宝石点击", content, 1, parent);
-        dlg->exec();
-        delete dlg;
+        qDebug() << "[Gemstone] PRESSED - Type:" << this->type;
         emit pickEvent("pressed");
-        emit clicked(this);
     });
+
     connect(m_picker, &Qt3DRender::QObjectPicker::clicked, this, [this](Qt3DRender::QPickEvent* event) {
-        auto pos = m_transform->translation();
-        QString content = QString("测试信息：\n类型: %1\n位置: (%.2f, %.2f, %.2f)")
-            .arg(getType())
-            .arg(pos.x()).arg(pos.y()).arg(pos.z());
-        QWidget* parent = QApplication::activeWindow();
-        AuthNoticeDialog* dlg = new AuthNoticeDialog("宝石点击", content, 1, parent);
-        dlg->exec();
-        delete dlg;
+        qDebug() << "[Gemstone] CLICKED - Type:" << this->type;
         emit pickEvent("clicked");
         emit clicked(this);
     });
+
     connect(m_picker, &Qt3DRender::QObjectPicker::entered, this, [this]() {
+        qDebug() << "[Gemstone] ENTERED - Type:" << this->type;
         emit pickEvent("entered");
     });
+
     connect(m_picker, &Qt3DRender::QObjectPicker::exited, this, [this]() {
+        qDebug() << "[Gemstone] EXITED - Type:" << this->type;
         emit pickEvent("exited");
     });
+
+    qDebug() << "[Gemstone] Created gemstone type" << this->type << "with picker enabled:" << m_picker->isEnabled();
 }
 
 Gemstone::~Gemstone() {
