@@ -1,5 +1,6 @@
 #include "PlayMenuWidget.h"
 #include "../GameWindow.h"
+#include "SingleModeGameWidget.h"
 #include "../components/MenuButton.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -72,10 +73,16 @@ void PlayMenuWidget::setupUI() {
     });
 
     connect(normalModeButton, &QPushButton::clicked, this, [this]() {
+        if (gameWindow && gameWindow->getSingleModeGameWidget()) {
+            gameWindow->getSingleModeGameWidget()->reset(1);
+        }
         emit startNormalMode();
     });
 
     connect(rotateModeButton, &QPushButton::clicked, this, [this]() {
+        if (gameWindow && gameWindow->getSingleModeGameWidget()) {
+            gameWindow->getSingleModeGameWidget()->reset(2);
+        }
         emit startRotateMode();
     });
 }

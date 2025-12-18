@@ -1,5 +1,6 @@
 #include "SettingWidget.h"
 #include "../GameWindow.h"
+#include "../../utils/BackgroundManager.h"
 #include "../../utils/ResourceUtils.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -33,8 +34,9 @@ bool SettingWidget::isEliminateSoundEnabled() {
 
 QString SettingWidget::getMenuBackgroundImage() {
     QSettings settings("GemMatch", "Settings");
-    // 修复：std::string转QString
-    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
+    QString defaultBg = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getFinalWidgetBackground())
+    );
     return settings.value("Image/MenuBg", defaultBg).toString();
 }
 
@@ -303,8 +305,9 @@ void SettingWidget::loadSettings() {
     // 图像设置
     QString resolution = settings->value("Image/Resolution", "1600x1000").toString();
     QString quality = settings->value("Image/Quality", "中").toString();
-    // 修复：std::string转QString
-    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
+    QString defaultBg = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getFinalWidgetBackground())
+    );
     currentBgPath = settings->value("Image/MenuBg", defaultBg).toString();
     resolutionCombo->setCurrentText(resolution);
     qualityCombo->setCurrentText(quality);
@@ -366,8 +369,9 @@ void SettingWidget::paintEvent(QPaintEvent* event) {
     // 半透明浅紫色背景（突出背景图）
     QColor bgColor(20, 20, 40, 180);
     p.fillRect(rect(), bgColor);
-    // 绘制背景图片（第二张图片，路径为resources/images/setting_bg.png）
-    QString bgPath = QString::fromStdString(ResourceUtils::getPath("images/setting_bg.png"));
+    QString bgPath = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getSettingbackground())
+    );
     QPixmap bgPixmap(bgPath);
     if (!bgPixmap.isNull()) {
         p.drawPixmap(rect(), bgPixmap.scaled(rect().size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
