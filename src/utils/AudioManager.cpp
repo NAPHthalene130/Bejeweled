@@ -81,15 +81,23 @@ void AudioManager::playClickSound() {
 }
 
 
-// 新增消除音乐播放接口（供游戏调用）
+// 修改playEliminateSound()函数
 void AudioManager::playEliminateSound() {
     if (!SettingWidget::isEliminateSoundEnabled()) return;
-    // 假设消除音效文件为Eliminate.wav
+    
+    // 获取选中的音效类型
+    QSettings settings("GemMatch", "Settings");
+    QString soundType = settings.value("Music/EliminateType", "Manbo").toString();
+    
+    // 根据类型选择对应的音效文件
+    std::string soundFile = soundType == "Manbo" ? "sounds/Manbo.wav" : "sounds/Eliminate.wav";
+    
     QSoundEffect* eliminateSound = new QSoundEffect(this);
-    std::string eliminatePath = ResourceUtils::getPath("sounds/Eliminate.wav");
+    std::string eliminatePath = ResourceUtils::getPath(soundFile);
     eliminateSound->setSource(QUrl::fromLocalFile(QString::fromStdString(eliminatePath)));
     eliminateSound->setVolume(SettingWidget::getEliminateSoundVolume() / 100.0f);
     eliminateSound->play();
+    
     // 播放完成后自动释放
     connect(eliminateSound, &QSoundEffect::playingChanged, [eliminateSound]() {
         if (!eliminateSound->isPlaying()) {
