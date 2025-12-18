@@ -29,6 +29,7 @@
 #include <QByteArray>
 #include <QSurfaceFormat>
 #include <QColor>
+#include <QVector>
 
 MenuWidget::MenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -85,6 +86,7 @@ void MenuWidget::setupUI() {
 
     mainLayout->addLayout(leftLayout, 0);
     mainLayout->addStretch(1); // Push everything else to the right
+   
 }
 
 void MenuWidget::setup3DView() {
@@ -113,7 +115,7 @@ void MenuWidget::setup3DView() {
     pointLight1->setColor(QColor(255, 0, 255)); // Magenta
     pointLight1->setIntensity(2.0f);
     pointLightEntity1->addComponent(pointLight1);
-    auto pl1Transform = new Qt3DCore::QTransform();
+    auto pl1Transform = new Qt3DCore::QTransform(pointLightEntity1);
     pl1Transform->setTranslation(QVector3D(5.0f, 5.0f, 5.0f));
     pointLightEntity1->addComponent(pl1Transform);
 
@@ -122,7 +124,7 @@ void MenuWidget::setup3DView() {
     pointLight2->setColor(QColor(0, 255, 255)); // Cyan
     pointLight2->setIntensity(2.0f);
     pointLightEntity2->addComponent(pointLight2);
-    auto pl2Transform = new Qt3DCore::QTransform();
+    auto pl2Transform = new Qt3DCore::QTransform(pointLightEntity2);
     pl2Transform->setTranslation(QVector3D(-5.0f, -5.0f, 5.0f));
     pointLightEntity2->addComponent(pl2Transform);
 
@@ -222,7 +224,7 @@ void MenuWidget::setup3DView() {
     octahedronEntity->addComponent(material);
     octahedronEntity->addComponent(octahedronTransform);
 
-    rotationAnim = new QPropertyAnimation(octahedronTransform, "rotationY");
+    rotationAnim = new QPropertyAnimation(octahedronTransform, "rotationY", this);
     rotationAnim->setStartValue(0.0f);
     rotationAnim->setEndValue(360.0f);
     rotationAnim->setDuration(5000);
@@ -250,7 +252,7 @@ void MenuWidget::setup3DView() {
     torusEntity->addComponent(torusTransform);
 
     // Animate Torus
-    auto torusAnim = new QPropertyAnimation(torusTransform, "rotationY");
+    auto torusAnim = new QPropertyAnimation(torusTransform, "rotationY", this);
     torusAnim->setStartValue(0.0f);
     torusAnim->setEndValue(360.0f);
     torusAnim->setDuration(12000);
@@ -267,7 +269,7 @@ void MenuWidget::setup3DView() {
         objMat->setSpecular(Qt::white);
         objMat->setShininess(50.0f);
         
-        auto objTransform = new Qt3DCore::QTransform();
+        auto objTransform = new Qt3DCore::QTransform(objEntity);
         
         objEntity->addComponent(mesh);
         objEntity->addComponent(objMat);
@@ -275,14 +277,14 @@ void MenuWidget::setup3DView() {
         
         // Pivot for orbit
         auto pivotEntity = new Qt3DCore::QEntity(rootEntity);
-        auto pivotTransform = new Qt3DCore::QTransform();
+        auto pivotTransform = new Qt3DCore::QTransform(pivotEntity);
         pivotEntity->addComponent(pivotTransform);
         objEntity->setParent(pivotEntity);
         
         objTransform->setTranslation(QVector3D(radius, yOffset, 0.0f));
         
         // Self rotation
-        auto selfRotAnim = new QPropertyAnimation(objTransform, "rotationY");
+        auto selfRotAnim = new QPropertyAnimation(objTransform, "rotationY", this);
         selfRotAnim->setStartValue(0.0f);
         selfRotAnim->setEndValue(360.0f);
         selfRotAnim->setDuration(2000);
@@ -290,7 +292,7 @@ void MenuWidget::setup3DView() {
         selfRotAnim->start();
 
         // Pivot rotation (orbit)
-        auto pivotAnim = new QPropertyAnimation(pivotTransform, "rotationY");
+        auto pivotAnim = new QPropertyAnimation(pivotTransform, "rotationY", this);
         pivotAnim->setStartValue(0.0f);
         pivotAnim->setEndValue(360.0f);
         pivotAnim->setDuration(speed);
@@ -329,14 +331,14 @@ void MenuWidget::setup3DView() {
         meteorMat->setAmbient(Qt::white);
         meteorMat->setShininess(0.0f);
         
-        auto meteorTransform = new Qt3DCore::QTransform();
+        auto meteorTransform = new Qt3DCore::QTransform(meteorEntity);
         meteorTransform->setTranslation(start);
         
         meteorEntity->addComponent(meteorMesh);
         meteorEntity->addComponent(meteorMat);
         meteorEntity->addComponent(meteorTransform);
         
-        auto anim = new QPropertyAnimation(meteorTransform, "translation");
+        auto anim = new QPropertyAnimation(meteorTransform, "translation", this);
         anim->setStartValue(start);
         anim->setEndValue(end);
         anim->setDuration(duration);
@@ -370,11 +372,13 @@ void MenuWidget::setBackgroundImage(const QPixmap& pixmap) {
 
 void MenuWidget::paintEvent(QPaintEvent* event) {
     Q_UNUSED(event);
+    QPainter p(this);
     if (hasBackground) {
-        QPainter p(this);
-        p.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        // 背景图自适应拉伸，保持透明度
         QPixmap scaled = backgroundPixmap.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
+        p.setOpacity(0.8); // 背景图透明度，避免遮挡3D元素
         p.drawPixmap(0, 0, scaled);
+        p.setOpacity(1.0);
     }
 }
 

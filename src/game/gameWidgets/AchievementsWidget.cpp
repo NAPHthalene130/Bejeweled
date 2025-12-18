@@ -673,4 +673,3 @@ void AchievementsBackgroundDecoration::paintEvent(QPaintEvent*) {
 
 
 
-

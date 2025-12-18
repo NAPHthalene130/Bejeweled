@@ -5,13 +5,11 @@ SelectedCircle::SelectedCircle(Qt3DCore::QNode* parent)
     : Qt3DCore::QEntity(parent) {
     
     // Transform
-    m_transform = new Qt3DCore::QTransform();
-    // Rotate 90 degrees around X to face the camera (assuming camera looks down Z)
-    m_transform->setRotationX(90.0f);
+    m_transform = new Qt3DCore::QTransform(this);
     addComponent(m_transform);
 
     // Mesh (Torus)
-    m_mesh = new Qt3DExtras::QTorusMesh();
+    m_mesh = new Qt3DExtras::QTorusMesh(this);
     // Diameter 120 pixels maps to approx 1.5 units in 3D world (spacing is 1.5)
     // We want it slightly smaller than the full cell. 
     // Radius 0.6 -> Diameter 1.2
@@ -22,7 +20,7 @@ SelectedCircle::SelectedCircle(Qt3DCore::QNode* parent)
     addComponent(m_mesh);
 
     // Material
-    m_material = new Qt3DExtras::QPhongMaterial();
+    m_material = new Qt3DExtras::QPhongMaterial(this);
     m_material->setDiffuse(QColor(255, 215, 0)); // Gold
     m_material->setAmbient(QColor(255, 215, 0));
     m_material->setSpecular(Qt::white);

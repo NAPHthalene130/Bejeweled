@@ -153,13 +153,13 @@ if (WIN32)
         Qt6Quick3DRuntimeRender.dll
         Qt6Quick3DSpatialAudio.dll
         Qt6Quick3DUtils.dll
-        Qt6Quick3DXr.dll
+        
         Qt6QuickWidgets.dll
         Qt6Qml.dll
         Qt6QmlCore.dll
         Qt6QmlModels.dll
         Qt6QmlWorkerScript.dll
-        Qt6QmlNetwork.dll
+        
         Qt6QmlXmlListModel.dll
         Qt6QuickControls2.dll
         Qt6QuickLayouts.dll
@@ -204,6 +204,19 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
     add_custom_command(TARGET Bejeweled POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:Bejeweled>/resources)
+endif()
+
+# Copy Qt plugins (required for multimedia and platform support)
+if(WIN32 AND DEFINED ENV{QT_DIR})
+    set(QT_PLUGINS_DIR "$ENV{QT_DIR}/plugins")
+    # Copy platforms plugin
+    add_custom_command(TARGET Bejeweled POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${QT_PLUGINS_DIR}/platforms $<TARGET_FILE_DIR:Bejeweled>/platforms)
+    # Copy multimedia plugin
+    add_custom_command(TARGET Bejeweled POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${QT_PLUGINS_DIR}/multimedia $<TARGET_FILE_DIR:Bejeweled>/multimedia)
 endif()
 
 # 确保代码可以使用项目源目录宏（ResourceUtils 使用 PROJECT_SOURCE_DIR）
