@@ -1356,6 +1356,7 @@ void SingleModeGameWidget::highlightMatches() {
     if (matches.empty()) {
         appendDebug("No possible matches found,resetting the game");
         reset(1);
+        return ;
     }
     
     appendDebug(QString("No activity detected for %1 seconds, highlighting %2 matches")
