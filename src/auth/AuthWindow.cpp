@@ -13,9 +13,7 @@
 #include <QDialog>
 #include <QPainter>
 #include <QPaintEvent>
-#include <QDir>
-#include <QCoreApplication>
-#include <QFile>
+#include "../utils/BackgroundManager.h"
 #include "../utils/ResourceUtils.h"
 #if HAVE_OPENSSL
 #include <openssl/conf.h>
@@ -31,32 +29,10 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     resize(1600, 1000);
     setWindowTitle("登录注册");
 
-    // Load background image
-    QString bgPath = QString::fromStdString(ResourceUtils::getPath("images/auth_bg.png"));
-    std::cout << "[AuthWindow] Attempting to load background from: " << bgPath.toStdString() << std::endl;
-    
-    if (!backgroundPixmap.load(bgPath)) {
-        std::cerr << "[AuthWindow] Failed to load background image: " << bgPath.toStdString() << std::endl;
-        
-        // Fallback 1: Try absolute path relative to project root (assuming standard layout)
-        // Check if we are in build directory
-        QDir dir(QCoreApplication::applicationDirPath());
-        // Go up until we find resources
-        QString candidate = dir.filePath("../resources/images/auth_bg.png");
-        if (QFile::exists(candidate)) {
-             std::cout << "[AuthWindow] Found image at fallback 1: " << candidate.toStdString() << std::endl;
-             backgroundPixmap.load(candidate);
-        } else {
-             // Fallback 2: Hardcoded path provided by user (as last resort for local dev)
-             candidate = "h:/CODE/Trae/Bejeweled/resources/images/auth_bg.png";
-             if (QFile::exists(candidate)) {
-                 std::cout << "[AuthWindow] Found image at fallback 2: " << candidate.toStdString() << std::endl;
-                 backgroundPixmap.load(candidate);
-             }
-        }
-    } else {
-        std::cout << "[AuthWindow] Successfully loaded background image." << std::endl;
-    }
+    QString bgPath = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getAuthBackground())
+    );
+    backgroundPixmap.load(bgPath);
 
     // 初始化子界面
     loginWidget = new LoginWidget(this);

@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <QTimer>
+#include <QString>
 #include <Qt3DExtras/Qt3DWindow>
 #include <Qt3DCore/QEntity>
 #include <Qt3DRender/QCamera>
@@ -13,8 +14,10 @@
 
 class QTextEdit;
 class QLabel;
+class QPushButton;
 class QShowEvent;
 class QEvent;
+class QHideEvent;
 
 class Gemstone;
 class SelectedCircle;
@@ -66,6 +69,7 @@ public:
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
@@ -78,6 +82,11 @@ private:
     void clearHighlights();
     void highlightMatches();
     void resetInactivityTimer();
+
+    void updateScoreBoard();
+    void updateTimeBoard();
+    void triggerFinishIfNeeded();
+    void finishToFinalWidget();
 
     // 辅助函数：找到宝石在容器中的位置
     bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;
@@ -96,6 +105,21 @@ private:
     int mode; // 1: Normal, 2: Rotate
     
     GameWindow* gameWindow;
+
+    class GameTimeKeeper {
+    public:
+        void reset();
+        void tick();
+        int totalSeconds() const;
+        QString displayText() const;
+    private:
+        int seconds = 0;
+    };
+
+    GameTimeKeeper gameTimeKeeper;
+    int gameScore = 0;
+    int targetScore = 100;
+    bool isFinishing = false;
 
     // Qt3D Members
     Qt3DCore::QEntity* rootEntity;
@@ -121,6 +145,11 @@ private:
     QTextEdit* debugText;
     QLabel* focusInfoLabel;
     QTimer* debugTimer;
+
+    QWidget* rightPanel = nullptr;
+    QLabel* scoreBoardLabel = nullptr;
+    QLabel* timeBoardLabel = nullptr;
+    QPushButton* backToMenuButton = nullptr;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H

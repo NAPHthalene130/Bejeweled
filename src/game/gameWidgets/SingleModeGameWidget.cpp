@@ -1,9 +1,14 @@
 #include "SingleModeGameWidget.h"
+#include "FinalWidget.h"
+#include "MenuWidget.h"
+#include "../GameWindow.h"
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QFrame>
+#include <QDialog>
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
 #include <Qt3DExtras/Qt3DWindow>
@@ -17,6 +22,10 @@
 #include <QMouseEvent>
 #include <QTextEdit>
 #include <QLabel>
+#include <QGraphicsDropShadowEffect>
+#include <QHideEvent>
+#include <QPainter>
+#include <QPainterPath>
 #include <QDateTime>
 #include <QApplication>
 #include <cmath>
@@ -26,12 +35,133 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+class GameBackDialog : public QDialog {
+public:
+    explicit GameBackDialog(QWidget* parent = nullptr) : QDialog(parent) {
+        setWindowFlags(Qt::FramelessWindowHint | Qt::Dialog);
+        setAttribute(Qt::WA_TranslucentBackground);
+        setModal(true);
+        setFixedSize(420, 240);
+
+        auto* layout = new QVBoxLayout(this);
+        layout->setContentsMargins(26, 24, 26, 22);
+        layout->setSpacing(14);
+
+        auto* titleLabel = new QLabel("提示", this);
+        QFont titleFont = titleLabel->font();
+        titleFont.setPointSize(16);
+        titleFont.setBold(true);
+        titleFont.setFamily("Microsoft YaHei");
+        titleLabel->setFont(titleFont);
+        titleLabel->setAlignment(Qt::AlignHCenter);
+        titleLabel->setStyleSheet("color: rgba(255,255,255,235); background: transparent;");
+
+        auto* contentLabel = new QLabel("是否返回至主菜单", this);
+        QFont contentFont = contentLabel->font();
+        contentFont.setPointSize(12);
+        contentFont.setFamily("Microsoft YaHei");
+        contentLabel->setFont(contentFont);
+        contentLabel->setAlignment(Qt::AlignHCenter);
+        contentLabel->setWordWrap(true);
+        contentLabel->setStyleSheet("color: rgba(255,255,255,210); background: transparent;");
+
+        auto* btnRow = new QHBoxLayout();
+        btnRow->setSpacing(14);
+
+        auto* yesBtn = new QPushButton("是", this);
+        auto* noBtn = new QPushButton("否", this);
+
+        QSize btnSize(150, 44);
+        yesBtn->setFixedSize(btnSize);
+        noBtn->setFixedSize(btnSize);
+        yesBtn->setCursor(Qt::PointingHandCursor);
+        noBtn->setCursor(Qt::PointingHandCursor);
+
+        yesBtn->setStyleSheet(R"(
+            QPushButton {
+                color: white;
+                border-radius: 12px;
+                border: 1px solid rgba(255,255,255,60);
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(80,180,255,220), stop:1 rgba(80,120,255,220));
+                font-family: 'Microsoft YaHei';
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(100,200,255,240), stop:1 rgba(95,140,255,240));
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(70,160,220,240), stop:1 rgba(70,110,220,240));
+            }
+        )");
+
+        noBtn->setStyleSheet(R"(
+            QPushButton {
+                color: rgba(255,255,255,235);
+                border-radius: 12px;
+                border: 1px solid rgba(255,255,255,60);
+                background: rgba(255,255,255,22);
+                font-family: 'Microsoft YaHei';
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: rgba(255,255,255,30);
+            }
+            QPushButton:pressed {
+                background: rgba(255,255,255,18);
+            }
+        )");
+
+        connect(yesBtn, &QPushButton::clicked, this, &QDialog::accept);
+        connect(noBtn, &QPushButton::clicked, this, &QDialog::reject);
+
+        btnRow->addStretch(1);
+        btnRow->addWidget(noBtn);
+        btnRow->addWidget(yesBtn);
+        btnRow->addStretch(1);
+
+        layout->addWidget(titleLabel);
+        layout->addWidget(contentLabel);
+        layout->addStretch(1);
+        layout->addLayout(btnRow);
+    }
+
+protected:
+    void paintEvent(QPaintEvent* event) override {
+        Q_UNUSED(event);
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+
+        QRect r = rect().adjusted(8, 8, -8, -8);
+        QPainterPath path;
+        path.addRoundedRect(r, 18, 18);
+
+        QLinearGradient bg(r.topLeft(), r.bottomRight());
+        bg.setColorAt(0, QColor(25, 30, 45, 235));
+        bg.setColorAt(1, QColor(15, 18, 30, 235));
+        painter.fillPath(path, bg);
+
+        QPen pen(QColor(255, 255, 255, 45));
+        pen.setWidth(1);
+        painter.setPen(pen);
+        painter.drawPath(path);
+    }
+};
+
 SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWindow) 
     : QWidget(parent), gameWindow(gameWindow), canOpe(true), nowTimeHave(0), mode(1),
       firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0) {
     
     // 初始化定时器
     timer = new QTimer(this);
+    timer->setInterval(1000);
+    connect(timer, &QTimer::timeout, this, [this]() {
+        if (isFinishing) return;
+        gameTimeKeeper.tick();
+        nowTimeHave = gameTimeKeeper.totalSeconds();
+        updateTimeBoard();
+    });
     
     // 设置主背景颜色
     setStyleSheet("background-color: rgb(40, 40, 45);");
@@ -58,70 +188,116 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     
     // 将容器对齐到左侧，垂直居中
     mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addStretch(1);
     
-    // 右侧控制按钮
-    QVBoxLayout* rightLayout = new QVBoxLayout();
-    
-    QPushButton* backButton = new QPushButton("返回", this);
-    QPushButton* testEliminateButton = new QPushButton("消除测试", this);
-    QPushButton* testSwitchButton = new QPushButton("交换测试", this);
-    
-    focusInfoLabel = new QLabel(this);
-    debugText = new QTextEdit(this);
+    rightPanel = new QWidget(this);
+    rightPanel->setFixedWidth(420);
+    rightPanel->setStyleSheet(R"(
+        QWidget {
+            background-color: rgba(12, 14, 24, 120);
+            border: 1px solid rgba(255, 255, 255, 35);
+            border-radius: 18px;
+        }
+    )");
+    auto* panelShadow = new QGraphicsDropShadowEffect(rightPanel);
+    panelShadow->setBlurRadius(26);
+    panelShadow->setOffset(0, 10);
+    panelShadow->setColor(QColor(0, 0, 0, 140));
+    rightPanel->setGraphicsEffect(panelShadow);
+
+    auto* panelLayout = new QVBoxLayout(rightPanel);
+    panelLayout->setContentsMargins(18, 18, 18, 18);
+    panelLayout->setSpacing(16);
+
+    auto* infoCard = new QWidget(rightPanel);
+    infoCard->setStyleSheet(R"(
+        QWidget {
+            background-color: rgba(255, 255, 255, 18);
+            border: 1px solid rgba(255, 255, 255, 40);
+            border-radius: 16px;
+        }
+    )");
+    auto* infoShadow = new QGraphicsDropShadowEffect(infoCard);
+    infoShadow->setBlurRadius(18);
+    infoShadow->setOffset(0, 7);
+    infoShadow->setColor(QColor(0, 0, 0, 120));
+    infoCard->setGraphicsEffect(infoShadow);
+
+    auto* infoLayout = new QVBoxLayout(infoCard);
+    infoLayout->setContentsMargins(18, 16, 18, 16);
+    infoLayout->setSpacing(10);
+
+    scoreBoardLabel = new QLabel(infoCard);
+    QFont scoreFont = scoreBoardLabel->font();
+    scoreFont.setFamily("Microsoft YaHei");
+    scoreFont.setPointSize(16);
+    scoreFont.setBold(true);
+    scoreBoardLabel->setFont(scoreFont);
+    scoreBoardLabel->setStyleSheet("color: rgba(255,255,255,235); background: transparent;");
+
+    timeBoardLabel = new QLabel(infoCard);
+    QFont timeFont = timeBoardLabel->font();
+    timeFont.setFamily("Microsoft YaHei");
+    timeFont.setPointSize(12);
+    timeFont.setBold(true);
+    timeBoardLabel->setFont(timeFont);
+    timeBoardLabel->setStyleSheet("color: rgba(255,255,255,200); background: transparent;");
+
+    infoLayout->addWidget(scoreBoardLabel);
+    infoLayout->addWidget(timeBoardLabel);
+    panelLayout->addWidget(infoCard, 0, Qt::AlignTop);
+
+    panelLayout->addStretch(1);
+
+    backToMenuButton = new QPushButton("返回菜单", rightPanel);
+    backToMenuButton->setFixedSize(180, 54);
+    backToMenuButton->setCursor(Qt::PointingHandCursor);
+    backToMenuButton->setStyleSheet(R"(
+        QPushButton {
+            color: white;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,55);
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(255,140,120,220), stop:1 rgba(255,95,120,220));
+            font-family: 'Microsoft YaHei';
+            font-size: 14px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(255,160,130,235), stop:1 rgba(255,115,140,235));
+        }
+        QPushButton:pressed {
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(220,110,100,235), stop:1 rgba(220,75,95,235));
+        }
+    )");
+
+    auto* backShadow = new QGraphicsDropShadowEffect(backToMenuButton);
+    backShadow->setBlurRadius(18);
+    backShadow->setOffset(0, 8);
+    backShadow->setColor(QColor(0, 0, 0, 120));
+    backToMenuButton->setGraphicsEffect(backShadow);
+
+    connect(backToMenuButton, &QPushButton::clicked, this, [this]() {
+        GameBackDialog dlg(this);
+        if (dlg.exec() == QDialog::Accepted) {
+            if (timer && timer->isActive()) timer->stop();
+            if (inactivityTimer) inactivityTimer->stop();
+            if (this->gameWindow && this->gameWindow->getMenuWidget()) {
+                this->gameWindow->switchWidget(this->gameWindow->getMenuWidget());
+            }
+        }
+    });
+
+    panelLayout->addWidget(backToMenuButton, 0, Qt::AlignRight | Qt::AlignBottom);
+
+    focusInfoLabel = new QLabel(rightPanel);
+    focusInfoLabel->setVisible(false);
+    debugText = new QTextEdit(rightPanel);
+    debugText->setVisible(false);
     debugText->setReadOnly(true);
-    debugText->setMinimumHeight(300);
-    debugText->setMinimumWidth(400);
     debugTimer = new QTimer(this);
-    connect(debugTimer, &QTimer::timeout, this, &SingleModeGameWidget::refreshDebugStatus);
-    debugTimer->start(500);
 
-    rightLayout->addWidget(backButton);
-    rightLayout->addWidget(testEliminateButton);
-    rightLayout->addWidget(testSwitchButton);
-    rightLayout->addSpacing(10);
-    rightLayout->addWidget(focusInfoLabel);
-    rightLayout->addWidget(debugText);
-    rightLayout->addStretch(1);
-    
-    mainLayout->addLayout(rightLayout);
-    mainLayout->addStretch(1); // 将内容推向左侧
-
-    connect(testEliminateButton, &QPushButton::clicked, [this]() {
-        appendDebug("Manual eliminate test triggered");
-        eliminate();
-    });
-
-    connect(testSwitchButton, &QPushButton::clicked, [this]() {
-        // 随机找两个相邻的宝石进行交换
-        // 这里简单起见，找(0,0)和(0,1)或者随机位置
-        if (gemstoneContainer.size() < 1 || gemstoneContainer[0].size() < 2) return;
-        
-        Gemstone* g1 = nullptr;
-        Gemstone* g2 = nullptr;
-        int r = -1, c = -1;
-        
-        // 尝试找到两个存在的宝石
-        for(int i=0; i<10; ++i) {
-            r = QRandomGenerator::global()->bounded((int)gemstoneContainer.size());
-            c = QRandomGenerator::global()->bounded((int)gemstoneContainer[r].size() - 1);
-            
-            g1 = gemstoneContainer[r][c];
-            g2 = gemstoneContainer[r][c+1];
-            
-            if(g1 && g2) break;
-        }
-        
-        if (g1 && g2 && r != -1 && c != -1) {
-            // 在动画开始前或结束后交换逻辑容器中的位置
-            // 这里我们选择先交换逻辑，然后播放动画
-            // 这样当动画结束调用 syncGemstonePositions 时，位置是正确的
-            std::swap(gemstoneContainer[r][c], gemstoneContainer[r][c+1]);
-            
-            switchGemstoneAnime(g1, g2);
-        }
-    });
-    
     setLayout(mainLayout);
+    mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
     container3d->installEventFilter(this);
     game3dWindow->installEventFilter(this); // 关键：在3D窗口上安装事件过滤器
 
@@ -140,7 +316,76 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
 
     inactivityTimer->stop();
 
+    updateScoreBoard();
+    updateTimeBoard();
     appendDebug("SingleModeGameWidget initialized - EventFilter installed on both container and 3D window");
+}
+
+void SingleModeGameWidget::GameTimeKeeper::reset() {
+    seconds = 0;
+}
+
+void SingleModeGameWidget::GameTimeKeeper::tick() {
+    ++seconds;
+}
+
+int SingleModeGameWidget::GameTimeKeeper::totalSeconds() const {
+    return seconds;
+}
+
+QString SingleModeGameWidget::GameTimeKeeper::displayText() const {
+    int m = seconds / 60;
+    int s = seconds % 60;
+    return QString("游戏进行时间：%1:%2")
+        .arg(m, 2, 10, QChar('0'))
+        .arg(s, 2, 10, QChar('0'));
+}
+
+void SingleModeGameWidget::updateScoreBoard() {
+    if (!scoreBoardLabel) return;
+    scoreBoardLabel->setText(QString("当前分数：%1").arg(gameScore));
+}
+
+void SingleModeGameWidget::updateTimeBoard() {
+    if (!timeBoardLabel) return;
+    timeBoardLabel->setText(gameTimeKeeper.displayText());
+}
+
+void SingleModeGameWidget::triggerFinishIfNeeded() {
+    if (isFinishing) return;
+    if (gameScore < targetScore) return;
+    finishToFinalWidget();
+}
+
+void SingleModeGameWidget::finishToFinalWidget() {
+    if (isFinishing) return;
+    isFinishing = true;
+    canOpe = false;
+
+    if (timer && timer->isActive()) timer->stop();
+    if (inactivityTimer) inactivityTimer->stop();
+    clearHighlights();
+    if (selectionRing1) selectionRing1->setVisible(false);
+    if (selectionRing2) selectionRing2->setVisible(false);
+
+    int total = gameTimeKeeper.totalSeconds();
+    int m = total / 60;
+    int s = total % 60;
+    QString timeText = QString("%1:%2")
+        .arg(m, 2, 10, QChar('0'))
+        .arg(s, 2, 10, QChar('0'));
+
+    QString gradeText = QString("本局得分：%1\n用时：%2\n评价：Excellent!")
+        .arg(gameScore)
+        .arg(timeText);
+
+    QTimer::singleShot(650, this, [this, gradeText]() {
+        if (!gameWindow) return;
+        auto* finalWidget = gameWindow->getFinalWidget();
+        if (!finalWidget) return;
+        finalWidget->setGradeContent(gradeText.toStdString());
+        gameWindow->switchWidget(finalWidget);
+    });
 }
 
 // 查找所有需要消除的宝石（三连或更多）
@@ -223,21 +468,30 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
+    int removedCount = 0;
     for (const auto& pos : matches) {
         int row = pos.first;
         int col = pos.second;
         Gemstone* gem = gemstoneContainer[row][col];
 
         if (gem) {
+            removedCount += 1;
             // 播放消除动画
             eliminateAnime(gem);
             // 从容器中移除
             gemstoneContainer[row][col] = nullptr;
         }
     }
+
+    if (removedCount > 0) {
+        gameScore += removedCount * 10;
+        updateScoreBoard();
+        triggerFinishIfNeeded();
+    }
 }
 
 void SingleModeGameWidget::eliminate() {
+    if (isFinishing) return;
     // 查找所有匹配
     std::vector<std::pair<int, int>> matches = findMatches();
 
@@ -249,6 +503,8 @@ void SingleModeGameWidget::eliminate() {
 
         // 移除匹配的宝石
         removeMatches(matches);
+
+        if (isFinishing) return;
 
         // 等待消除动画完成后执行下落（500ms）
         QTimer::singleShot(600, this, [this]() {
@@ -263,6 +519,7 @@ void SingleModeGameWidget::eliminate() {
 }
 
 void SingleModeGameWidget::drop() {
+    if (isFinishing) return;
     appendDebug("Starting drop animation");
 
     QParallelAnimationGroup* dropAnimGroup = new QParallelAnimationGroup();
@@ -294,6 +551,7 @@ void SingleModeGameWidget::drop() {
     if (hasDrops) {
         appendDebug("Drop animation started");
         connect(dropAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
+            if (isFinishing) return;
             appendDebug("Drop animation finished, filling new gemstones");
             resetGemstoneTable();
             resetInactivityTimer();
@@ -307,6 +565,7 @@ void SingleModeGameWidget::drop() {
 }
 
 void SingleModeGameWidget::resetGemstoneTable() {
+    if (isFinishing) return;
     appendDebug("Filling empty positions with new gemstones");
 
     QParallelAnimationGroup* fillAnimGroup = new QParallelAnimationGroup();
@@ -368,6 +627,7 @@ void SingleModeGameWidget::resetGemstoneTable() {
     if (hasFills) {
         appendDebug("Fill animation started");
         connect(fillAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
+            if (isFinishing) return;
             appendDebug("Fill animation finished, checking for new matches");
             // 填充完成后，递归检查是否有新的匹配
             eliminate();
@@ -518,7 +778,23 @@ void SingleModeGameWidget::showEvent(QShowEvent* event) {
     }
     refreshDebugStatus();
     appendDebug("showEvent");
+    updateScoreBoard();
+    updateTimeBoard();
+    if (!isFinishing && timer && !timer->isActive()) {
+        timer->start();
+    }
     resetInactivityTimer();
+}
+
+void SingleModeGameWidget::hideEvent(QHideEvent* event) {
+    QWidget::hideEvent(event);
+    if (timer && timer->isActive()) {
+        timer->stop();
+    }
+    if (inactivityTimer) {
+        inactivityTimer->stop();
+    }
+    clearHighlights();
 }
 
 bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
@@ -699,7 +975,13 @@ void SingleModeGameWidget::setMode(int mode) {
 void SingleModeGameWidget::reset(int mode) {
     this->mode = mode;
     this->canOpe = true;
+    this->isFinishing = false;
+    this->gameScore = 0;
+    this->targetScore = 100;
+    this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
+    updateScoreBoard();
+    updateTimeBoard();
     appendDebug(QString("reset mode=%1").arg(mode));
     
     // 清除现有的宝石（如果有）

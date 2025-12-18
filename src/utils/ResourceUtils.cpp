@@ -53,11 +53,29 @@ std::string ResourceUtils::getResourcesDir() {
 }
 
 std::string ResourceUtils::getPath(const std::string& relativePath) {
+    fs::path inputPath(relativePath);
+    if (inputPath.is_absolute()) {
+        if (inputPath.filename() == "user_bg.png") {
+            return (inputPath.parent_path() / "achievement_bg.png").string();
+        }
+        if (inputPath.filename() == "default_bg.png") {
+            return (inputPath.parent_path() / "final_bg.png").string();
+        }
+        return relativePath;
+    }
+
+    std::string normalized = relativePath;
+    if (normalized == "images/user_bg.png") {
+        normalized = "images/achievement_bg.png";
+    } else if (normalized == "images/default_bg.png") {
+        normalized = "images/final_bg.png";
+    }
+
     std::string base = getResourcesDir();
     if (base.empty()) {
-        return relativePath; // Just return what was asked if we can't find the base
+        return normalized; // Just return what was asked if we can't find the base
     }
     
-    fs::path fullPath = fs::path(base) / relativePath;
+    fs::path fullPath = fs::path(base) / normalized;
     return fullPath.string();
 }

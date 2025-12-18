@@ -1,5 +1,6 @@
 #include "AchievementsWidget.h"
 #include "../GameWindow.h"
+#include "../../utils/BackgroundManager.h"
 #include "../../utils/ResourceUtils.h"
 #include <QVBoxLayout>
 #include <QGridLayout>
@@ -403,8 +404,9 @@ AchievementsBackgroundDecoration::AchievementsBackgroundDecoration(QWidget* pare
     // 不再设置全局鼠标穿透，改为在 mouseMoveEvent 中手动处理
     setAttribute(Qt::WA_TranslucentBackground);
     userBg = QPixmap();
-    // 加载成就背景图片
-    QString bgPath = QString::fromStdString(ResourceUtils::getPath("images/user_bg.png"));
+    QString bgPath = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getAchievementBackground())
+    );
     if (QFile::exists(bgPath)) {
         bgImage.load(bgPath);
     }
