@@ -155,7 +155,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     
     // 初始化定时器
     timer = new QTimer(this);
-    timer->setInterval(1000);
+    timer->setInterval(16);
     connect(timer, &QTimer::timeout, this, [this]() {
         if (isFinishing) return;
         gameTimeKeeper.tick();
@@ -1361,17 +1361,20 @@ void SingleModeGameWidget::highlightMatches() {
     appendDebug(QString("No activity detected for %1 seconds, highlighting %2 matches")
                .arg(inactivityTimeout/1000).arg(matches.size()));
     
-    // 为每个可消除的宝石添加高亮环
+    // 为随机一个可消除的宝石添加高亮环
+    int choice = QRandomGenerator::global()->bounded(matches.size()) ,num = 0;
     for (const auto& pos : matches) {
         int row = pos.first;
         int col = pos.second;
         Gemstone* gem = gemstoneContainer[row][col];
-        if (gem) {
+        if (gem && num == choice) {
             SelectedCircle* ring = new SelectedCircle(rootEntity);
             ring->setVisible(true);
             ring->setPosition(getPosition(row, col));
             highlightRings.push_back(ring);
+            break;
         }
+        num++;
     }
 }
 
