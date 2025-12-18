@@ -13,6 +13,7 @@
 #include <cmath>
 #include <QGraphicsDropShadowEffect>
 #include "MenuWidget.h"
+#include "../../utils/BGMManager.h"
 // 修复点1：添加QSettings头文件包含（必须）
 #include <QSettings>
 
@@ -648,7 +649,7 @@ void SettingWidget::loadSettings() {
         return;
     }
 
-    int bgVol = settings->value("Music/BgVolume", 50).toInt();
+    int bgVolume = settings->value("Music/BgVolume", 50).toInt();
     int eliminateVol = settings->value("Music/EliminateVolume", 50).toInt();
     bool bgEnable = settings->value("Music/BgEnable", true).toBool();
     bool eliminateEnable = settings->value("Music/EliminateEnable", true).toBool();
@@ -658,7 +659,7 @@ void SettingWidget::loadSettings() {
     bgMusicEnableBox->setChecked(bgEnable);
     eliminateSoundEnableBox->setChecked(eliminateEnable);
     // 再设置滑块值，并同步启用状态
-    bgMusicSlider->setValue(bgVol);
+    bgMusicSlider->setValue(bgVolume);
     bgMusicSlider->setEnabled(bgEnable);
     eliminateSoundSlider->setValue(eliminateVol);
     eliminateSoundSlider->setEnabled(eliminateEnable);
@@ -666,7 +667,7 @@ void SettingWidget::loadSettings() {
     eliminateSoundCombo->setCurrentText(soundType);
     eliminateSoundCombo->setEnabled(eliminateEnable);
     // 更新标签
-    bgVolLabel->setText(QString("%1%").arg(bgVol));
+    bgVolLabel->setText(QString("%1%").arg(bgVolume));
     bgVolLabel->setEnabled(bgEnable);
     eliminateVolLabel->setText(QString("%1%").arg(eliminateVol));
     eliminateVolLabel->setEnabled(eliminateEnable);
@@ -700,6 +701,14 @@ void SettingWidget::saveSettings() {
     settings->setValue("Image/Resolution", resolutionCombo->currentText());
     settings->setValue("Image/Quality", qualityCombo->currentText());
     settings->setValue("Image/MenuBg", currentBgPath);
+
+    // 应用背景音乐设置
+    BGMManager::instance().setVolume(bgMusicSlider->value());
+    if (bgMusicEnableBox->isChecked()) {
+        BGMManager::instance().resume();
+    } else {
+        BGMManager::instance().pause();
+    }
 
     emit backgroundImageChanged(currentBgPath);
     QMessageBox::information(this, "成功", "设置已保存！");

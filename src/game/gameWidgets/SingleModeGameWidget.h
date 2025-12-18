@@ -94,6 +94,7 @@ private:
     QTimer* timer;
     int nowTimeHave;
     int mode; // 1: Normal, 2: Rotate
+    int comboCount = 0; 
     
     GameWindow* gameWindow;
 

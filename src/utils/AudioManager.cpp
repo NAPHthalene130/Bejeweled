@@ -81,27 +81,48 @@ void AudioManager::playClickSound() {
 }
 
 
-// 修改playEliminateSound()函数
-void AudioManager::playEliminateSound() {
+void AudioManager::playEliminateSound(int comboCount) {
+    // 1. 检查设置中是否启用消除音效，未启用则直接返回
     if (!SettingWidget::isEliminateSoundEnabled()) return;
-    
-    // 获取选中的音效类型
+
+    // 2. 从设置中获取用户选择的音效类型（默认值为"Manbo"）
+    // 建议：如果SettingWidget有封装好的getEliminateSoundType()接口，可替换此处的QSettings直接调用，更符合封装原则
     QSettings settings("GemMatch", "Settings");
     QString soundType = settings.value("Music/EliminateType", "Manbo").toString();
-    
-    // 根据类型选择对应的音效文件
-    std::string soundFile = soundType == "Manbo" ? "sounds/Manbo.wav" : "sounds/Eliminate.wav";
-    
+    // 将QString转为std::string，方便拼接文件名
+    std::string soundTypeStr = soundType.toStdString();
+
+    // 3. 根据连续消除次数选择音效的数字后缀（1-5）
+    int soundSuffix = 1; // 默认后缀为1
+    if (comboCount <= 3) {
+        // 普通消除：使用1/2/3后缀
+        soundSuffix = comboCount;
+    } else {
+        // 连续消除：超过3次则循环使用4/5后缀
+        soundSuffix = (comboCount % 2 == 0) ? 4 : 5;
+    }
+
+    // 4. 拼接最终的音效文件路径（如"sounds/Manbo3.mp3"或"sounds/Eliminate5.mp3"）
+    std::string soundFile = "sounds/" + soundTypeStr + std::to_string(soundSuffix) + ".wav";
+
+    // 5. 初始化音效播放器并设置资源路径
     QSoundEffect* eliminateSound = new QSoundEffect(this);
     std::string eliminatePath = ResourceUtils::getPath(soundFile);
     eliminateSound->setSource(QUrl::fromLocalFile(QString::fromStdString(eliminatePath)));
-    eliminateSound->setVolume(SettingWidget::getEliminateSoundVolume() / 100.0f);
+
+    // 6. 应用设置中的音量（确保音量在0-100范围内，再转为0.0-1.0的浮点数）
+    int vol = qBound(0, SettingWidget::getEliminateSoundVolume(), 100);
+    eliminateSound->setVolume(vol / 100.0f);
+
+    // 7. 播放音效
     eliminateSound->play();
-    
-    // 播放完成后自动释放
+
+    // 8. 播放完成后自动释放资源，避免内存泄漏
     connect(eliminateSound, &QSoundEffect::playingChanged, [eliminateSound]() {
         if (!eliminateSound->isPlaying()) {
             eliminateSound->deleteLater();
         }
     });
 }
+
+

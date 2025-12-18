@@ -1,6 +1,7 @@
 #include "SingleModeGameWidget.h"
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
+#include "../../utils/AudioManager.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -242,11 +243,14 @@ void SingleModeGameWidget::eliminate() {
     std::vector<std::pair<int, int>> matches = findMatches();
 
     if (!matches.empty()) {
+        comboCount++; // 增加连续消除计数
         appendDebug(QString("Found %1 matches to eliminate").arg(matches.size()));
+        AudioManager::instance().playEliminateSound(comboCount);
+
 
         // 禁止操作
         canOpe = false;
-
+        
         // 移除匹配的宝石
         removeMatches(matches);
 
@@ -255,6 +259,7 @@ void SingleModeGameWidget::eliminate() {
             drop();
         });
     } else {
+        comboCount = 0;
         // 没有匹配了，恢复操作
         canOpe = true;
         resetInactivityTimer();

@@ -161,26 +161,26 @@ AchievementsWidget::AchievementsWidget(QWidget* parent, GameWindow* gameWindow)
     deco->lower(); // 确保在最底层
     
     // 初始化背景音乐播放器
-    bgMusic = new QMediaPlayer(this);
-    audioOutput = new QAudioOutput(this);
-    bgMusic->setAudioOutput(audioOutput);
-    audioOutput->setVolume(0.5); // 音量 50%
+    //bgMusic = new QMediaPlayer(this);
+    //audioOutput = new QAudioOutput(this);
+    //bgMusic->setAudioOutput(audioOutput);
+    //audioOutput->setVolume(0.5); // 音量 50%
     
     // 加载背景音乐文件
-    QString musicPath = QString::fromStdString(ResourceUtils::getPath("sounds/ambient.ogg"));
-    qDebug() << "Music path:" << musicPath << "exists:" << QFile::exists(musicPath);
-    if (QFile::exists(musicPath)) {
-        bgMusic->setSource(QUrl::fromLocalFile(musicPath));
-        bgMusic->setLoops(QMediaPlayer::Infinite); // 循环播放
-    }
+    //QString musicPath = QString::fromStdString(ResourceUtils::getPath("sounds/ambient.ogg"));
+    //qDebug() << "Music path:" << musicPath << "exists:" << QFile::exists(musicPath);
+    //if (QFile::exists(musicPath)) {
+        //bgMusic->setSource(QUrl::fromLocalFile(musicPath));
+        //bgMusic->setLoops(QMediaPlayer::Infinite); // 循环播放
+    //}
     
     // 监听播放错误
-    connect(bgMusic, &QMediaPlayer::errorOccurred, this, [](QMediaPlayer::Error error, const QString &errorString) {
-        qDebug() << "Media error:" << error << errorString;
-    });
-    connect(bgMusic, &QMediaPlayer::playbackStateChanged, this, [](QMediaPlayer::PlaybackState state) {
-        qDebug() << "Playback state:" << state;
-    });
+    //connect(bgMusic, &QMediaPlayer::errorOccurred, this, [](QMediaPlayer::Error error, const QString &errorString) {
+        //qDebug() << "Media error:" << error << errorString;
+    //});
+    //connect(bgMusic, &QMediaPlayer::playbackStateChanged, this, [](QMediaPlayer::PlaybackState state) {
+        //qDebug() << "Playback state:" << state;
+    //});
 
     // 主布局直接设置在 this 上
     mainLayout = new QVBoxLayout(this);
