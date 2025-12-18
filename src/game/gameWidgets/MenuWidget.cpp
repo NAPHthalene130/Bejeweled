@@ -5,8 +5,12 @@
 #include <QVBoxLayout>
 #include <QPainter>
 #include <QPropertyAnimation>
+#include <QVariantAnimation>
 #include <QResizeEvent>
 #include <QApplication>
+#include <QtMath>
+#include <cmath>
+#include <algorithm>
 #include <Qt3DExtras/QCuboidMesh>
 #include <Qt3DExtras/QCylinderMesh>
 #include <Qt3DExtras/QConeMesh>
@@ -30,6 +34,7 @@
 #include <QSurfaceFormat>
 #include <QColor>
 #include <QVector>
+#include <QRandomGenerator>
 
 MenuWidget::MenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -92,8 +97,8 @@ void MenuWidget::setupUI() {
 void MenuWidget::setup3DView() {
     view3D = new Qt3DExtras::Qt3DWindow();
     
-    // Dark Space Background
-    view3D->defaultFrameGraph()->setClearColor(QColor(10, 10, 25)); // Darker
+    auto* frameGraph = view3D->defaultFrameGraph();
+    frameGraph->setClearColor(QColor(10, 10, 25));
     rootEntity = new Qt3DCore::QEntity();
     view3D->setRootEntity(rootEntity);
 
@@ -102,18 +107,33 @@ void MenuWidget::setup3DView() {
     camera->setPosition(QVector3D(0.0f, 0.0f, 13.0f));
     camera->setViewCenter(QVector3D(0.0f, 0.0f, 0.0f));
 
+    auto* bgAnim = new QVariantAnimation(this);
+    bgAnim->setStartValue(0.0);
+    bgAnim->setEndValue(1.0);
+    bgAnim->setDuration(22000);
+    bgAnim->setLoopCount(-1);
+    connect(bgAnim, &QVariantAnimation::valueChanged, this, [frameGraph](const QVariant& v) {
+        constexpr double TwoPi = 6.2831853071795864769;
+        const double t = v.toDouble();
+        const double hue = std::fmod(240.0 + 55.0 * std::sin(TwoPi * t * 0.7) + 18.0 * std::sin(TwoPi * t * 1.9), 360.0);
+        const double sat = std::clamp(0.35 + 0.25 * std::sin(TwoPi * t * 0.5 + 1.2), 0.0, 1.0);
+        const double val = std::clamp(0.05 + 0.10 * (0.5 + 0.5 * std::sin(TwoPi * t * 0.35)), 0.0, 1.0);
+        frameGraph->setClearColor(QColor::fromHsvF(hue / 360.0, sat, val));
+    });
+    bgAnim->start();
+
     // Lights
     Qt3DCore::QEntity* lightEntity = new Qt3DCore::QEntity(rootEntity);
     Qt3DRender::QDirectionalLight* light = new Qt3DRender::QDirectionalLight(lightEntity);
     light->setColor(Qt::white);
-    light->setIntensity(0.5f);
+    light->setIntensity(0.38f);
     light->setWorldDirection(QVector3D(-1.0f, -1.0f, -1.0f));
     lightEntity->addComponent(light);
 
     Qt3DCore::QEntity* pointLightEntity1 = new Qt3DCore::QEntity(rootEntity);
     Qt3DRender::QPointLight* pointLight1 = new Qt3DRender::QPointLight(pointLightEntity1);
     pointLight1->setColor(QColor(255, 0, 255)); // Magenta
-    pointLight1->setIntensity(2.0f);
+    pointLight1->setIntensity(1.4f);
     pointLightEntity1->addComponent(pointLight1);
     auto pl1Transform = new Qt3DCore::QTransform(pointLightEntity1);
     pl1Transform->setTranslation(QVector3D(5.0f, 5.0f, 5.0f));
@@ -122,11 +142,48 @@ void MenuWidget::setup3DView() {
     Qt3DCore::QEntity* pointLightEntity2 = new Qt3DCore::QEntity(rootEntity);
     Qt3DRender::QPointLight* pointLight2 = new Qt3DRender::QPointLight(pointLightEntity2);
     pointLight2->setColor(QColor(0, 255, 255)); // Cyan
-    pointLight2->setIntensity(2.0f);
+    pointLight2->setIntensity(1.4f);
     pointLightEntity2->addComponent(pointLight2);
     auto pl2Transform = new Qt3DCore::QTransform(pointLightEntity2);
     pl2Transform->setTranslation(QVector3D(-5.0f, -5.0f, 5.0f));
     pointLightEntity2->addComponent(pl2Transform);
+
+    auto createOrbitingLight = [&](float radius, float y, float z, int durationMs, double hueStartDeg, float intensity) {
+        auto* orbitRoot = new Qt3DCore::QEntity(rootEntity);
+        auto* orbitTransform = new Qt3DCore::QTransform();
+        orbitRoot->addComponent(orbitTransform);
+
+        auto* orbitAnim = new QPropertyAnimation(orbitTransform, "rotationY", this);
+        orbitAnim->setStartValue(0.0f);
+        orbitAnim->setEndValue(360.0f);
+        orbitAnim->setDuration(durationMs);
+        orbitAnim->setLoopCount(-1);
+        orbitAnim->start();
+
+        auto* lightEntity = new Qt3DCore::QEntity(orbitRoot);
+        auto* pointLight = new Qt3DRender::QPointLight(lightEntity);
+        pointLight->setIntensity(intensity);
+        lightEntity->addComponent(pointLight);
+
+        auto* lightTransform = new Qt3DCore::QTransform();
+        lightTransform->setTranslation(QVector3D(radius, y, z));
+        lightEntity->addComponent(lightTransform);
+
+        auto* colorAnim = new QVariantAnimation(this);
+        colorAnim->setStartValue(0.0);
+        colorAnim->setEndValue(1.0);
+        colorAnim->setDuration(std::max(4800, durationMs / 2));
+        colorAnim->setLoopCount(-1);
+        connect(colorAnim, &QVariantAnimation::valueChanged, this, [pointLight, hueStartDeg](const QVariant& v) {
+            const double t = v.toDouble();
+            const double hue = std::fmod(hueStartDeg + 360.0 * t, 360.0);
+            pointLight->setColor(QColor::fromHsvF(hue / 360.0, 0.9, 1.0));
+        });
+        colorAnim->start();
+    };
+
+    createOrbitingLight(6.5f, 3.2f, 6.5f, 9000, 190.0, 1.6f);
+    createOrbitingLight(6.5f, -2.8f, 6.5f, 13000, 300.0, 1.4f);
 
     // --- Octahedron (Central) ---
     // Geometry - Flat Shaded Octahedron (24 vertices for distinct face colors)
@@ -240,8 +297,8 @@ void MenuWidget::setup3DView() {
     torusMesh->setSlices(32);
 
     auto torusMaterial = new Qt3DExtras::QPhongMaterial(rootEntity);
-    torusMaterial->setDiffuse(QColor(100, 200, 255));
-    torusMaterial->setShininess(150.0f);
+    torusMaterial->setDiffuse(QColor(75, 150, 200));
+    torusMaterial->setShininess(120.0f);
     torusMaterial->setAmbient(QColor(0, 50, 100));
 
     auto torusTransform = new Qt3DCore::QTransform();
@@ -258,6 +315,29 @@ void MenuWidget::setup3DView() {
     torusAnim->setDuration(12000);
     torusAnim->setLoopCount(-1);
     torusAnim->start();
+
+    auto* haloEntity = new Qt3DCore::QEntity(rootEntity);
+    auto* haloMesh = new Qt3DExtras::QTorusMesh(haloEntity);
+    haloMesh->setRadius(4.8f);
+    haloMesh->setMinorRadius(0.07f);
+    haloMesh->setRings(96);
+    haloMesh->setSlices(48);
+    auto* haloMat = new Qt3DExtras::QPhongMaterial(haloEntity);
+    haloMat->setDiffuse(QColor(80, 135, 195));
+    haloMat->setAmbient(QColor(10, 20, 35));
+    haloMat->setSpecular(QColor(255, 255, 255));
+    haloMat->setShininess(180.0f);
+    auto* haloTr = new Qt3DCore::QTransform();
+    haloTr->setRotationZ(30.0f);
+    haloEntity->addComponent(haloMesh);
+    haloEntity->addComponent(haloMat);
+    haloEntity->addComponent(haloTr);
+    auto* haloAnim = new QPropertyAnimation(haloTr, "rotationY", this);
+    haloAnim->setStartValue(0.0f);
+    haloAnim->setEndValue(-360.0f);
+    haloAnim->setDuration(18000);
+    haloAnim->setLoopCount(-1);
+    haloAnim->start();
 
     // --- Orbiting Objects (Various Shapes) ---
     auto createOrbitingObject = [&](Qt3DRender::QGeometryRenderer* mesh, float radius, float speed, float yOffset, const QColor& color) {
@@ -303,22 +383,22 @@ void MenuWidget::setup3DView() {
     // 1. Red Cube
     auto cubeMesh = new Qt3DExtras::QCuboidMesh(rootEntity);
     cubeMesh->setXExtent(1.0f); cubeMesh->setYExtent(1.0f); cubeMesh->setZExtent(1.0f);
-    createOrbitingObject(cubeMesh, 5.0f, 5000, 1.5f, QColor(255, 80, 80));
+    createOrbitingObject(cubeMesh, 5.0f, 5000, 1.5f, QColor(200, 70, 70));
 
     // 2. Green Sphere
     auto sphereMesh = new Qt3DExtras::QSphereMesh(rootEntity);
     sphereMesh->setRadius(0.6f);
-    createOrbitingObject(sphereMesh, 6.5f, 7000, -1.5f, QColor(80, 255, 80));
+    createOrbitingObject(sphereMesh, 6.5f, 7000, -1.5f, QColor(70, 200, 70));
 
     // 3. Blue Cylinder
     auto cylMesh = new Qt3DExtras::QCylinderMesh(rootEntity);
     cylMesh->setRadius(0.5f); cylMesh->setLength(1.2f);
-    createOrbitingObject(cylMesh, 8.0f, 9000, 2.0f, QColor(80, 100, 255));
+    createOrbitingObject(cylMesh, 8.0f, 9000, 2.0f, QColor(65, 85, 205));
 
     // 4. Yellow Cone
     auto coneMesh = new Qt3DExtras::QConeMesh(rootEntity);
     coneMesh->setBottomRadius(0.6f); coneMesh->setLength(1.2f);
-    createOrbitingObject(coneMesh, 5.5f, 4000, -2.5f, QColor(255, 255, 0));
+    createOrbitingObject(coneMesh, 5.5f, 4000, -2.5f, QColor(210, 210, 0));
 
     // --- Meteors (Shooting Stars) ---
     auto createMeteor = [&](const QVector3D& start, const QVector3D& end, int duration) {
@@ -327,8 +407,8 @@ void MenuWidget::setup3DView() {
         meteorMesh->setRadius(0.15f);
         
         auto meteorMat = new Qt3DExtras::QPhongMaterial(rootEntity);
-        meteorMat->setDiffuse(Qt::white);
-        meteorMat->setAmbient(Qt::white);
+        meteorMat->setDiffuse(QColor(210, 210, 210));
+        meteorMat->setAmbient(QColor(210, 210, 210));
         meteorMat->setShininess(0.0f);
         
         auto meteorTransform = new Qt3DCore::QTransform(meteorEntity);
@@ -349,6 +429,45 @@ void MenuWidget::setup3DView() {
     createMeteor(QVector3D(-20, 8, -5), QVector3D(20, -8, -5), 2000);
     createMeteor(QVector3D(-25, 5, -10), QVector3D(25, -5, -10), 3500);
     createMeteor(QVector3D(20, 10, -8), QVector3D(-20, -10, -8), 2500);
+
+    auto* starsRoot = new Qt3DCore::QEntity(rootEntity);
+    auto* starMesh = new Qt3DExtras::QSphereMesh(starsRoot);
+    starMesh->setRadius(0.06f);
+    starMesh->setRings(10);
+    starMesh->setSlices(10);
+
+    const int starCount = 120;
+    for (int i = 0; i < starCount; ++i) {
+        auto* star = new Qt3DCore::QEntity(starsRoot);
+        auto* tr = new Qt3DCore::QTransform();
+
+        const float x = -14.0f + static_cast<float>(QRandomGenerator::global()->generateDouble()) * 28.0f;
+        const float y = -10.0f + static_cast<float>(QRandomGenerator::global()->generateDouble()) * 20.0f;
+        const float z = -14.0f + static_cast<float>(QRandomGenerator::global()->generateDouble()) * 18.0f;
+        tr->setTranslation(QVector3D(x, y, z));
+        const float s = 0.35f + static_cast<float>(QRandomGenerator::global()->generateDouble()) * 1.25f;
+        tr->setScale3D(QVector3D(s, s, s));
+
+        auto* mat = new Qt3DExtras::QPhongMaterial(star);
+        const double hue = std::fmod(180.0 + QRandomGenerator::global()->generateDouble() * 180.0, 360.0);
+        const QColor c = QColor::fromHsvF(hue / 360.0, 0.28, 0.82);
+        mat->setDiffuse(c);
+        mat->setAmbient(QColor(8, 8, 12));
+        mat->setSpecular(QColor(255, 255, 255));
+        mat->setShininess(70.0f);
+
+        auto* twinkle = new QPropertyAnimation(tr, "scale3D", this);
+        twinkle->setStartValue(QVector3D(0.65f * s, 0.65f * s, 0.65f * s));
+        twinkle->setEndValue(QVector3D(1.35f * s, 1.35f * s, 1.35f * s));
+        twinkle->setDuration(QRandomGenerator::global()->bounded(1400, 3600));
+        twinkle->setLoopCount(-1);
+        twinkle->setEasingCurve(QEasingCurve::InOutSine);
+        twinkle->start();
+
+        star->addComponent(starMesh);
+        star->addComponent(mat);
+        star->addComponent(tr);
+    }
 
     // Container - Full Background
     view3DContainer = QWidget::createWindowContainer(view3D, this);
