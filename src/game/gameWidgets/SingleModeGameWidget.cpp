@@ -138,8 +138,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
         resetInactivityTimer();
     });
 
-    // 初始启动计时器
-    resetInactivityTimer();
+    inactivityTimer->stop();
 
     appendDebug("SingleModeGameWidget initialized - EventFilter installed on both container and 3D window");
 }
@@ -519,6 +518,7 @@ void SingleModeGameWidget::showEvent(QShowEvent* event) {
     }
     refreshDebugStatus();
     appendDebug("showEvent");
+    resetInactivityTimer();
 }
 
 bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
@@ -950,14 +950,37 @@ void SingleModeGameWidget::handleManualClick(const QPoint& screenPos) {
 }
 // 重置无操作计时器————————————————————————————————————————————————————————————————————————————————————————————————————————————
 void SingleModeGameWidget::resetInactivityTimer() {
-    // 清除现有高亮
     clearHighlights();
-    // 重启计时器
+    if (!inactivityTimer) return;
+    if (!isVisible()) {
+        inactivityTimer->stop();
+        return;
+    }
+    if (gemstoneContainer.size() != 8) {
+        inactivityTimer->stop();
+        return;
+    }
+    for (const auto& row : gemstoneContainer) {
+        if (row.size() != 8) {
+            inactivityTimer->stop();
+            return;
+        }
+        for (auto* gem : row) {
+            if (!gem) {
+                inactivityTimer->stop();
+                return;
+            }
+        }
+    }
     inactivityTimer->start(inactivityTimeout);
 }
 
 std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
     std::vector<std::pair<int, int>> matches;
+    if (gemstoneContainer.size() != 8) return matches;
+    for (const auto& row : gemstoneContainer) {
+        if (row.size() != 8) return matches;
+    }
     std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
     const int dx[4] = {0,0,1,-1};
     const int dy[4] = {1,-1,0,0};
@@ -973,14 +996,16 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
                     int Dx = i+dx[k],Dy1 = L+dy[k],Dy2 = R+dy[k];
                     if(L>0) {
                         if(Dx >= 0 && Dx < 8 && Dy1 >= 0 && Dy1 < 8 && k!=0) {
-                            if(gemstoneContainer[Dx][Dy1] -> getType() == gem1 ->getType()) {
+                            Gemstone* g = gemstoneContainer[Dx][Dy1];
+                            if(g && g->getType() == gem1->getType()) {
                                 marked[Dx][Dy1] = true;
                             }
                         }
                     }
                     if(R<8) {
                         if(Dx >= 0 && Dx < 8 && Dy2 >= 0 && Dy2 < 8 && k!=1) {
-                            if(gemstoneContainer[Dx][Dy2] -> getType() == gem1 ->getType()) {
+                            Gemstone* g = gemstoneContainer[Dx][Dy2];
+                            if(g && g->getType() == gem1->getType()) {
                                 marked[Dx][Dy2] = true;
                             }
                         }
@@ -1002,14 +1027,16 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
                     int Dx1 = L+dx[k],Dx2 = R+dx[k],Dy = j+dy[k];
                     if(L>0) {
                         if(Dx1 >= 0 && Dx1 < 8 && Dy >= 0 && Dy < 8 && k!=2) {
-                            if(gemstoneContainer[Dx1][Dy] -> getType() == gem1 ->getType()) {
+                            Gemstone* g = gemstoneContainer[Dx1][Dy];
+                            if(g && g->getType() == gem1->getType()) {
                                 marked[Dx1][Dy] = true;
                             }
                         }
                     }
                     if(R<8) {
                         if(Dx2 >= 0 && Dx2 < 8 && Dy >= 0 && Dy < 8 && k!=3) {
-                            if(gemstoneContainer[Dx2][Dy] -> getType() == gem1 ->getType()) {
+                            Gemstone* g = gemstoneContainer[Dx2][Dy];
+                            if(g && g->getType() == gem1->getType()) {
                                 marked[Dx2][Dy] = true;
                             }
                         }
@@ -1034,6 +1061,11 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
 // 高亮显示所有可消除的宝石
 void SingleModeGameWidget::highlightMatches() {
     if (!canOpe) return; // 操作不可用时不高亮
+    if (!isVisible()) return;
+    if (gemstoneContainer.size() != 8) return;
+    for (const auto& row : gemstoneContainer) {
+        if (row.size() != 8) return;
+    }
     
     clearHighlights(); // 先清除现有高亮
     
@@ -1065,7 +1097,7 @@ void SingleModeGameWidget::highlightMatches() {
 void SingleModeGameWidget::clearHighlights() {
     for (SelectedCircle* ring : highlightRings) {
         ring->setVisible(false);
+        delete ring;
     }
     highlightRings.clear();
 }
-
