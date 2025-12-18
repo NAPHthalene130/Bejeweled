@@ -125,6 +125,22 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     container3d->installEventFilter(this);
     game3dWindow->installEventFilter(this); // 关键：在3D窗口上安装事件过滤器
 
+    // 初始化无操作计时器
+    inactivityTimer = new QTimer(this);
+    inactivityTimer->setInterval(inactivityTimeout);
+    inactivityTimer->setSingleShot(true);
+    
+    // 超时后高亮可消除的宝石
+    connect(inactivityTimer, &QTimer::timeout, this, &SingleModeGameWidget::highlightMatches);
+    
+    // 任何用户操作后重置计时器
+    connect(this, &SingleModeGameWidget::userActionOccurred, [this]() {
+        resetInactivityTimer();
+    });
+
+    // 初始启动计时器
+    resetInactivityTimer();
+
     appendDebug("SingleModeGameWidget initialized - EventFilter installed on both container and 3D window");
 }
 
@@ -242,6 +258,7 @@ void SingleModeGameWidget::eliminate() {
     } else {
         // 没有匹配了，恢复操作
         canOpe = true;
+        resetInactivityTimer();
         appendDebug("No matches found, game can continue");
     }
 }
@@ -252,22 +269,15 @@ void SingleModeGameWidget::drop() {
     QParallelAnimationGroup* dropAnimGroup = new QParallelAnimationGroup();
     bool hasDrops = false;
 
-    // 遍历每一列
     for (int col = 0; col < 8; ++col) {
-        // 从下往上扫描这一列
         int writePos = 7; // 从底部开始写入
-
         for (int row = 7; row >= 0; --row) {
             if (gemstoneContainer[row][col] != nullptr) {
-                // 如果这个位置有宝石，并且它需要下落
                 if (row < writePos) {
                     Gemstone* gem = gemstoneContainer[row][col];
-
-                    // 移动到容器的新位置
                     gemstoneContainer[writePos][col] = gem;
                     gemstoneContainer[row][col] = nullptr;
 
-                    // 创建下落动画
                     QVector3D targetPos = getPosition(writePos, col);
                     QPropertyAnimation* dropAnim = new QPropertyAnimation(gem->transform(), "translation");
                     dropAnim->setDuration(500);
@@ -287,11 +297,13 @@ void SingleModeGameWidget::drop() {
         connect(dropAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
             appendDebug("Drop animation finished, filling new gemstones");
             resetGemstoneTable();
+            resetInactivityTimer();
         });
         dropAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
     } else {
         appendDebug("No drops needed, filling new gemstones");
         resetGemstoneTable();
+        resetInactivityTimer();
     }
 }
 
@@ -418,6 +430,8 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
         appendDebug("handleGemstoneClicked: gem is null!");
         return;
     }
+    if (!canOpe) return;
+    emit userActionOccurred(); // 发送用户操作信号
 
     appendDebug(QString("Gemstone clicked! Type=%1 Mode=%2 CanOpe=%3 SelectedNum=%4")
         .arg(gem->getType()).arg(mode).arg(canOpe).arg(selectedNum));
@@ -538,6 +552,9 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
 }
 
 SingleModeGameWidget::~SingleModeGameWidget() {
+    clearHighlights();
+    delete inactivityTimer;
+
     if (rootEntity) {
         delete rootEntity;
     }
@@ -931,3 +948,124 @@ void SingleModeGameWidget::handleManualClick(const QPoint& screenPos) {
             .arg(minDistance, 0, 'f', 2));
     }
 }
+// 重置无操作计时器————————————————————————————————————————————————————————————————————————————————————————————————————————————
+void SingleModeGameWidget::resetInactivityTimer() {
+    // 清除现有高亮
+    clearHighlights();
+    // 重启计时器
+    inactivityTimer->start(inactivityTimeout);
+}
+
+std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
+    std::vector<std::pair<int, int>> matches;
+    std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
+    const int dx[4] = {0,0,1,-1};
+    const int dy[4] = {1,-1,0,0};
+    // 检查水平方向
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 7; ++j) {  // 最多检查到j=5，这样j+2不会越界
+            Gemstone* gem1 = gemstoneContainer[i][j];
+            Gemstone* gem2 = gemstoneContainer[i][j+1];
+
+            if (gem1 && gem2 && gem1->getType() == gem2->getType()) {
+                int L = j-1,R=j+2;
+                for(int k = 0;k < 4; k++) {
+                    int Dx = i+dx[k],Dy1 = L+dy[k],Dy2 = R+dy[k];
+                    if(L>0) {
+                        if(Dx >= 0 && Dx < 8 && Dy1 >= 0 && Dy1 < 8 && k!=0) {
+                            if(gemstoneContainer[Dx][Dy1] -> getType() == gem1 ->getType()) {
+                                marked[Dx][Dy1] = true;
+                            }
+                        }
+                    }
+                    if(R<8) {
+                        if(Dx >= 0 && Dx < 8 && Dy2 >= 0 && Dy2 < 8 && k!=1) {
+                            if(gemstoneContainer[Dx][Dy2] -> getType() == gem1 ->getType()) {
+                                marked[Dx][Dy2] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 检查垂直方向
+    for (int i = 0; i < 7; ++i) {
+        for (int j = 0; j < 8; ++j) {  // 最多检查到j=5，这样j+2不会越界
+            Gemstone* gem1 = gemstoneContainer[i][j];
+            Gemstone* gem2 = gemstoneContainer[i+1][j];
+
+            if (gem1 && gem2 && gem1->getType() == gem2->getType()) {
+                int L = i-1,R=i+2;
+                for(int k = 0;k < 4; k++) {
+                    int Dx1 = L+dx[k],Dx2 = R+dx[k],Dy = j+dy[k];
+                    if(L>0) {
+                        if(Dx1 >= 0 && Dx1 < 8 && Dy >= 0 && Dy < 8 && k!=2) {
+                            if(gemstoneContainer[Dx1][Dy] -> getType() == gem1 ->getType()) {
+                                marked[Dx1][Dy] = true;
+                            }
+                        }
+                    }
+                    if(R<8) {
+                        if(Dx2 >= 0 && Dx2 < 8 && Dy >= 0 && Dy < 8 && k!=3) {
+                            if(gemstoneContainer[Dx2][Dy] -> getType() == gem1 ->getType()) {
+                                marked[Dx2][Dy] = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 收集所有被标记的位置
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            if (marked[i][j]) {
+                matches.push_back({i, j});
+            }
+        }
+    }
+
+    return matches;
+}
+
+// 高亮显示所有可消除的宝石
+void SingleModeGameWidget::highlightMatches() {
+    if (!canOpe) return; // 操作不可用时不高亮
+    
+    clearHighlights(); // 先清除现有高亮
+    
+    // 找到所有可消除的宝石
+    std::vector<std::pair<int, int>> matches = findPossibleMatches();
+    if (matches.empty()) {
+        appendDebug("No possible matches found,resetting the game");
+        reset(1);
+    }
+    
+    appendDebug(QString("No activity detected for %1 seconds, highlighting %2 matches")
+               .arg(inactivityTimeout/1000).arg(matches.size()));
+    
+    // 为每个可消除的宝石添加高亮环
+    for (const auto& pos : matches) {
+        int row = pos.first;
+        int col = pos.second;
+        Gemstone* gem = gemstoneContainer[row][col];
+        if (gem) {
+            SelectedCircle* ring = new SelectedCircle(rootEntity);
+            ring->setVisible(true);
+            ring->setPosition(getPosition(row, col));
+            highlightRings.push_back(ring);
+        }
+    }
+}
+
+// 清除所有高亮
+void SingleModeGameWidget::clearHighlights() {
+    for (SelectedCircle* ring : highlightRings) {
+        ring->setVisible(false);
+    }
+    highlightRings.clear();
+}
+

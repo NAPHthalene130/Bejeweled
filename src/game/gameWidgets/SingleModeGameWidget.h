@@ -22,6 +22,9 @@ class GameWindow;
 
 class SingleModeGameWidget : public QWidget {
     Q_OBJECT
+signals:
+    void userActionOccurred();
+
 public:
     explicit SingleModeGameWidget(QWidget* parent = nullptr, GameWindow* gameWindow = nullptr);
     ~SingleModeGameWidget();
@@ -55,6 +58,7 @@ public:
 
     // 消除相关的辅助方法
     std::vector<std::pair<int, int>> findMatches();
+    std::vector<std::pair<int, int>> findPossibleMatches();
     void removeMatches(const std::vector<std::pair<int, int>>& matches);
 
     void syncGemstonePositions();
@@ -70,6 +74,10 @@ private:
     void handleManualClick(const QPoint& screenPos); // 手动处理点击
     void appendDebug(const QString& text);
     void refreshDebugStatus();
+
+    void clearHighlights();
+    void highlightMatches();
+    void resetInactivityTimer();
 
     // 辅助函数：找到宝石在容器中的位置
     bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;
@@ -100,6 +108,10 @@ private:
     
     SelectedCircle* selectionRing1;
     SelectedCircle* selectionRing2;
+
+    QTimer* inactivityTimer;       // 无操作计时器
+    int inactivityTimeout = 5000;  // 超时时间(毫秒)，这里设为5秒
+    std::vector<SelectedCircle*> highlightRings;  // 用于标记可消除宝石的高亮环
     
     int selectedNum;
 
