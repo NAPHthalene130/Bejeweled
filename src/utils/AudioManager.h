@@ -14,7 +14,7 @@ public:
     
     void playHoverSound();
     void playClickSound();
-    void playEliminateSound();
+    void playEliminateSound(int comboCount = 1);
 
 private slots:
     void updateAudioOutput();
