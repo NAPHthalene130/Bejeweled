@@ -1,5 +1,6 @@
 #include "AudioManager.h"
 #include <QUrl>
+#include <string>
 #include <QCoreApplication>
 #include <QDir>
 #include <QMediaDevices>
@@ -102,19 +103,41 @@ void AudioManager::playEliminateSound(int comboCount) {
         soundSuffix = (comboCount % 2 == 0) ? 4 : 5;
     }
 
-    // 4. 拼接最终的音效文件路径（如"sounds/Manbo3.mp3"或"sounds/Eliminate5.mp3"）
-    std::string soundFile = "sounds/" + soundTypeStr + std::to_string(soundSuffix) + ".wav";
+    // 4. 拼接最终的音效文件路径（如"sounds/Manbo/Manbo3.wav"）
+    std::string soundFile;
+    if (soundTypeStr == "Manbo") {
+        soundFile = "sounds/Manbo/Manbo" + std::to_string(soundSuffix) + ".wav";
+    } else {
+        soundFile = "sounds/" + soundTypeStr + std::to_string(soundSuffix) + ".wav";
+    }
 
     // 5. 初始化音效播放器并设置资源路径
     QSoundEffect* eliminateSound = new QSoundEffect(this);
     std::string eliminatePath = ResourceUtils::getPath(soundFile);
     eliminateSound->setSource(QUrl::fromLocalFile(QString::fromStdString(eliminatePath)));
+    
+    // Debug: 输出音频路径和加载状态
+    qDebug() << "Trying to play eliminate sound:" << QString::fromStdString(eliminatePath);
+    
+    // 设置默认音频输出设备
+    QAudioDevice device = QMediaDevices::defaultAudioOutput();
+    if (!device.isNull()) {
+        eliminateSound->setAudioDevice(device);
+    }
 
     // 6. 应用设置中的音量（确保音量在0-100范围内，再转为0.0-1.0的浮点数）
     int vol = qBound(0, SettingWidget::getEliminateSoundVolume(), 100);
     eliminateSound->setVolume(vol / 100.0f);
 
     // 7. 播放音效
+    // 等待加载完成后播放，或直接播放（QSoundEffect会自动处理）
+    // 但为了确保，我们连接 statusChanged 信号
+    connect(eliminateSound, &QSoundEffect::statusChanged, this, [eliminateSound]() {
+        if (eliminateSound->status() == QSoundEffect::Error) {
+            qDebug() << "Sound effect error:" << eliminateSound->source();
+        }
+    });
+
     eliminateSound->play();
 
     // 8. 播放完成后自动释放资源，避免内存泄漏

@@ -733,21 +733,4 @@ void SettingWidget::selectMenuBackground() {
     }
 }
 
-// 绘制半透明背景（突出背景图片）
-void SettingWidget::paintEvent(QPaintEvent* event) {
-    Q_UNUSED(event);
-    QStyleOption opt;
-    opt.initFrom(this);
-    QPainter p(this);
-    // 半透明浅紫色背景（突出背景图）
-    QColor bgColor(20, 20, 40, 180);
-    p.fillRect(rect(), bgColor);
-    QString bgPath = QString::fromStdString(
-        ResourceUtils::getPath(BackgroundManager::instance().getSettingbackground())
-    );
-    QPixmap bgPixmap(bgPath);
-    if (!bgPixmap.isNull()) {
-        p.drawPixmap(rect(), bgPixmap.scaled(rect().size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
-    }
-    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
-}
+
