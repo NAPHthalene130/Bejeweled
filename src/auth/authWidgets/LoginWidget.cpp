@@ -67,7 +67,7 @@ LoginWidget::LoginWidget(QWidget* parent) : QWidget(parent) {
     idLabel->setStyleSheet("color: #2d3748; background: transparent; padding: 3px 5px;");
 
     // 提示在输入框上方
-    idHintLabel = new QLabel("💡 输入您注册时使用的账号", cardWidget);
+    idHintLabel = new QLabel("", cardWidget);
     idHintLabel->setStyleSheet(R"(
         color: #a0aec0; 
         font-size: 10px; 
@@ -85,7 +85,7 @@ LoginWidget::LoginWidget(QWidget* parent) : QWidget(parent) {
     passwordLabel->setStyleSheet("color: #2d3748; background: transparent; padding: 3px 5px;");
 
     // 提示在输入框上方
-    QLabel* passwordHintLabel = new QLabel("💡 点击右侧图标可显示/隐藏密码", cardWidget);
+    QLabel* passwordHintLabel = new QLabel("", cardWidget);
     passwordHintLabel->setStyleSheet(R"(
         color: #a0aec0; 
         font-size: 10px; 
@@ -130,7 +130,7 @@ LoginWidget::LoginWidget(QWidget* parent) : QWidget(parent) {
     )");
 
     // 离线登录标签说明
-    oflHintLabel = new QLabel("────────  或  ────────", cardWidget);
+    oflHintLabel = new QLabel("", cardWidget);
     oflHintLabel->setAlignment(Qt::AlignCenter);
     oflHintLabel->setStyleSheet(R"(
         color: #cbd5e0; 
