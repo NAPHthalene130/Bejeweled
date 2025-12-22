@@ -66,6 +66,9 @@ public:
 
     void syncGemstonePositions();
 
+    void setDifficulty(int diff);
+    int getDifficulty() const;
+    
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -103,8 +106,8 @@ private:
     QTimer* timer;
     int nowTimeHave;
     int mode; // 1: Normal, 2: Rotate
-    int comboCount = 0; 
-    
+    int difficulty = 4;
+
     GameWindow* gameWindow;
 
     class GameTimeKeeper {
