@@ -38,7 +38,6 @@ public:
 private:
     std::string userID;
     QWidget* currentWidget = nullptr;
-
     AchievementsWidget* achievementsWidget = nullptr;
     MenuWidget* menuWidget = nullptr;
     PlayMenuWidget* playMenuWidget = nullptr;

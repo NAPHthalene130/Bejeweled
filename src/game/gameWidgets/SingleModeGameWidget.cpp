@@ -576,14 +576,14 @@ void SingleModeGameWidget::resetGemstoneTable() {
         for (int row = 0; row < 8; ++row) {
             if (gemstoneContainer[row][col] == nullptr) {
                 // 创建新宝石，避免立即形成三连
-                int type = QRandomGenerator::global()->bounded(8);
+                int type = QRandomGenerator::global()->bounded(difficulty);
 
                 // 检查左边两个
                 if (col >= 2 && gemstoneContainer[row][col-1] && gemstoneContainer[row][col-2]) {
                     int type1 = gemstoneContainer[row][col-1]->getType();
                     int type2 = gemstoneContainer[row][col-2]->getType();
                     if (type1 == type2 && type == type1) {
-                        type = (type + 1) % 8;
+                        type = (type + 1) % difficulty;
                     }
                 }
 
@@ -592,7 +592,7 @@ void SingleModeGameWidget::resetGemstoneTable() {
                     int type1 = gemstoneContainer[row-1][col]->getType();
                     int type2 = gemstoneContainer[row-2][col]->getType();
                     if (type1 == type2 && type == type1) {
-                        type = (type + 1) % 8;
+                        type = (type + 1) % difficulty;
                     }
                 }
 
@@ -1001,7 +1001,7 @@ void SingleModeGameWidget::reset(int mode) {
     for (int i = 0; i < 8; ++i) {
         gemstoneContainer[i].resize(8);
         for (int j = 0; j < 8; ++j) {
-            int type = QRandomGenerator::global()->bounded(8);
+            int type = QRandomGenerator::global()->bounded(difficulty);
 
             // 避免在初始化时创建三连
             // 检查左边两个
@@ -1010,7 +1010,7 @@ void SingleModeGameWidget::reset(int mode) {
                 int type2 = gemstoneContainer[i][j-2]->getType();
                 if (type1 == type2 && type == type1) {
                     // 会形成三连，换一个类型
-                    type = (type + 1) % 8;
+                    type = (type + 1) % difficulty;
                 }
             }
 
@@ -1020,7 +1020,7 @@ void SingleModeGameWidget::reset(int mode) {
                 int type2 = gemstoneContainer[i-2][j]->getType();
                 if (type1 == type2 && type == type1) {
                     // 会形成三连，换一个类型
-                    type = (type + 1) % 8;
+                    type = (type + 1) % difficulty;
                 }
             }
 
@@ -1382,4 +1382,12 @@ void SingleModeGameWidget::clearHighlights() {
         delete ring;
     }
     highlightRings.clear();
+}
+
+void SingleModeGameWidget::setDifficulty(int diff) {
+    difficulty = diff;
+}
+
+int SingleModeGameWidget::getDifficulty() const {
+    return difficulty;
 }
