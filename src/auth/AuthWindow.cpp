@@ -76,6 +76,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     // 连接登录信号，处理登录数据
     connect(loginWidget, &LoginWidget::loginClicked, this,
             [=](const QString& id, const QString& password) {
+        const QString idCopy = id;
         AuthNetData authData;
         authData.setType(1);
         authData.setId(id.toStdString());
@@ -86,7 +87,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
         *conn = 
         connect(this, &AuthWindow::loginResult, this, [=](bool success, const QString& msg) {
             if (success) {// 登录成功
-                GameWindow* mainUI = new GameWindow();
+                GameWindow* mainUI = new GameWindow(nullptr, idCopy.toStdString());
                 mainUI->show();
                 
                 // Show TestWindow
@@ -167,7 +168,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     
     // 离线登录处理
     connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
-        GameWindow* mainUI = new GameWindow();
+        GameWindow* mainUI = new GameWindow(nullptr, "$#SINGLE#$");
         mainUI->show();
         
         // Show TestWindow
