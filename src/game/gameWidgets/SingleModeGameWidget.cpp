@@ -491,11 +491,12 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     }
 }
 
+int comboCount = 0;
+
 void SingleModeGameWidget::eliminate() {
     if (isFinishing) return;
     // 查找所有匹配
     std::vector<std::pair<int, int>> matches = findMatches();
-
     if (!matches.empty()) {
         comboCount++; // 增加连续消除计数
         appendDebug(QString("Found %1 matches to eliminate").arg(matches.size()));
