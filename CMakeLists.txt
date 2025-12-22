@@ -90,8 +90,8 @@ endif()
 qt_standard_project_setup()
 
 # Collect sources from src directory
-# AudioManager moved to src/utils
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+# Use CONFIGURE_DEPENDS so CMake regenerates when new files are added/removed.
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h")
 
 qt_add_executable(Bejeweled
     WIN32 MACOSX_BUNDLE

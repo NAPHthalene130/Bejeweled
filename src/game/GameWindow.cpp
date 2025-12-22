@@ -6,6 +6,7 @@
 #include "gameWidgets/StoreWidget.h"
 #include "gameWidgets/RankListWidget.h"
 #include "gameWidgets/SingleModeGameWidget.h"
+#include "gameWidgets/FinalWidget.h"
 #include "components/MenuButton.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
@@ -25,6 +26,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     storeWidget = new StoreWidget(this, this);
     rankListWidget = new RankListWidget(this, this);
     singleModeGameWidget = new SingleModeGameWidget(this, this);
+    finalWidget = new FinalWidget(this, this);
 
     achievementsWidget->hide();
     playMenuWidget->hide();
@@ -32,6 +34,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     storeWidget->hide();
     rankListWidget->hide();
     singleModeGameWidget->hide();
+    finalWidget->hide();
 
     connect(menuWidget, &MenuWidget::startGame, [this]() {
         switchWidget(playMenuWidget);
@@ -43,7 +46,6 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // 连接 PlayMenuWidget 信号到 SingleModeGameWidget
     connect(playMenuWidget, &PlayMenuWidget::startNormalMode, [this]() {
-        singleModeGameWidget->reset(1); // 普通模式
         switchWidget(singleModeGameWidget);
     });
 
@@ -60,7 +62,6 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     });
     
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
-        singleModeGameWidget->reset(2); // 旋风模式
         switchWidget(singleModeGameWidget);
     });
 

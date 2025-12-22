@@ -1,5 +1,6 @@
 #include "SettingWidget.h"
 #include "../GameWindow.h"
+#include "../../utils/BackgroundManager.h"
 #include "../../utils/ResourceUtils.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -40,7 +41,9 @@ bool SettingWidget::isEliminateSoundEnabled() {
 
 QString SettingWidget::getMenuBackgroundImage() {
     QSettings settings("GemMatch", "Settings");
-    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
+    QString defaultBg = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getFinalWidgetBackground())
+    );
     return settings.value("Image/MenuBg", defaultBg).toString();
 }
 
@@ -675,7 +678,9 @@ void SettingWidget::loadSettings() {
     // 图像设置加载（不变）
     QString resolution = settings->value("Image/Resolution", "1600x1000").toString();
     QString quality = settings->value("Image/Quality", "中").toString();
-    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
+    QString defaultBg = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getFinalWidgetBackground())
+    );
     currentBgPath = settings->value("Image/MenuBg", defaultBg).toString();
     resolutionCombo->setCurrentText(resolution);
     qualityCombo->setCurrentText(quality);
@@ -726,4 +731,23 @@ void SettingWidget::selectMenuBackground() {
             bgPreviewLabel->setPixmap(bgPixmap.scaled(bgPreviewLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
         }
     }
+}
+
+// 绘制半透明背景（突出背景图片）
+void SettingWidget::paintEvent(QPaintEvent* event) {
+    Q_UNUSED(event);
+    QStyleOption opt;
+    opt.initFrom(this);
+    QPainter p(this);
+    // 半透明浅紫色背景（突出背景图）
+    QColor bgColor(20, 20, 40, 180);
+    p.fillRect(rect(), bgColor);
+    QString bgPath = QString::fromStdString(
+        ResourceUtils::getPath(BackgroundManager::instance().getSettingbackground())
+    );
+    QPixmap bgPixmap(bgPath);
+    if (!bgPixmap.isNull()) {
+        p.drawPixmap(rect(), bgPixmap.scaled(rect().size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation));
+    }
+    style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }

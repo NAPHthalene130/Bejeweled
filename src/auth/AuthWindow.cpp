@@ -1,5 +1,5 @@
 #include "AuthWindow.h"
-#include "../auth/AuthNetData.h"
+#include "AuthNetData.h"
 #include "../game/GameWindow.h"
 #include "../game/TestWindow.h"
 #include "components/AuthNoticeDialog.h"
@@ -17,15 +17,11 @@
 #include <QCoreApplication>
 #include <QFile>
 #include "../utils/ResourceUtils.h"
-#if HAVE_OPENSSL
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
-#else
-// OpenSSL fallback: builds without OpenSSL installed
-#endif
 
 AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket(this)) {
     resize(1600, 1000);
@@ -80,6 +76,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     // 连接登录信号，处理登录数据
     connect(loginWidget, &LoginWidget::loginClicked, this,
             [=](const QString& id, const QString& password) {
+        const QString idCopy = id;
         AuthNetData authData;
         authData.setType(1);
         authData.setId(id.toStdString());
@@ -90,7 +87,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
         *conn = 
         connect(this, &AuthWindow::loginResult, this, [=](bool success, const QString& msg) {
             if (success) {// 登录成功
-                GameWindow* mainUI = new GameWindow();
+                GameWindow* mainUI = new GameWindow(nullptr, idCopy.toStdString());
                 mainUI->show();
                 
                 // Show TestWindow
@@ -171,7 +168,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     
     // 离线登录处理
     connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
-        GameWindow* mainUI = new GameWindow();
+        GameWindow* mainUI = new GameWindow(nullptr, "$#SINGLE#$");
         mainUI->show();
         
         // Show TestWindow
@@ -312,7 +309,6 @@ void AuthWindow::handleRequestEmailCode(AuthNetData& data) {
 
 // 网络发送封装
 void AuthWindow::netDataSender(AuthNetData data) {
-#if HAVE_OPENSSL
     auto rsaEncryptBase64 = [](const std::string& plaintext, const std::string& publicKeyPem) -> std::string {
         BIO* bio = BIO_new_mem_buf(publicKeyPem.data(), (int)publicKeyPem.size());
         if (!bio) throw std::runtime_error("加密初始化失败");
@@ -379,13 +375,6 @@ void AuthWindow::netDataSender(AuthNetData data) {
         QByteArray b = QByteArray::fromRawData(out.data(), (int)out.size());
         return b.toBase64().toStdString();
     };
-#else
-    // Fallback: no OpenSSL — use base64(plaintext) as a placeholder (not secure)
-    auto rsaEncryptBase64 = [](const std::string& plaintext, const std::string& /*publicKeyPem*/) -> std::string {
-        QByteArray b = QByteArray::fromStdString(plaintext);
-        return b.toBase64().toStdString();
-    };
-#endif
     if (socket->state() == QAbstractSocket::ConnectedState) {
         socket->disconnectFromHost();
     }
