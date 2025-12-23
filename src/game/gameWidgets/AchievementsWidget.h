@@ -82,8 +82,6 @@ private:
     QPixmap bgPixmap;
     QLabel* bgLabel = nullptr;
 
-// protected:
-//     void resizeEvent(QResizeEvent* event) override;
     // Qt3D background (always enabled)
     Qt3DExtras::Qt3DWindow* qt3dWindow = nullptr;
     QWidget* qt3dContainer = nullptr;

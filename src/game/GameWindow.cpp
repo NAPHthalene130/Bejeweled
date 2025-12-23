@@ -14,6 +14,36 @@
 #include <string>
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
+    
+    // 初始化成就数据
+    {
+        AchievementData a1("初入江湖", "完成第一局游戏", true);
+        a1.setDifficulty(AchievementData::Difficulty::Easy);
+        a1.setCompletedAt(QDateTime::currentDateTime().addDays(-5));
+        achievementsContainer.push_back(a1);
+        
+        AchievementData a2("连击大师", "单局达成5连消", false);
+        a2.setDifficulty(AchievementData::Difficulty::Medium);
+        achievementsContainer.push_back(a2);
+        
+        AchievementData a3("宝石猎人", "累计消除1000颗宝石", true);
+        a3.setDifficulty(AchievementData::Difficulty::Medium);
+        a3.setCompletedAt(QDateTime::currentDateTime().addDays(-2));
+        achievementsContainer.push_back(a3);
+        
+        AchievementData a4("时间管理者", "在限时模式中获得10000分", false);
+        a4.setDifficulty(AchievementData::Difficulty::Hard);
+        achievementsContainer.push_back(a4);
+        
+        AchievementData a5("完美主义", "单局不使用提示完成游戏", false);
+        a5.setDifficulty(AchievementData::Difficulty::Hard);
+        achievementsContainer.push_back(a5);
+        
+        AchievementData a6("传奇玩家", "累计游戏时长达到100小时", false);
+        a6.setDifficulty(AchievementData::Difficulty::Ultimate);
+        achievementsContainer.push_back(a6);
+    }
+    
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
     connect(menuWidget, &MenuWidget::openAchievements, this, [this]() { this->switchWidget(achievementsWidget); });
@@ -23,6 +53,10 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     storeWidget = new StoreWidget(this, this);
     rankListWidget = new RankListWidget(this, this);
     singleModeGameWidget = new SingleModeGameWidget(this, this);
+
+    // 连接排行榜信号
+    connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { this->switchWidget(rankListWidget); });
+    connect(rankListWidget, &RankListWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
 
     achievementsWidget->hide();
     playMenuWidget->hide();

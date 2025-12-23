@@ -26,7 +26,7 @@
                 }
             ],
             "envFile": "${workspaceFolder}/.vscode/.env",
-            "visualizerFile": "c:\\Users\\祝霖瑞\\AppData\\Roaming\\Code\\User\\workspaceStorage\\5bc2633b062296ba831088c53b4a8e4e\\tonka3000.qtvsctools\\qt.natvis.xml"
+            "visualizerFile": "c:\\Users\\祝霖瑞\\AppData\\Roaming\\Code\\User\\workspaceStorage\\4d5022242e3951b88a9897acfd7aeaf4\\tonka3000.qtvsctools\\qt.natvis.xml"
         }
     ]
 }

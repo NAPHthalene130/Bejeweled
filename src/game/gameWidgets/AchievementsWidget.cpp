@@ -158,6 +158,7 @@ AchievementsWidget::AchievementsWidget(QWidget* parent, GameWindow* gameWindow)
     // 背景装饰层作为子 widget，放在最底层
     AchievementsBackgroundDecoration* deco = new AchievementsBackgroundDecoration(this);
     deco->setContentMargin(28);
+    deco->setGeometry(rect()); // 设置初始几何尺寸
     deco->lower(); // 确保在最底层
     
     // 初始化背景音乐播放器

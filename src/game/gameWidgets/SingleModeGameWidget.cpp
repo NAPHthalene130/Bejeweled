@@ -438,6 +438,7 @@ void SingleModeGameWidget::reset(int mode) {
     if (timer->isActive()) {
         timer->stop();
     }
+    timer->start(16);  // 启动定时器（约60fps）
 }
 
 void SingleModeGameWidget::appendDebug(const QString& text) {
