@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <filesystem>
+#include <algorithm> // for std::replace
 
 namespace fs = std::filesystem;
 
@@ -11,6 +12,12 @@ std::string ResourceUtils::getResourcesDir() {
 #ifdef PROJECT_SOURCE_DIR
     // PROJECT_SOURCE_DIR is expected to be a string literal, e.g., "C:/Path/To/Project"
     fs::path sourceDir(PROJECT_SOURCE_DIR);
+    
+    // Normalize path separators
+    std::string sourceDirStr = sourceDir.string();
+    std::replace(sourceDirStr.begin(), sourceDirStr.end(), '\\', '/');
+    sourceDir = fs::path(sourceDirStr);
+
     fs::path resourceDir = sourceDir / "resources";
     if (fs::exists(resourceDir)) {
         return resourceDir.string();
@@ -26,6 +33,11 @@ std::string ResourceUtils::getResourcesDir() {
     // This handles cases where the executable is in a build folder (e.g., build/Debug)
     // or when deployed without the source code (if resources are copied relative to exe)
     fs::path currentPath = fs::current_path();
+    
+    // Normalize path separators
+    std::string currentPathStr = currentPath.string();
+    std::replace(currentPathStr.begin(), currentPathStr.end(), '\\', '/');
+    currentPath = fs::path(currentPathStr);
     
     // Check up to 3 levels up
     std::vector<fs::path> candidates;
