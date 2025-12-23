@@ -6,6 +6,7 @@
 #include <QMediaDevices>
 #include <QAudioDevice>
 #include <QElapsedTimer>
+#include <QDialog>
 #include "../game/gameWidgets/SettingWidget.h" 
 #include "ResourceUtils.h"
 
@@ -103,13 +104,9 @@ void AudioManager::playEliminateSound(int comboCount) {
         soundSuffix = (comboCount % 2 == 0) ? 4 : 5;
     }
 
-    // 4. 拼接最终的音效文件路径（如"sounds/Manbo/Manbo3.wav"）
-    std::string soundFile;
-    if (soundTypeStr == "Manbo") {
-        soundFile = "sounds/Manbo/Manbo" + std::to_string(soundSuffix) + ".wav";
-    } else {
-        soundFile = "sounds/" + soundTypeStr + std::to_string(soundSuffix) + ".wav";
-    }
+    // 4. 拼接最终的音效文件路径（如"sounds/Manbo3.wav"）
+    // 移除对Manbo子目录的特殊处理，统一使用 resources/sounds/ 下的平铺结构
+    std::string soundFile = "sounds/" + soundTypeStr + std::to_string(soundSuffix) + ".wav";
 
     // 5. 初始化音效播放器并设置资源路径
     QSoundEffect* eliminateSound = new QSoundEffect(this);
@@ -130,15 +127,12 @@ void AudioManager::playEliminateSound(int comboCount) {
     eliminateSound->setVolume(vol / 100.0f);
 
     // 7. 播放音效
-    // 等待加载完成后播放，或直接播放（QSoundEffect会自动处理）
-    // 但为了确保，我们连接 statusChanged 信号
+    // 连接信号以监控状态和自动清理
     connect(eliminateSound, &QSoundEffect::statusChanged, this, [eliminateSound]() {
         if (eliminateSound->status() == QSoundEffect::Error) {
             qDebug() << "Sound effect error:" << eliminateSound->source();
         }
     });
-
-    eliminateSound->play();
 
     // 8. 播放完成后自动释放资源，避免内存泄漏
     connect(eliminateSound, &QSoundEffect::playingChanged, [eliminateSound]() {
@@ -146,6 +140,8 @@ void AudioManager::playEliminateSound(int comboCount) {
             eliminateSound->deleteLater();
         }
     });
+
+    eliminateSound->play();
 }
 
 

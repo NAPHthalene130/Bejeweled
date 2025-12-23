@@ -31,6 +31,7 @@
 #include <QApplication>
 #include <cmath>
 #include <limits>
+#include <iostream>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -498,6 +499,13 @@ void SingleModeGameWidget::eliminate() {
     // 查找所有匹配
     std::vector<std::pair<int, int>> matches = findMatches();
     if (!matches.empty()) {
+        // //DEBUG
+        // QDialog* dialog = new QDialog(this);
+        // dialog->setWindowTitle("匹配消除");
+        // dialog->setModal(true);
+        // dialog->exec();
+        // //DEBUG
+
         comboCount++; // 增加连续消除计数
         appendDebug(QString("Found %1 matches to eliminate").arg(matches.size()));
         AudioManager::instance().playEliminateSound(comboCount);
