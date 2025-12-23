@@ -156,7 +156,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     
     // 初始化定时器
     timer = new QTimer(this);
-    timer->setInterval(1000);
+    timer->setInterval(16);
     connect(timer, &QTimer::timeout, this, [this]() {
         if (isFinishing) return;
         gameTimeKeeper.tick();
@@ -491,11 +491,12 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     }
 }
 
+int comboCount = 0;
+
 void SingleModeGameWidget::eliminate() {
     if (isFinishing) return;
     // 查找所有匹配
     std::vector<std::pair<int, int>> matches = findMatches();
-
     if (!matches.empty()) {
         comboCount++; // 增加连续消除计数
         appendDebug(QString("Found %1 matches to eliminate").arg(matches.size()));
@@ -982,7 +983,7 @@ void SingleModeGameWidget::reset(int mode) {
     this->canOpe = true;
     this->isFinishing = false;
     this->gameScore = 0;
-    this->targetScore = 100;
+    this->targetScore = 10000;
     this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
     updateScoreBoard();
@@ -1361,22 +1362,26 @@ void SingleModeGameWidget::highlightMatches() {
     if (matches.empty()) {
         appendDebug("No possible matches found,resetting the game");
         reset(1);
+        return ;
     }
     
     appendDebug(QString("No activity detected for %1 seconds, highlighting %2 matches")
                .arg(inactivityTimeout/1000).arg(matches.size()));
     
-    // 为每个可消除的宝石添加高亮环
+    // 为随机一个可消除的宝石添加高亮环
+    int choice = QRandomGenerator::global()->bounded(matches.size()) ,num = 0;
     for (const auto& pos : matches) {
         int row = pos.first;
         int col = pos.second;
         Gemstone* gem = gemstoneContainer[row][col];
-        if (gem) {
+        if (gem && num == choice) {
             SelectedCircle* ring = new SelectedCircle(rootEntity);
             ring->setVisible(true);
             ring->setPosition(getPosition(row, col));
             highlightRings.push_back(ring);
+            break;
         }
+        num++;
     }
 }
 

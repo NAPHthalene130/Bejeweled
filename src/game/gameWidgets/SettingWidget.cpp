@@ -41,9 +41,7 @@ bool SettingWidget::isEliminateSoundEnabled() {
 
 QString SettingWidget::getMenuBackgroundImage() {
     QSettings settings("GemMatch", "Settings");
-    QString defaultBg = QString::fromStdString(
-        ResourceUtils::getPath(BackgroundManager::instance().getFinalWidgetBackground())
-    );
+    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
     return settings.value("Image/MenuBg", defaultBg).toString();
 }
 
@@ -678,9 +676,7 @@ void SettingWidget::loadSettings() {
     // 图像设置加载（不变）
     QString resolution = settings->value("Image/Resolution", "1600x1000").toString();
     QString quality = settings->value("Image/Quality", "中").toString();
-    QString defaultBg = QString::fromStdString(
-        ResourceUtils::getPath(BackgroundManager::instance().getFinalWidgetBackground())
-    );
+    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
     currentBgPath = settings->value("Image/MenuBg", defaultBg).toString();
     resolutionCombo->setCurrentText(resolution);
     qualityCombo->setCurrentText(quality);
