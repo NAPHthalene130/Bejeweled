@@ -32,10 +32,117 @@
 #include <cmath>
 #include <limits>
 #include <iostream>
+#include <algorithm>
+#include <QWidget>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
+
+class ScoreProgressBar : public QWidget {
+public:
+    explicit ScoreProgressBar(QWidget* parent = nullptr)
+        : QWidget(parent) {
+        setAttribute(Qt::WA_TransparentForMouseEvents);
+        setFixedSize(820, 64); // 你可以按蓝圈区域宽度调整
+    }
+
+    void setScore(int score, int target) {
+        if (target <= 0) target = 1;
+        m_score = score;
+        m_target = target;
+        m_ratio = std::clamp(static_cast<double>(score) / static_cast<double>(target), 0.0, 1.0);
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing);
+
+        const QRectF outer = rect().adjusted(2, 2, -2, -2);
+        const qreal radius = outer.height() / 2.0;
+
+        QPainterPath outerPath;
+        outerPath.addRoundedRect(outer, radius, radius);
+
+        // 外层蓝色渐变胶囊
+        QLinearGradient bg(outer.topLeft(), outer.bottomRight());
+        bg.setColorAt(0.0, QColor(30, 70, 120, 210));
+        bg.setColorAt(1.0, QColor(20, 45, 85, 210));
+        p.fillPath(outerPath, bg);
+
+        // 描边
+        QPen border(QColor(255, 255, 255, 70));
+        border.setWidthF(1.0);
+        p.setPen(border);
+        p.drawPath(outerPath);
+
+        // 内层区域
+        const QRectF inner = outer.adjusted(6, 6, -6, -6);
+        const qreal innerRadius = inner.height() / 2.0;
+        QPainterPath innerPath;
+        innerPath.addRoundedRect(inner, innerRadius, innerRadius);
+
+        QLinearGradient innerBg(inner.topLeft(), inner.bottomLeft());
+        innerBg.setColorAt(0.0, QColor(0, 0, 0, 35));
+        innerBg.setColorAt(1.0, QColor(255, 255, 255, 18));
+        p.fillPath(innerPath, innerBg);
+
+        // 填充部分（进度）
+        const qreal fillW = inner.width() * m_ratio;
+        if (fillW > 0.5) {
+            QRectF fillRect = inner;
+            fillRect.setWidth(fillW);
+
+            QPainterPath fillPath;
+            fillPath.addRoundedRect(fillRect, innerRadius, innerRadius);
+
+            p.save();
+            p.setClipPath(fillPath);
+
+            // 进度渐变
+            QLinearGradient fillGrad(fillRect.topLeft(), fillRect.bottomRight());
+            fillGrad.setColorAt(0.0, QColor(120, 220, 255, 230));
+            fillGrad.setColorAt(1.0, QColor(60, 140, 255, 230));
+            p.fillRect(fillRect, fillGrad);
+
+            // 斜纹
+            QPen stripePen(QColor(255, 255, 255, 75));
+            stripePen.setWidthF(6.0);
+            p.setPen(stripePen);
+            const int step = 22;
+            for (int x = -height(); x < width() + height(); x += step) {
+                p.drawLine(QPointF(x, inner.bottom()), QPointF(x + height(), inner.top()));
+            }
+
+            // 高光
+            QRectF gloss = fillRect;
+            gloss.setHeight(gloss.height() * 0.55);
+            QLinearGradient glossGrad(gloss.topLeft(), gloss.bottomLeft());
+            glossGrad.setColorAt(0.0, QColor(255, 255, 255, 90));
+            glossGrad.setColorAt(1.0, QColor(255, 255, 255, 0));
+            p.fillRect(gloss, glossGrad);
+
+            p.restore();
+        }
+
+        // 中间文字
+        p.setPen(QColor(255, 255, 255, 230));
+        QFont f("Microsoft YaHei");
+        f.setPointSize(12);
+        f.setBold(true);
+        p.setFont(f);
+        p.drawText(inner, Qt::AlignCenter,
+                   QString("分数 %1 / %2").arg(m_score).arg(m_target));
+    }
+
+private:
+    int m_score = 0;
+    int m_target = 1;
+    double m_ratio = 0.0;
+};
 
 class GameBackDialog : public QDialog {
 public:
@@ -188,8 +295,21 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(50, 0, 50, 0); // 添加一些边距
     
-    // 将容器对齐到左侧，垂直居中
-    mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
+        // 左侧容器：顶部进度条 + 下方3D窗口
+    QWidget* leftPanel = new QWidget(this);
+    leftPanel->setStyleSheet("background: transparent;");
+    auto* leftLayout = new QVBoxLayout(leftPanel);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(18);
+
+    scoreProgressBar = new ScoreProgressBar(leftPanel);
+    // 位置对应你截图蓝圈区域（3D区域上方），居中显示
+    leftLayout->addWidget(scoreProgressBar, 0, Qt::AlignHCenter | Qt::AlignTop);
+    leftLayout->addWidget(container3d, 0, Qt::AlignHCenter | Qt::AlignVCenter);
+
+    // 将左侧容器对齐到左侧，垂直居中
+    mainLayout->addWidget(leftPanel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+
     mainLayout->addStretch(1);
     
     rightPanel = new QWidget(this);
@@ -346,7 +466,13 @@ QString SingleModeGameWidget::GameTimeKeeper::displayText() const {
 void SingleModeGameWidget::updateScoreBoard() {
     if (!scoreBoardLabel) return;
     scoreBoardLabel->setText(QString("当前分数：%1").arg(gameScore));
+
+    // 同步顶部进度条
+    if (scoreProgressBar) {
+        scoreProgressBar->setScore(gameScore, targetScore);
+    }
 }
+
 
 void SingleModeGameWidget::updateTimeBoard() {
     if (!timeBoardLabel) return;
@@ -499,12 +625,6 @@ void SingleModeGameWidget::eliminate() {
     // 查找所有匹配
     std::vector<std::pair<int, int>> matches = findMatches();
     if (!matches.empty()) {
-        // //DEBUG
-        // QDialog* dialog = new QDialog(this);
-        // dialog->setWindowTitle("匹配消除");
-        // dialog->setModal(true);
-        // dialog->exec();
-        // //DEBUG
 
         comboCount++; // 增加连续消除计数
         appendDebug(QString("Found %1 matches to eliminate").arg(matches.size()));

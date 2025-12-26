@@ -22,6 +22,7 @@ class QHideEvent;
 class Gemstone;
 class SelectedCircle;
 class GameWindow;
+class ScoreProgressBar;
 
 class SingleModeGameWidget : public QWidget {
     Q_OBJECT
@@ -156,6 +157,7 @@ private:
     QLabel* scoreBoardLabel = nullptr;
     QLabel* timeBoardLabel = nullptr;
     QPushButton* backToMenuButton = nullptr;
+    ScoreProgressBar* scoreProgressBar = nullptr;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H
