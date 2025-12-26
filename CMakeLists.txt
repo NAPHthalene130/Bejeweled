@@ -48,70 +48,66 @@ project(Bejeweled LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # 帮助 VS Code IntelliSense
- 
- # 将 cmake/ 文件夹添加到模块路径，以便使用自定义查找模块（如 FindGLFW3.cmake）
- list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
- 
- 
- 
- # ==============================================================================
- # 依赖项
- # ==============================================================================
- 
- # Qt6
- if(DEFINED ENV{QT_DIR})
-     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
- endif()
- find_package(Qt6 REQUIRED COMPONENTS 
-     Core Widgets Network Multimedia
-     3DCore 3DRender 3DExtras 3DInput 3DLogic 3DAnimation
-     3DQuick 3DQuickAnimation 3DQuickExtras 3DQuickInput 3DQuickLogic 3DQuickRender 3DQuickScene2D 3DQuickScene3D
- )
- 
- # Boost (直接使用本地路径，绕过 vcpkg)
- if(DEFINED ENV{BOOST_ROOT})
-     set(BOOST_ROOT "$ENV{BOOST_ROOT}")
-     set(Boost_INCLUDE_DIR "$ENV{BOOST_ROOT}")
-     set(Boost_NO_BOOST_CMAKE ON)
-     set(Boost_NO_SYSTEM_PATHS ON)
-     # 直接设置 Boost 为已找到，因为 Boost 是 header-only
-     set(Boost_FOUND TRUE)
-     message(STATUS "Using local Boost from: ${BOOST_ROOT}")
- else()
-     find_package(Boost REQUIRED)
- endif()
- 
- # GLEW (via vcpkg)
- find_package(GLEW REQUIRED)
- 
- # OpenSSL
- if(DEFINED ENV{OPENSSL_ROOT_DIR})
-     set(OPENSSL_ROOT_DIR "$ENV{OPENSSL_ROOT_DIR}")
- endif()
- find_package(OpenSSL REQUIRED)
- 
- # GLFW (可选)
- if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
-     # 使用我们的自定义 FindGLFW3.cmake，它使用 ENV{GLFW_DIR} 作为提示
-     find_package(GLFW3 REQUIRED)
- endif()
- 
- # ==============================================================================
- # 项目目标
- # ==============================================================================
- 
- qt_standard_project_setup()
- 
- # 从 src 目录收集源文件
- # 注意：如果添加新文件，请重新运行 CMake 或修改此文件。
- # 需要检测新添加的窗口部件和组件
- file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
-# 创建可执行文件
-qt_add_executable(Bejeweled ${SOURCES})
+# 将 cmake/ 文件夹添加到模块路径，以便使用自定义查找模块（如 FindGLFW3.cmake）
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
-# 传递源码根目录给代码
-add_definitions(-DCODE_SOURCE_DIR=\"${CMAKE_SOURCE_DIR}\")
+# ==============================================================================
+# 依赖项
+# ==============================================================================
+
+# Qt6
+if(DEFINED ENV{QT_DIR})
+    list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
+endif()
+find_package(Qt6 REQUIRED COMPONENTS 
+    Core Widgets Network Multimedia
+    3DCore 3DRender 3DExtras 3DInput 3DLogic 3DAnimation
+    3DQuick 3DQuickAnimation 3DQuickExtras 3DQuickInput 3DQuickLogic 3DQuickRender 3DQuickScene2D 3DQuickScene3D
+)
+
+# Boost (直接使用本地路径，绕过 vcpkg)
+if(DEFINED ENV{BOOST_ROOT})
+    set(BOOST_ROOT "$ENV{BOOST_ROOT}")
+    set(Boost_INCLUDE_DIR "$ENV{BOOST_ROOT}")
+    set(Boost_NO_BOOST_CMAKE ON)
+    set(Boost_NO_SYSTEM_PATHS ON)
+    # 直接设置 Boost 为已找到，因为 Boost 是 header-only
+    set(Boost_FOUND TRUE)
+    message(STATUS "Using local Boost from: ${BOOST_ROOT}")
+else()
+    find_package(Boost REQUIRED)
+endif()
+
+# GLEW (via vcpkg)
+find_package(GLEW REQUIRED)
+
+# OpenSSL
+if(DEFINED ENV{OPENSSL_ROOT_DIR})
+    set(OPENSSL_ROOT_DIR "$ENV{OPENSSL_ROOT_DIR}")
+endif()
+find_package(OpenSSL REQUIRED)
+
+# GLFW (可选)
+if(DEFINED ENV{GLFW_DIR} AND NOT "$ENV{GLFW_DIR}" STREQUAL "")
+    # 使用我们的自定义 FindGLFW3.cmake，它使用 ENV{GLFW_DIR} 作为提示
+    find_package(GLFW3 REQUIRED)
+endif()
+
+# ==============================================================================
+# Project Targets
+# ==============================================================================
+
+qt_standard_project_setup()
+
+# Collect sources from src directory
+# Use CONFIGURE_DEPENDS so CMake regenerates when new files are added/removed.
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h")
+
+qt_add_executable(Bejeweled
+    WIN32 MACOSX_BUNDLE
+    ${SOURCES}
+)
 
 target_include_directories(Bejeweled PRIVATE "${CMAKE_SOURCE_DIR}/include")
 
@@ -135,11 +131,11 @@ target_link_libraries(Bejeweled
     Qt6::Multimedia
 )
 
-# 链接Qt3D及其所有常用子模块，确保动画和3D功能完整
+# Link necessary Qt modules
 if(BUILD_SHARED_LIB)
-    target_link_libraries(BejeweledLib PUBLIC Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput Qt6::3DLogic Qt6::3DAnimation Qt6::3DQuick Qt6::3DQuickAnimation Qt6::3DQuickExtras Qt6::3DQuickInput Qt6::3DQuickLogic Qt6::3DQuickRender Qt6::3DQuickScene2D Qt6::3DQuickScene3D)
+    target_link_libraries(BejeweledLib PUBLIC Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput)
 else()
-    target_link_libraries(Bejeweled PRIVATE Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput Qt6::3DLogic Qt6::3DAnimation Qt6::3DQuick Qt6::3DQuickAnimation Qt6::3DQuickExtras Qt6::3DQuickInput Qt6::3DQuickLogic Qt6::3DQuickRender Qt6::3DQuickScene2D Qt6::3DQuickScene3D)
+    target_link_libraries(Bejeweled PRIVATE Qt6::Widgets Qt6::Network Qt6::Multimedia Qt6::3DCore Qt6::3DRender Qt6::3DExtras Qt6::3DInput)
 endif()
 
 
@@ -154,17 +150,7 @@ if (WIN32)
         Qt63DCore.dll
         Qt63DRender.dll
         Qt63DExtras.dll
-        Qt63DAnimation.dll
         Qt63DInput.dll
-        Qt63DLogic.dll
-        Qt63DQuick.dll
-        Qt63DQuickAnimation.dll
-        Qt63DQuickExtras.dll
-        Qt63DQuickInput.dll
-        Qt63DQuickLogic.dll
-        Qt63DQuickRender.dll
-        Qt63DQuickScene2D.dll
-        Qt63DQuickScene3D.dll
         Qt6OpenGL.dll
         Qt6OpenGLWidgets.dll
         Qt6Quick.dll
@@ -181,13 +167,13 @@ if (WIN32)
         Qt6Quick3DRuntimeRender.dll
         Qt6Quick3DSpatialAudio.dll
         Qt6Quick3DUtils.dll
-        Qt6Quick3DXr.dll
+        
         Qt6QuickWidgets.dll
         Qt6Qml.dll
         Qt6QmlCore.dll
         Qt6QmlModels.dll
         Qt6QmlWorkerScript.dll
-        Qt6QmlNetwork.dll
+        
         Qt6QmlXmlListModel.dll
         Qt6QuickControls2.dll
         Qt6QuickLayouts.dll
@@ -208,8 +194,13 @@ if (WIN32)
         opengl32sw.dll
     )
     # 请根据你的实际Qt安装路径修改下方路径
-    set(QT_BIN_DIR "C:/Qt/6.10.1/mingw_64/bin")
-    set(QT_PLUGINS_DIR "C:/Qt/6.10.1/mingw_64/plugins")
+    if(DEFINED ENV{QT_DIR})
+        set(QT_BIN_DIR "$ENV{QT_DIR}/bin")
+        set(QT_PLUGINS_DIR "$ENV{QT_DIR}/plugins")
+    else()
+        set(QT_BIN_DIR "C:/Qt/6.10.1/mingw_64/bin")
+        set(QT_PLUGINS_DIR "C:/Qt/6.10.1/mingw_64/plugins")
+    endif()
     foreach(DLL ${QT_DLLS})
         # Always copy Qt DLLs to the executable output directory after build.
         # Bind to the executable target to avoid creating a strong dependency
@@ -229,15 +220,26 @@ if (WIN32)
 endif()
 
 # 资源文件夹复制（如有）
-add_custom_command(TARGET Bejeweled POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:Bejeweled>/assets)
+# Assets folder moved to resources, removed legacy copy command
 
 # 如果存在 resources 目录则一并复制到输出目录，供运行时读取
 if(EXISTS "${CMAKE_SOURCE_DIR}/resources")
     add_custom_command(TARGET Bejeweled POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/resources $<TARGET_FILE_DIR:Bejeweled>/resources)
+endif()
+
+# Copy Qt plugins (required for multimedia and platform support)
+if(WIN32 AND DEFINED ENV{QT_DIR})
+    set(QT_PLUGINS_DIR "$ENV{QT_DIR}/plugins")
+    # Copy platforms plugin
+    add_custom_command(TARGET Bejeweled POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${QT_PLUGINS_DIR}/platforms $<TARGET_FILE_DIR:Bejeweled>/platforms)
+    # Copy multimedia plugin
+    add_custom_command(TARGET Bejeweled POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${QT_PLUGINS_DIR}/multimedia $<TARGET_FILE_DIR:Bejeweled>/multimedia)
 endif()
 
 # 确保代码可以使用项目源目录宏（ResourceUtils 使用 PROJECT_SOURCE_DIR）

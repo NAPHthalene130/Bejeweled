@@ -1,8 +1,10 @@
 #include "Auth/AuthWindow.h"
 #include <QApplication>
+#include <QTimer>
 #include <iostream>
 #include "utils/ResourceUtils.h"
 #include "Game/GameWindow.h"
+#include "Game/gameWidgets/SingleModeGameWidget.h"
 
 extern "C" {
     __declspec(dllimport) int __stdcall WSAStartup(unsigned short, void*);
@@ -17,9 +19,9 @@ int main(int argc, char *argv[])
     // Verify resource path
     std::cout << "Current Resource Path: " << ResourceUtils::getResourcesDir() << std::endl;
 
-    GameWindow* mainUI = new GameWindow();
-    mainUI->show();
-    // AuthWindow w;
-    // w.show();
+    // 启动登录注册窗口
+    AuthWindow w;
+    w.show();
+
     return a.exec();
 }

@@ -2,8 +2,9 @@
 #define RANK_LIST_WIDGET_H
 
 #include <QWidget>
-#include <QDateTime>
 #include <QPixmap>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 #include <vector>
 #include <QString>
 
@@ -19,14 +20,9 @@ class QTableWidgetItem;
 // 单条排行记录
 struct RankRecord {
     int score;              // 分数
-    int duration;           // 游戏时长（秒）
-    QDateTime playedAt;     // 游戏时间
-    QString opponentName;   // 对手名称（仅多人模式）
-    bool isWin;             // 是否获胜（仅多人模式）
     
-    RankRecord() : score(0), duration(0), isWin(false) {}
-    RankRecord(int s, int d, const QDateTime& t, const QString& opp = "", bool win = false)
-        : score(s), duration(d), playedAt(t), opponentName(opp), isWin(win) {}
+    RankRecord() : score(0) {}
+    RankRecord(int s) : score(s) {}
 };
 
 class RankListWidget : public QWidget {
@@ -35,9 +31,9 @@ public:
     explicit RankListWidget(QWidget* parent = nullptr, GameWindow* gameWindow = nullptr);
     
     // 添加记录的接口
-    void addNormalModeRecord(int score, int duration);
-    void addRotateModeRecord(int score, int duration);
-    void addMultiplayerRecord(int score, int duration, const QString& opponent, bool isWin);
+    void addNormalModeRecord(int score);
+    void addRotateModeRecord(int score);
+    void addMultiplayerRecord(int score);
     
     // 刷新显示
     void refreshDisplay();
@@ -48,19 +44,21 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
+    void showEvent(QShowEvent* event) override;
+    void hideEvent(QHideEvent* event) override;
 
 private slots:
     void onBackClicked();
     void updateGoldenAnimation();  // 鎏金动画更新
+    void updateBackgroundAnimation();  // 背景动画更新
 
 private:
     void setupUI();
-    void setupTab(QTableWidget* table, bool isMultiplayer = false);
-    void updateTable(QTableWidget* table, const std::vector<RankRecord>& records, bool isMultiplayer = false);
+    void setupTab(QTableWidget* table);
+    void updateTable(QTableWidget* table, const std::vector<RankRecord>& records);
     void sortAndKeepTop10(std::vector<RankRecord>& records);
     void applyGoldenGlowEffect(QTableWidgetItem* item, int rank);
     QColor getAnimatedGoldColor(int rank, float phase);
-    QString formatDuration(int seconds) const;
     
     GameWindow* gameWindow = nullptr;
     
@@ -81,10 +79,37 @@ private:
     // 背景图片
     QPixmap bgImage;
     
+    // 背景动画
+    float bgAnimPhase = 0.0f;  // 背景动画相位
+    QTimer* bgAnimTimer = nullptr;  // 背景动画定时器
+    
+    // 浮动粒子
+    struct Particle {
+        float x, y;
+        float speedX, speedY;
+        float size;
+        float alpha;
+        float phase;
+    };
+    std::vector<Particle> particles;
+    
+    // 海鸥
+    struct Seagull {
+        float x, y;
+        float speed;
+        float wingPhase;  // 翅膀扇动相位
+        float size;
+    };
+    std::vector<Seagull> seagulls;
+    
     // 鎏金动画
     QTimer* goldenAnimTimer = nullptr;
     float goldenAnimPhase = 0.0f;
     std::vector<QTableWidgetItem*> goldenItems;  // 存储需要动画的item
+    
+    // 排行榜背景音乐
+    QMediaPlayer* bgmPlayer = nullptr;
+    QAudioOutput* bgmAudioOutput = nullptr;
 };
 
 #endif // RANK_LIST_WIDGET_H

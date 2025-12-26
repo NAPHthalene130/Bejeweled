@@ -1,5 +1,5 @@
 #include "AuthWindow.h"
-#include "../auth/AuthNetData.h"
+#include "AuthNetData.h"
 #include "../game/GameWindow.h"
 #include "../game/TestWindow.h"
 #include "components/AuthNoticeDialog.h"
@@ -11,19 +11,48 @@
 #include <stdexcept>
 #include <iostream>
 #include <QDialog>
-#if HAVE_OPENSSL
+#include <QPainter>
+#include <QPaintEvent>
+#include <QDir>
+#include <QCoreApplication>
+#include <QFile>
+#include "../utils/ResourceUtils.h"
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
-#else
-// OpenSSL fallback: builds without OpenSSL installed
-#endif
 
 AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket(this)) {
     resize(1600, 1000);
     setWindowTitle("登录注册");
+
+    // Load background image
+    QString bgPath = QString::fromStdString(ResourceUtils::getPath("images/auth_bg.png"));
+    std::cout << "[AuthWindow] Attempting to load background from: " << bgPath.toStdString() << std::endl;
+    
+    if (!backgroundPixmap.load(bgPath)) {
+        std::cerr << "[AuthWindow] Failed to load background image: " << bgPath.toStdString() << std::endl;
+        
+        // Fallback 1: Try absolute path relative to project root (assuming standard layout)
+        // Check if we are in build directory
+        QDir dir(QCoreApplication::applicationDirPath());
+        // Go up until we find resources
+        QString candidate = dir.filePath("../resources/images/auth_bg.png");
+        if (QFile::exists(candidate)) {
+             std::cout << "[AuthWindow] Found image at fallback 1: " << candidate.toStdString() << std::endl;
+             backgroundPixmap.load(candidate);
+        } else {
+             // Fallback 2: Hardcoded path provided by user (as last resort for local dev)
+             candidate = "h:/CODE/Trae/Bejeweled/resources/images/auth_bg.png";
+             if (QFile::exists(candidate)) {
+                 std::cout << "[AuthWindow] Found image at fallback 2: " << candidate.toStdString() << std::endl;
+                 backgroundPixmap.load(candidate);
+             }
+        }
+    } else {
+        std::cout << "[AuthWindow] Successfully loaded background image." << std::endl;
+    }
 
     // 初始化子界面
     loginWidget = new LoginWidget(this);
@@ -47,6 +76,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     // 连接登录信号，处理登录数据
     connect(loginWidget, &LoginWidget::loginClicked, this,
             [=](const QString& id, const QString& password) {
+        const QString idCopy = id;
         AuthNetData authData;
         authData.setType(1);
         authData.setId(id.toStdString());
@@ -57,7 +87,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
         *conn = 
         connect(this, &AuthWindow::loginResult, this, [=](bool success, const QString& msg) {
             if (success) {// 登录成功
-                GameWindow* mainUI = new GameWindow();
+                GameWindow* mainUI = new GameWindow(nullptr, idCopy.toStdString());
                 mainUI->show();
                 
                 // Show TestWindow
@@ -138,7 +168,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     
     // 离线登录处理
     connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
-        GameWindow* mainUI = new GameWindow();
+        GameWindow* mainUI = new GameWindow(nullptr, "$#SINGLE#$");
         mainUI->show();
         
         // Show TestWindow
@@ -162,6 +192,17 @@ void AuthWindow::switchWidget(QWidget* widget) {
     registerWidget->hide();
     if (widget) {
         widget->show();
+    }
+}
+
+void AuthWindow::paintEvent(QPaintEvent *event) {
+    Q_UNUSED(event);
+    QPainter painter(this);
+    if (!backgroundPixmap.isNull()) {
+        painter.drawPixmap(0, 0, width(), height(), backgroundPixmap);
+    } else {
+        // Fallback color if image fails to load
+        painter.fillRect(rect(), QColor(40, 40, 45));
     }
 }
 
@@ -268,7 +309,6 @@ void AuthWindow::handleRequestEmailCode(AuthNetData& data) {
 
 // 网络发送封装
 void AuthWindow::netDataSender(AuthNetData data) {
-#if HAVE_OPENSSL
     auto rsaEncryptBase64 = [](const std::string& plaintext, const std::string& publicKeyPem) -> std::string {
         BIO* bio = BIO_new_mem_buf(publicKeyPem.data(), (int)publicKeyPem.size());
         if (!bio) throw std::runtime_error("加密初始化失败");
@@ -335,13 +375,6 @@ void AuthWindow::netDataSender(AuthNetData data) {
         QByteArray b = QByteArray::fromRawData(out.data(), (int)out.size());
         return b.toBase64().toStdString();
     };
-#else
-    // Fallback: no OpenSSL — use base64(plaintext) as a placeholder (not secure)
-    auto rsaEncryptBase64 = [](const std::string& plaintext, const std::string& /*publicKeyPem*/) -> std::string {
-        QByteArray b = QByteArray::fromStdString(plaintext);
-        return b.toBase64().toStdString();
-    };
-#endif
     if (socket->state() == QAbstractSocket::ConnectedState) {
         socket->disconnectFromHost();
     }

@@ -12,6 +12,7 @@ class SettingWidget;
 class StoreWidget;
 class RankListWidget;
 class SingleModeGameWidget;
+class FinalWidget;
 
 #include <vector>
 #include "data/AchievementData.h"
@@ -27,15 +28,16 @@ public:
     
     // Public getter for singleModeGameWidget if needed, or just make it public/accessible via switch
     SingleModeGameWidget* getSingleModeGameWidget() const { return singleModeGameWidget; }
+    FinalWidget* getFinalWidget() const { return finalWidget; }
 
     // Achievements access
     std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
     void addAchievement(const AchievementData& a) { achievementsContainer.push_back(a); }
+    MenuWidget* getMenuWidget() const { return menuWidget; }
 
 private:
     std::string userID;
     QWidget* currentWidget = nullptr;
-
     AchievementsWidget* achievementsWidget = nullptr;
     MenuWidget* menuWidget = nullptr;
     PlayMenuWidget* playMenuWidget = nullptr;
@@ -43,6 +45,7 @@ private:
     StoreWidget* storeWidget = nullptr;
     RankListWidget* rankListWidget = nullptr;
     SingleModeGameWidget* singleModeGameWidget = nullptr;
+    FinalWidget* finalWidget = nullptr;
 
     std::vector<AchievementData> achievementsContainer;
 

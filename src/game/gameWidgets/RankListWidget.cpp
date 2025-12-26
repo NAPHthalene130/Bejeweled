@@ -10,12 +10,14 @@
 #include <QHeaderView>
 #include <QGraphicsDropShadowEffect>
 #include <QPainter>
+#include <QPainterPath>
 #include <QLinearGradient>
 #include <QFont>
 #include <QFile>
 #include <QDebug>
 #include <QCoreApplication>
 #include <QTimer>
+#include <QUrl>
 #include <algorithm>
 #include <cmath>
 
@@ -48,20 +50,20 @@ RankListWidget::RankListWidget(QWidget* parent, GameWindow* gameWindow)
     setupUI();
     
     // 添加一些示例数据
-    addNormalModeRecord(15000, 180);
-    addNormalModeRecord(12500, 150);
-    addNormalModeRecord(18000, 200);
-    addNormalModeRecord(9500, 120);
-    addNormalModeRecord(21000, 250);
+    addNormalModeRecord(15000);
+    addNormalModeRecord(12500);
+    addNormalModeRecord(18000);
+    addNormalModeRecord(9500);
+    addNormalModeRecord(21000);
     
-    addRotateModeRecord(8000, 60);
-    addRotateModeRecord(12000, 90);
-    addRotateModeRecord(6500, 45);
+    addRotateModeRecord(8000);
+    addRotateModeRecord(12000);
+    addRotateModeRecord(6500);
     
-    addMultiplayerRecord(5000, 120, "玩家A", true);
-    addMultiplayerRecord(4500, 100, "玩家B", false);
-    addMultiplayerRecord(6200, 130, "玩家C", true);
-    addMultiplayerRecord(3800, 90, "玩家D", true);
+    addMultiplayerRecord(5000);
+    addMultiplayerRecord(4500);
+    addMultiplayerRecord(6200);
+    addMultiplayerRecord(3800);
     
     refreshDisplay();
     
@@ -69,6 +71,57 @@ RankListWidget::RankListWidget(QWidget* parent, GameWindow* gameWindow)
     goldenAnimTimer = new QTimer(this);
     connect(goldenAnimTimer, &QTimer::timeout, this, &RankListWidget::updateGoldenAnimation);
     goldenAnimTimer->start(50);  // 20fps动画
+    
+    // 初始化背景动画定时器
+    bgAnimTimer = new QTimer(this);
+    connect(bgAnimTimer, &QTimer::timeout, this, &RankListWidget::updateBackgroundAnimation);
+    bgAnimTimer->start(30);  // 约33fps动画
+    
+    // 初始化浮动粒子
+    std::srand(static_cast<unsigned>(time(nullptr)));
+    for (int i = 0; i < 30; ++i) {
+        Particle p;
+        p.x = std::rand() % 1600;
+        p.y = std::rand() % 1000;
+        p.speedX = (std::rand() % 100 - 50) / 100.0f;  // -0.5 到 0.5
+        p.speedY = (std::rand() % 100 - 70) / 100.0f;  // 主要向上飘
+        p.size = 2 + std::rand() % 6;
+        p.alpha = 50 + std::rand() % 150;
+        p.phase = (std::rand() % 628) / 100.0f;  // 随机初始相位
+        particles.push_back(p);
+    }
+    
+    // 初始化海鸥
+    for (int i = 0; i < 5; ++i) {
+        Seagull s;
+        s.x = std::rand() % 1600;
+        s.y = 50 + std::rand() % 200;  // 在天空上方区域
+        s.speed = 1.0f + (std::rand() % 100) / 100.0f;  // 1.0 到 2.0
+        s.wingPhase = (std::rand() % 628) / 100.0f;
+        s.size = 15 + std::rand() % 10;  // 15-25
+        seagulls.push_back(s);
+    }
+    
+    // 初始化排行榜背景音乐播放器
+    bgmPlayer = new QMediaPlayer(this);
+    bgmAudioOutput = new QAudioOutput(this);
+    bgmPlayer->setAudioOutput(bgmAudioOutput);
+    bgmAudioOutput->setVolume(0.5f);  // 设置音量为50%
+    bgmPlayer->setLoops(QMediaPlayer::Infinite);  // 循环播放
+    
+    // 加载音乐文件
+    QStringList bgmPaths = {
+        QCoreApplication::applicationDirPath() + "/resources/sounds/rank_bgm.mp3",
+        "D:/Bejeweled/build/resources/sounds/rank_bgm.mp3"
+    };
+    
+    for (const QString& path : bgmPaths) {
+        if (QFile::exists(path)) {
+            bgmPlayer->setSource(QUrl::fromLocalFile(path));
+            qDebug() << "Rank BGM loaded from:" << path;
+            break;
+        }
+    }
 }
 
 void RankListWidget::setupUI() {
@@ -159,9 +212,9 @@ void RankListWidget::setupUI() {
     rotateModeTable = new QTableWidget(this);
     multiplayerTable = new QTableWidget(this);
     
-    setupTab(normalModeTable, false);
-    setupTab(rotateModeTable, false);
-    setupTab(multiplayerTable, true);
+    setupTab(normalModeTable);
+    setupTab(rotateModeTable);
+    setupTab(multiplayerTable);
     
     tabWidget->addTab(normalModeTable, "🎮 普通模式");
     tabWidget->addTab(rotateModeTable, "🌀 旋风模式");
@@ -179,14 +232,9 @@ void RankListWidget::setupUI() {
     mainLayout->addWidget(infoLabel);
 }
 
-void RankListWidget::setupTab(QTableWidget* table, bool isMultiplayer) {
-    if (isMultiplayer) {
-        table->setColumnCount(6);
-        table->setHorizontalHeaderLabels({"排名", "分数", "用时", "对手", "结果", "日期"});
-    } else {
-        table->setColumnCount(4);
-        table->setHorizontalHeaderLabels({"排名", "分数", "用时", "日期"});
-    }
+void RankListWidget::setupTab(QTableWidget* table) {
+    table->setColumnCount(2);
+    table->setHorizontalHeaderLabels({"排名", "分数"});
     
     table->setRowCount(10);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -230,14 +278,14 @@ void RankListWidget::setupTab(QTableWidget* table, bool isMultiplayer) {
     )");
 }
 
-void RankListWidget::updateTable(QTableWidget* table, const std::vector<RankRecord>& records, bool isMultiplayer) {
+void RankListWidget::updateTable(QTableWidget* table, const std::vector<RankRecord>& records) {
     table->clearContents();
     
     // 排名图标/奖牌
     QStringList rankIcons = {"🥇", "🥈", "🥉", "4", "5", "6", "7", "8", "9", "10"};
     
-    // 非前三名的淡色
-    QColor dimColor(120, 130, 150);  // 淡灰蓝色
+    // 非前三名的颜色
+    QColor dimColor(200, 210, 230);  // 亮白蓝色
     
     for (int i = 0; i < 10; ++i) {
         if (i < (int)records.size()) {
@@ -261,47 +309,9 @@ void RankListWidget::updateTable(QTableWidget* table, const std::vector<RankReco
             if (i < 3) applyGoldenGlowEffect(scoreItem, i);
             else scoreItem->setForeground(dimColor);
             table->setItem(i, 1, scoreItem);
-            
-            // 用时
-            QTableWidgetItem* timeItem = new QTableWidgetItem(formatDuration(rec.duration));
-            timeItem->setTextAlignment(Qt::AlignCenter);
-            if (i < 3) applyGoldenGlowEffect(timeItem, i);
-            else timeItem->setForeground(dimColor);
-            table->setItem(i, 2, timeItem);
-            
-            if (isMultiplayer) {
-                // 对手
-                QTableWidgetItem* oppItem = new QTableWidgetItem(rec.opponentName);
-                oppItem->setTextAlignment(Qt::AlignCenter);
-                if (i < 3) applyGoldenGlowEffect(oppItem, i);
-                else oppItem->setForeground(dimColor);
-                table->setItem(i, 3, oppItem);
-                
-                // 结果
-                QTableWidgetItem* resultItem = new QTableWidgetItem(rec.isWin ? "🏆 胜利" : "💔 失败");
-                resultItem->setTextAlignment(Qt::AlignCenter);
-                if (i >= 3) resultItem->setForeground(rec.isWin ? QColor(80, 180, 80) : QColor(180, 80, 80));  // 淡化的胜负颜色
-                else applyGoldenGlowEffect(resultItem, i);
-                table->setItem(i, 4, resultItem);
-                
-                // 日期
-                QTableWidgetItem* dateItem = new QTableWidgetItem(rec.playedAt.toString("MM-dd HH:mm"));
-                dateItem->setTextAlignment(Qt::AlignCenter);
-                if (i < 3) applyGoldenGlowEffect(dateItem, i);
-                else dateItem->setForeground(QColor(100, 110, 130));  // 更淡的日期
-                table->setItem(i, 5, dateItem);
-            } else {
-                // 日期
-                QTableWidgetItem* dateItem = new QTableWidgetItem(rec.playedAt.toString("MM-dd HH:mm"));
-                dateItem->setTextAlignment(Qt::AlignCenter);
-                if (i < 3) applyGoldenGlowEffect(dateItem, i);
-                else dateItem->setForeground(QColor(100, 110, 130));  // 更淡的日期
-                table->setItem(i, 3, dateItem);
-            }
         } else {
             // 空行显示 "--"
-            int cols = isMultiplayer ? 6 : 4;
-            for (int j = 0; j < cols; ++j) {
+            for (int j = 0; j < 2; ++j) {
                 QTableWidgetItem* emptyItem = new QTableWidgetItem(j == 0 ? QString::number(i + 1) : "--");
                 emptyItem->setTextAlignment(Qt::AlignCenter);
                 emptyItem->setForeground(QColor(100, 100, 100));
@@ -386,35 +396,66 @@ void RankListWidget::updateGoldenAnimation() {
     }
 }
 
-QString RankListWidget::formatDuration(int seconds) const {
-    int mins = seconds / 60;
-    int secs = seconds % 60;
-    return QString("%1:%2").arg(mins, 2, 10, QChar('0')).arg(secs, 2, 10, QChar('0'));
+void RankListWidget::updateBackgroundAnimation() {
+    // 更新背景动画相位
+    bgAnimPhase += 0.05f;
+    if (bgAnimPhase > 628.0f) {
+        bgAnimPhase -= 628.0f;
+    }
+    
+    // 更新粒子位置
+    for (auto& particle : particles) {
+        particle.x += particle.speedX;
+        particle.y += particle.speedY;
+        
+        // 粒子超出边界时重新生成
+        if (particle.y < -20) {
+            particle.y = height() + 20;
+            particle.x = std::rand() % width();
+        }
+        if (particle.x < -20) particle.x = width() + 20;
+        if (particle.x > width() + 20) particle.x = -20;
+    }
+    
+    // 更新海鸥位置
+    for (auto& seagull : seagulls) {
+        seagull.x += seagull.speed;
+        seagull.wingPhase += 0.2f;  // 翅膀扇动速度
+        
+        // 海鸥飞出屏幕右侧时从左侧重新进入
+        if (seagull.x > width() + 50) {
+            seagull.x = -50;
+            seagull.y = 50 + std::rand() % 200;
+        }
+    }
+    
+    // 触发重绘
+    update();
 }
 
-void RankListWidget::addNormalModeRecord(int score, int duration) {
-    RankRecord rec(score, duration, QDateTime::currentDateTime());
+void RankListWidget::addNormalModeRecord(int score) {
+    RankRecord rec(score);
     normalModeRecords.push_back(rec);
     sortAndKeepTop10(normalModeRecords);
 }
 
-void RankListWidget::addRotateModeRecord(int score, int duration) {
-    RankRecord rec(score, duration, QDateTime::currentDateTime());
+void RankListWidget::addRotateModeRecord(int score) {
+    RankRecord rec(score);
     rotateModeRecords.push_back(rec);
     sortAndKeepTop10(rotateModeRecords);
 }
 
-void RankListWidget::addMultiplayerRecord(int score, int duration, const QString& opponent, bool isWin) {
-    RankRecord rec(score, duration, QDateTime::currentDateTime(), opponent, isWin);
+void RankListWidget::addMultiplayerRecord(int score) {
+    RankRecord rec(score);
     multiplayerRecords.push_back(rec);
     sortAndKeepTop10(multiplayerRecords);
 }
 
 void RankListWidget::refreshDisplay() {
     goldenItems.clear();  // 清空以便重新收集
-    updateTable(normalModeTable, normalModeRecords, false);
-    updateTable(rotateModeTable, rotateModeRecords, false);
-    updateTable(multiplayerTable, multiplayerRecords, true);
+    updateTable(normalModeTable, normalModeRecords);
+    updateTable(rotateModeTable, rotateModeRecords);
+    updateTable(multiplayerTable, multiplayerRecords);
 }
 
 void RankListWidget::onBackClicked() {
@@ -427,17 +468,15 @@ void RankListWidget::paintEvent(QPaintEvent* event) {
     p.setRenderHint(QPainter::Antialiasing);
     p.setRenderHint(QPainter::SmoothPixmapTransform);
     
-    // 绘制背景图片
+    // 绘制背景图片（静态，不移动）
     if (!bgImage.isNull()) {
-        // 缩放图片以填充整个窗口，保持比例
         QPixmap scaled = bgImage.scaled(size(), Qt::KeepAspectRatioByExpanding, Qt::SmoothTransformation);
-        // 居中裁剪
         int offsetX = (scaled.width() - width()) / 2;
         int offsetY = (scaled.height() - height()) / 2;
         p.drawPixmap(0, 0, scaled, offsetX, offsetY, width(), height());
         
         // 添加半透明遮罩层，确保排行榜内容清晰可见
-        p.fillRect(rect(), QColor(0, 0, 0, 120));
+        p.fillRect(rect(), QColor(0, 0, 0, 80));
     } else {
         // 如果没有背景图片，使用渐变背景
         QLinearGradient grad(rect().topLeft(), rect().bottomRight());
@@ -445,22 +484,75 @@ void RankListWidget::paintEvent(QPaintEvent* event) {
         grad.setColorAt(0.5, QColor(35, 35, 65));
         grad.setColorAt(1.0, QColor(45, 30, 70));
         p.fillRect(rect(), grad);
+    }
+    
+    // 绘制海鸥
+    p.setPen(QPen(QColor(30, 30, 30), 2));
+    for (const auto& seagull : seagulls) {
+        // 翅膀扇动效果
+        float wingAngle = std::sin(seagull.wingPhase) * 0.4f;  // 翅膀上下扇动
         
-        // 绘制一些装饰星星
+        float sz = seagull.size;
+        float x = seagull.x;
+        float y = seagull.y;
+        
+        // 绘制海鸥（简化的 M 形状）
+        QPainterPath path;
+        // 左翅膀
+        path.moveTo(x - sz, y + sz * wingAngle);
+        path.quadTo(x - sz * 0.5, y - sz * 0.3 + sz * wingAngle * 0.5, x, y);
+        // 右翅膀
+        path.quadTo(x + sz * 0.5, y - sz * 0.3 + sz * wingAngle * 0.5, x + sz, y + sz * wingAngle);
+        
+        p.setBrush(Qt::NoBrush);
+        p.setPen(QPen(QColor(40, 40, 50), 2.5));
+        p.drawPath(path);
+        
+        // 绘制身体小点
+        p.setBrush(QColor(40, 40, 50));
         p.setPen(Qt::NoPen);
-        std::srand(12345);
-        for (int i = 0; i < 50; ++i) {
-            int x = std::rand() % width();
-            int y = std::rand() % height();
-            int sz = 1 + std::rand() % 3;
-            int alpha = 50 + std::rand() % 100;
-            p.setBrush(QColor(255, 255, 255, alpha));
-            p.drawEllipse(QPoint(x, y), sz, sz);
-        }
+        p.drawEllipse(QPointF(x, y), sz * 0.15, sz * 0.1);
+    }
+    
+    // 绘制浮动粒子（发光效果）
+    p.setPen(Qt::NoPen);
+    for (const auto& particle : particles) {
+        // 粒子呼吸效果
+        float breathe = 0.7f + 0.3f * std::sin(bgAnimPhase + particle.phase);
+        int alpha = static_cast<int>(particle.alpha * breathe);
+        
+        // 绘制光晕
+        QRadialGradient glow(particle.x, particle.y, particle.size * 2);
+        glow.setColorAt(0, QColor(255, 255, 255, alpha));
+        glow.setColorAt(0.5, QColor(200, 220, 255, alpha / 2));
+        glow.setColorAt(1, QColor(150, 180, 255, 0));
+        p.setBrush(glow);
+        p.drawEllipse(QPointF(particle.x, particle.y), particle.size * 2, particle.size * 2);
+        
+        // 绘制粒子核心
+        p.setBrush(QColor(255, 255, 255, alpha));
+        p.drawEllipse(QPointF(particle.x, particle.y), particle.size * 0.5, particle.size * 0.5);
     }
 }
 
 void RankListWidget::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
     update(); // 重绘背景
+}
+
+void RankListWidget::showEvent(QShowEvent* event) {
+    QWidget::showEvent(event);
+    // 进入排行榜页面时播放背景音乐
+    if (bgmPlayer) {
+        bgmPlayer->play();
+        qDebug() << "Playing rank BGM";
+    }
+}
+
+void RankListWidget::hideEvent(QHideEvent* event) {
+    QWidget::hideEvent(event);
+    // 离开排行榜页面时停止音乐
+    if (bgmPlayer) {
+        bgmPlayer->stop();
+    }
 }
