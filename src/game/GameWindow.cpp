@@ -28,6 +28,10 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     singleModeGameWidget = new SingleModeGameWidget(this, this);
     finalWidget = new FinalWidget(this, this);
 
+    // 连接排行榜信号
+    connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { this->switchWidget(rankListWidget); });
+    connect(rankListWidget, &RankListWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
+
     achievementsWidget->hide();
     playMenuWidget->hide();
     settingWidget->hide();
