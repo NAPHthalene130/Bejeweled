@@ -1,6 +1,7 @@
 #include "PlayMenuWidget.h"
 #include "../GameWindow.h"
 #include "SingleModeGameWidget.h"
+#include "MultiplayerModeGameWidget.h"
 #include "../components/MenuButton.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -88,6 +89,13 @@ void PlayMenuWidget::setupUI() {
             gameWindow->getSingleModeGameWidget()->reset(2);
         }
         emit startRotateMode();
+    });
+
+    connect(multiModeButton, &QPushButton::clicked, this, [this]() {
+        if (gameWindow && gameWindow->getMultiplayerModeGameWidget()) {
+            gameWindow->getMultiplayerModeGameWidget()->reset(1);  // Normal mode for multiplayer
+            gameWindow->switchWidget(gameWindow->getMultiplayerModeGameWidget());
+        }
     });
 }
 

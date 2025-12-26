@@ -6,6 +6,8 @@
 #include "gameWidgets/StoreWidget.h"
 #include "gameWidgets/RankListWidget.h"
 #include "gameWidgets/SingleModeGameWidget.h"
+#include "gameWidgets/WhirlwindModeGameWidget.h"
+#include "gameWidgets/MultiplayerModeGameWidget.h"
 #include "gameWidgets/FinalWidget.h"
 #include "components/MenuButton.h"
 #include <QMainWindow>
@@ -26,6 +28,8 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     storeWidget = new StoreWidget(this, this);
     rankListWidget = new RankListWidget(this, this);
     singleModeGameWidget = new SingleModeGameWidget(this, this);
+    whirlwindModeGameWidget = new WhirlwindModeGameWidget(this, this);
+    multiplayerModeGameWidget = new MultiplayerModeGameWidget(this, this, userID);
     finalWidget = new FinalWidget(this, this);
 
     achievementsWidget->hide();
@@ -34,6 +38,8 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     storeWidget->hide();
     rankListWidget->hide();
     singleModeGameWidget->hide();
+    whirlwindModeGameWidget->hide();
+    multiplayerModeGameWidget->hide();
     finalWidget->hide();
 
     connect(menuWidget, &MenuWidget::startGame, [this]() {
@@ -62,7 +68,8 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     });
     
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
-        switchWidget(singleModeGameWidget);
+        whirlwindModeGameWidget->reset(2);
+        switchWidget(whirlwindModeGameWidget);
     });
 
     // Add test achievements
@@ -125,7 +132,7 @@ void GameWindow::switchWidget(QWidget* widget)
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/store_bgm.ogg"));
     } else if (widget == rankListWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.ogg"));
-    } else if (widget == singleModeGameWidget) {
+    } else if (widget == singleModeGameWidget || widget == whirlwindModeGameWidget || widget == multiplayerModeGameWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.ogg"));
     }
     
