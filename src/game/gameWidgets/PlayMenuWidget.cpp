@@ -32,6 +32,7 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <json.hpp>
+#include "../data/NetDataIO.h"
 
 PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -413,5 +414,26 @@ void PlayMenuWidget::resizeEvent(QResizeEvent* event) {
 }
 
 void PlayMenuWidget::multiModeButtonClicked() {
-    
+    if (gameWindow->getUserID() == "$#SINGLE#$") {
+        AuthNoticeDialog* dialog = new AuthNoticeDialog("提示", "当前为离线模式无法进行多人游戏", 2, this);
+        dialog->exec();
+        return;
+    }
+
+    QTcpSocket socket;
+    socket.connectToHost(QString::fromStdString(gameWindow->getIp()), std::stoi(gameWindow->getPort()));
+
+    if (socket.waitForConnected(3000)) {
+        socket.disconnectFromHost();
+        NetDataIO* net = new NetDataIO(gameWindow->getIp(), gameWindow->getPort(), gameWindow);
+        gameWindow->setNetDataIO(net);
+
+        GameNetData joinMsg;
+        joinMsg.setType(0);
+        joinMsg.setID(gameWindow->getUserID());
+        net->sendData(joinMsg);
+    } else {
+        AuthNoticeDialog* dialog = new AuthNoticeDialog("提示", "无法连接到服务器", 3, this);
+        dialog->exec();
+    }
 }

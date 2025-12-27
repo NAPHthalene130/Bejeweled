@@ -5,6 +5,8 @@
 #include <QMetaObject>
 #include <QCoreApplication>
 #include <boost/asio.hpp>
+#include "../../auth/components/AuthNoticeDialog.h"
+#include "../gameWidgets/MultiGameWaitWidget.h"
 
 using boost::asio::ip::tcp;
 
@@ -95,7 +97,19 @@ void NetDataIO::readerLoop() {
                 
                 int type = receiveData.getType();
                 if (type == 0) {
-                    //TODO
+                    std::string dataStr = receiveData.getData();
+                    if (dataStr == "ENTER_ROOM") {
+                         QMetaObject::invokeMethod(gameWindow, [this]() {
+                            if (gameWindow->getMultiGameWaitWidget()) {
+                                gameWindow->getMultiGameWaitWidget()->enterRoom();
+                            }
+                         }, Qt::QueuedConnection);
+                    } else if (dataStr == "GAME_STARTED") {
+                         QMetaObject::invokeMethod(gameWindow, [this]() {
+                            AuthNoticeDialog* dialog = new AuthNoticeDialog("提示", "房间已开始，请等待游戏结束", 3, gameWindow);
+                            dialog->exec();
+                         }, Qt::QueuedConnection);
+                    }
                 } else if (type == 1) {
                     //TODO
                 } else if (type == 2) {

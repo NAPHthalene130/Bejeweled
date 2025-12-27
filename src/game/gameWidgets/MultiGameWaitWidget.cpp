@@ -1,4 +1,6 @@
 #include "MultiGameWaitWidget.h"
+#include "PlayMenuWidget.h"
+#include "../GameWindow.h"
 #include "../components/MenuButton.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -25,10 +27,18 @@
 #include <Qt3DRender/QDirectionalLight>
 #include <Qt3DRender/QPointLight>
 
-MultiGameWaitWidget::MultiGameWaitWidget(QWidget* parent)
-    : QWidget(parent), isInRoom(false), roomPeopleHave(0) {
+MultiGameWaitWidget::MultiGameWaitWidget(QWidget* parent, GameWindow* gameWindow)
+    : QWidget(parent), gameWindow(gameWindow), isInRoom(false), roomPeopleHave(0) {
     setupUI();
     setup3DView();
+}
+
+void MultiGameWaitWidget::enterRoom() {
+    roomPeopleHave = 0;
+    updateInfoLabel();
+    if (gameWindow) {
+        gameWindow->switchWidget(this);
+    }
 }
 
 MultiGameWaitWidget::~MultiGameWaitWidget() {
@@ -54,6 +64,23 @@ void MultiGameWaitWidget::setRoomPeopleHave(int count) {
     updateInfoLabel();
 }
 
+void MultiGameWaitWidget::resetRoomPeopleHaveLabel(int people) {
+    setRoomPeopleHave(people);
+}
+
+void MultiGameWaitWidget::backButtonClicked() {
+    if (gameWindow) {
+        if (gameWindow->getPlayMenuWidget()) {
+             // 切换回PlayMenuWidget
+             gameWindow->switchWidget(gameWindow->getPlayMenuWidget());
+             
+             // TODO: Network exit logic (Tell server we left the room)
+             // NetDataIO* net = gameWindow->getNetDataIO();
+             // if (net) { ... send exit room packet ... }
+        }
+    }
+}
+
 void MultiGameWaitWidget::updateInfoLabel() {
     if (infoLabel) {
         infoLabel->setText(QString("当前玩家人数: %1 人").arg(roomPeopleHave));
@@ -63,16 +90,15 @@ void MultiGameWaitWidget::updateInfoLabel() {
 void MultiGameWaitWidget::setupUI() {
     setMinimumSize(1200, 800);
 
-    // Main layout
+    // Main layout for the widget
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->setAlignment(Qt::AlignCenter);
+    mainLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     mainLayout->setSpacing(40);
+    mainLayout->setContentsMargins(50, 0, 0, 0); // Left margin to position it nicely
 
-    // Spacer to push content to center/bottom
-    mainLayout->addStretch(1);
-
-    // Info Label (Center Display)
-    infoLabel = new QLabel(this);
+    // Info Label
+    infoLabel = new QLabel(this); 
+    infoLabel->setAttribute(Qt::WA_NativeWindow); // Ensure it's on top of native 3D window
     infoLabel->setAlignment(Qt::AlignCenter);
     updateInfoLabel();
     
@@ -89,25 +115,19 @@ void MultiGameWaitWidget::setupUI() {
         "   padding: 20px 60px;"
         "}"
     );
-    // Shadow effect for the label
-    // Note: QGraphicsDropShadowEffect is standard, but simple stylesheet is often enough for text.
     
-    mainLayout->addWidget(infoLabel, 0, Qt::AlignCenter);
+    mainLayout->addWidget(infoLabel);
     
-    // Spacer
-    mainLayout->addSpacing(60);
-
     // Back Button
     backButton = new MenuButton(200, 60, 20, QColor(255, 80, 80), "返回菜单", this);
-    connect(backButton, &QPushButton::clicked, this, &MultiGameWaitWidget::backToMenu);
+    backButton->setAttribute(Qt::WA_NativeWindow); // Ensure it's on top of native 3D window
+    connect(backButton, &QPushButton::clicked, this, &MultiGameWaitWidget::backButtonClicked);
     
-    mainLayout->addWidget(backButton, 0, Qt::AlignCenter);
+    mainLayout->addWidget(backButton);
 
-    // Bottom Spacer
-    mainLayout->addStretch(1);
-
-    // Ensure widgets are above the 3D view
-    infoLabel->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+    // Ensure widgets are raised (though NativeWindow attribute helps most)
+    infoLabel->raise();
+    backButton->raise();
 }
 
 void MultiGameWaitWidget::setup3DView() {
@@ -118,7 +138,7 @@ void MultiGameWaitWidget::setup3DView() {
     // Container
     view3DContainer = QWidget::createWindowContainer(view3D, this);
     view3DContainer->setMinimumSize(0, 0);
-    view3DContainer->setGeometry(rect());
+    // Geometry will be set in resizeEvent
     view3DContainer->lower(); // Send to back
     view3DContainer->show();
 
@@ -129,8 +149,11 @@ void MultiGameWaitWidget::setup3DView() {
     // Camera
     auto camera = view3D->camera();
     camera->lens()->setPerspectiveProjection(45.0f, 16.0f/9.0f, 0.1f, 1000.0f);
+    
+    // Position camera to see objects, but look slightly to the left (-8, 0, 0) 
+    // so that the objects (at 0,0,0) appear shifted to the right on screen.
     camera->setPosition(QVector3D(0.0f, 10.0f, 25.0f));
-    camera->setViewCenter(QVector3D(0.0f, 0.0f, 0.0f));
+    camera->setViewCenter(QVector3D(-8.0f, 0.0f, 0.0f));
 
     // --- Lighting ---
     auto* lightEntity = new Qt3DCore::QEntity(rootEntity);
@@ -279,19 +302,7 @@ void MultiGameWaitWidget::setup3DView() {
         pEntity->addComponent(pTransform);
 
         // Simple floating animation (vertical bobbing)
-        auto* floatAnim = new QPropertyAnimation(pTransform, "translation", this);
-        floatAnim->setStartValue(QVector3D(x, y, z));
-        floatAnim->setEndValue(QVector3D(x, y + 2.0f, z));
-        floatAnim->setDuration(2000 + QRandomGenerator::global()->bounded(3000));
-        floatAnim->setLoopCount(-1);
-        floatAnim->setEasingCurve(QEasingCurve::InOutSine); // Creates yoyo effect if reverse?
-        // PropertyAnimation doesn't auto-reverse loop by default easily without keyframes, 
-        // but QVariantAnimation with easing InOutSine creates a smooth stop. 
-        // To make it bounce back, we need KeyValueAt or a different approach.
-        // Let's use a KeyValue approach for smoother float.
-        
-        // Actually, let's just use a QVariantAnimation to drive the Y offset
-        delete floatAnim; 
+        // Using QVariantAnimation to drive the Y offset for smooth ping-pong effect
         auto* varAnim = new QVariantAnimation(this);
         varAnim->setStartValue(0.0f);
         varAnim->setEndValue(1.0f);
@@ -309,6 +320,8 @@ void MultiGameWaitWidget::setup3DView() {
 // Override resizeEvent to handle the container resizing
 void MultiGameWaitWidget::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
+    
+    // 3D View fills the whole window
     if (view3DContainer) {
         view3DContainer->setGeometry(rect());
         view3DContainer->lower();

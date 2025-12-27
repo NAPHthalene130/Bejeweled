@@ -13,12 +13,13 @@ namespace Qt3DCore {
 }
 
 class MenuButton;
+class GameWindow;
 
 class MultiGameWaitWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit MultiGameWaitWidget(QWidget* parent = nullptr);
+    explicit MultiGameWaitWidget(QWidget* parent = nullptr, GameWindow* gameWindow = nullptr);
     ~MultiGameWaitWidget();
 
     bool getIsInRoom() const;
@@ -26,17 +27,25 @@ public:
 
     int getRoomPeopleHave() const;
     void setRoomPeopleHave(int count);
+    void resetRoomPeopleHaveLabel(int people);
+
+    void enterRoom();
+
+private slots:
+    void backButtonClicked();
 
 signals:
     void backToMenu();
 
 private:
+    GameWindow* gameWindow;
     void setupUI();
     void setup3DView();
     void updateInfoLabel();
 
     // UI Elements
     QWidget* view3DContainer;
+    // QWidget* uiContainer; // Removed as we use main layout now
     Qt3DExtras::Qt3DWindow* view3D;
     Qt3DCore::QEntity* rootEntity;
     

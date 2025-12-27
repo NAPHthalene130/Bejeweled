@@ -14,6 +14,7 @@ class RankListWidget;
 class SingleModeGameWidget;
 class FinalWidget;
 class MultiGameWaitWidget;
+class NetDataIO;
 
 #include <vector>
 #include "data/AchievementData.h"
@@ -29,8 +30,14 @@ public:
     
     // Public getter for singleModeGameWidget if needed, or just make it public/accessible via switch
     SingleModeGameWidget* getSingleModeGameWidget() const { return singleModeGameWidget; }
+    PlayMenuWidget* getPlayMenuWidget() const { return playMenuWidget; }
     FinalWidget* getFinalWidget() const { return finalWidget; }
     MultiGameWaitWidget* getMultiGameWaitWidget() const { return multiGameWaitWidget; }
+    void setMultiGameWaitWidget(MultiGameWaitWidget* widget) { multiGameWaitWidget = widget; }
+
+    // NetDataIO access
+    NetDataIO* getNetDataIO() const { return netDataIO; }
+    void setNetDataIO(NetDataIO* netDataIO) { this->netDataIO = netDataIO; }
 
     // Achievements access
     std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
@@ -57,6 +64,7 @@ private:
     SingleModeGameWidget* singleModeGameWidget = nullptr;
     FinalWidget* finalWidget = nullptr;
     MultiGameWaitWidget* multiGameWaitWidget = nullptr;
+    NetDataIO* netDataIO = nullptr;
 
     std::vector<AchievementData> achievementsContainer;
 

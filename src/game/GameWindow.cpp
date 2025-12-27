@@ -7,6 +7,7 @@
 #include "gameWidgets/RankListWidget.h"
 #include "gameWidgets/SingleModeGameWidget.h"
 #include "gameWidgets/FinalWidget.h"
+#include "gameWidgets/MultiGameWaitWidget.h"
 #include "components/MenuButton.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
@@ -27,6 +28,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     rankListWidget = new RankListWidget(this, this);
     singleModeGameWidget = new SingleModeGameWidget(this, this);
     finalWidget = new FinalWidget(this, this);
+    multiGameWaitWidget = new MultiGameWaitWidget(this, this);
 
     // 连接排行榜信号
     connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { this->switchWidget(rankListWidget); });
@@ -39,6 +41,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     rankListWidget->hide();
     singleModeGameWidget->hide();
     finalWidget->hide();
+    multiGameWaitWidget->hide();
 
     connect(menuWidget, &MenuWidget::startGame, [this]() {
         switchWidget(playMenuWidget);
