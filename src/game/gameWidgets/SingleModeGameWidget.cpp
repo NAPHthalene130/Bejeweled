@@ -1111,7 +1111,7 @@ void SingleModeGameWidget::reset(int mode) {
     this->canOpe = true;
     this->isFinishing = false;
     this->gameScore = 0;
-    this->targetScore = 10000;
+    this->targetScore = 300;
     this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
     updateScoreBoard();

@@ -98,6 +98,22 @@ void GameWindow::setUserID(std::string userID) {
     this->userID = userID;
 }
 
+std::string GameWindow::getIp() const {
+    return ip;
+}
+
+void GameWindow::setIp(const std::string& ip) {
+    this->ip = ip;
+}
+
+std::string GameWindow::getPort() const {
+    return port;
+}
+
+void GameWindow::setPort(const std::string& port) {
+    this->port = port;
+}
+
 void GameWindow::switchWidget(QWidget* widget)
 {
     BGMManager::instance().stop();

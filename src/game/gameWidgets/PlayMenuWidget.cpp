@@ -1,7 +1,10 @@
 #include "PlayMenuWidget.h"
 #include "../GameWindow.h"
 #include "SingleModeGameWidget.h"
+#include "MultiGameWaitWidget.h"
 #include "../components/MenuButton.h"
+#include "../data/GameNetData.h"
+#include "../../auth/components/AuthNoticeDialog.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPropertyAnimation>
@@ -26,6 +29,9 @@
 #include <Qt3DRender/QPointLight>
 #include <QVector3D>
 #include <QRandomGenerator>
+#include <QTcpSocket>
+#include <QHostAddress>
+#include <json.hpp>
 
 PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -89,6 +95,8 @@ void PlayMenuWidget::setupUI() {
         }
         emit startRotateMode();
     });
+
+    connect(multiModeButton, &QPushButton::clicked, this, &PlayMenuWidget::multiModeButtonClicked);
 }
 
 void PlayMenuWidget::setup3DView() {
@@ -402,4 +410,8 @@ void PlayMenuWidget::resizeEvent(QResizeEvent* event) {
         view3DContainer->setGeometry(rect());
         view3DContainer->lower();
     }
+}
+
+void PlayMenuWidget::multiModeButtonClicked() {
+    
 }
