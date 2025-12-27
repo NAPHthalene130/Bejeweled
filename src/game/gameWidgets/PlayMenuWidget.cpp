@@ -169,9 +169,9 @@ void PlayMenuWidget::setup3DView() {
         intensityAnim->start();
     };
 
-    createOrbitingLight(7.0f, 4.0f, 10.0f, 9000, 1.1f, 2.4f);
-    createOrbitingLight(7.0f, -3.5f, 9.0f, 12000, 1.0f, 2.1f);
-    createOrbitingLight(6.0f, 0.0f, 11.0f, 7000, 0.9f, 2.0f);
+    createOrbitingLight(7.0f, 4.0f, 10.0f, 9000, 0.4f, 0.8f);
+    createOrbitingLight(7.0f, -3.5f, 9.0f, 12000, 0.3f, 0.7f);
+    createOrbitingLight(6.0f, 0.0f, 11.0f, 7000, 0.3f, 0.6f);
 
     // --- 炫酷效果：旋转的立方体环 ---
     

@@ -94,7 +94,7 @@ void MultiGameWaitWidget::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     mainLayout->setSpacing(40);
-    mainLayout->setContentsMargins(50, 0, 0, 0); // Left margin to position it nicely
+    mainLayout->setContentsMargins(50, 0, 0, 0);
 
     // Info Label
     infoLabel = new QLabel(this); 
@@ -111,19 +111,19 @@ void MultiGameWaitWidget::setupUI() {
         "   font-weight: bold;"
         "   background-color: rgba(10, 20, 40, 180);"
         "   border: 2px solid rgba(0, 255, 255, 100);"
-        "   border-radius: 15px;"
+        "   border-radius: 0px;"
         "   padding: 20px 60px;"
         "}"
     );
     
-    mainLayout->addWidget(infoLabel);
+    mainLayout->addWidget(infoLabel, 0, Qt::AlignHCenter);
     
     // Back Button
-    backButton = new MenuButton(200, 60, 20, QColor(255, 80, 80), "返回菜单", this);
+    backButton = new MenuButton(200, 60, 30, QColor(255, 80, 80), "返回菜单", this);
     backButton->setAttribute(Qt::WA_NativeWindow); // Ensure it's on top of native 3D window
     connect(backButton, &QPushButton::clicked, this, &MultiGameWaitWidget::backButtonClicked);
     
-    mainLayout->addWidget(backButton);
+    mainLayout->addWidget(backButton, 0, Qt::AlignHCenter);
 
     // Ensure widgets are raised (though NativeWindow attribute helps most)
     infoLabel->raise();
