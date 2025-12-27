@@ -38,6 +38,7 @@ private:
 
     void readerLoop();
     void senderLoop();
+    void log(const std::string& nature, const std::string& methodName, const std::string& content);
 };
 
 #endif // NET_DATA_IO_H

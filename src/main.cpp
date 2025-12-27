@@ -5,6 +5,7 @@
 #include "utils/ResourceUtils.h"
 #include "Game/GameWindow.h"
 #include "Game/gameWidgets/SingleModeGameWidget.h"
+#include <QRandomGenerator>
 
 extern "C" {
     __declspec(dllimport) int __stdcall WSAStartup(unsigned short, void*);
@@ -24,7 +25,8 @@ int main(int argc, char *argv[])
     // w.show();
 
     //测试用
-    GameWindow gameWindow;
+    int randNum = QRandomGenerator::global()->bounded(1000000); //随机ID
+    GameWindow gameWindow(nullptr, std::to_string(randNum));
     gameWindow.show();
 
     return a.exec();

@@ -16,8 +16,13 @@
 #include <string>
 #include "../utils/BGMManager.h"
 #include "../utils/ResourceUtils.h"
+#include "../utils/LogWindow.h"
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
+    
+    logWindow = new LogWindow();
+    logWindow->show();
+
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
     connect(menuWidget, &MenuWidget::openAchievements, this, [this]() { this->switchWidget(achievementsWidget); });
@@ -92,6 +97,10 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 }
 
 GameWindow::~GameWindow() {
+    if (logWindow) {
+        delete logWindow;
+        logWindow = nullptr;
+    }
 }
 
 std::string GameWindow::getUserID() {

@@ -15,6 +15,7 @@ class SingleModeGameWidget;
 class FinalWidget;
 class MultiGameWaitWidget;
 class NetDataIO;
+class LogWindow;
 
 #include <vector>
 #include "data/AchievementData.h"
@@ -38,6 +39,8 @@ public:
     // NetDataIO access
     NetDataIO* getNetDataIO() const { return netDataIO; }
     void setNetDataIO(NetDataIO* netDataIO) { this->netDataIO = netDataIO; }
+
+    LogWindow* getLogWindow() const { return logWindow; }
 
     // Achievements access
     std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
@@ -65,6 +68,7 @@ private:
     FinalWidget* finalWidget = nullptr;
     MultiGameWaitWidget* multiGameWaitWidget = nullptr;
     NetDataIO* netDataIO = nullptr;
+    LogWindow* logWindow = nullptr;
 
     std::vector<AchievementData> achievementsContainer;
 
