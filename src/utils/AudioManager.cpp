@@ -7,6 +7,8 @@
 #include <QAudioDevice>
 #include <QElapsedTimer>
 #include <QDialog>
+#include <QRandomGenerator>
+#include <QDateTime>
 #include "../game/gameWidgets/SettingWidget.h" 
 #include "ResourceUtils.h"
 
@@ -17,6 +19,8 @@ AudioManager& AudioManager::instance() {
 
 AudioManager::AudioManager() : QObject(nullptr), lastHoverPlayTime(0) {
     throttleTimer.start();
+
+    m_randomGenerator = QRandomGenerator::securelySeeded();
     
     QString soundDir;
 #ifdef PROJECT_SOURCE_DIR
@@ -88,7 +92,6 @@ void AudioManager::playEliminateSound(int comboCount) {
     if (!SettingWidget::isEliminateSoundEnabled()) return;
 
     // 2. 从设置中获取用户选择的音效类型（默认值为"Manbo"）
-    // 建议：如果SettingWidget有封装好的getEliminateSoundType()接口，可替换此处的QSettings直接调用，更符合封装原则
     QSettings settings("GemMatch", "Settings");
     QString soundType = settings.value("Music/EliminateType", "Manbo").toString();
     // 将QString转为std::string，方便拼接文件名
@@ -96,9 +99,9 @@ void AudioManager::playEliminateSound(int comboCount) {
 
     // 3. 根据连续消除次数选择音效的数字后缀（1-5）
     int soundSuffix = 1; // 默认后缀为1
-    if (comboCount <= 3) {
+    if (comboCount < 2) {
         // 普通消除：使用1/2/3后缀
-        soundSuffix = comboCount;
+        soundSuffix = m_randomGenerator.bounded(1, 4);
     } else {
         // 连续消除：超过3次则循环使用4/5后缀
         soundSuffix = (comboCount % 2 == 0) ? 4 : 5;

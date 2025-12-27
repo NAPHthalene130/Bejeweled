@@ -117,20 +117,20 @@ void GameWindow::switchWidget(QWidget* widget)
     widget->show();
     QString bgmPath;
     if (widget == menuWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/menu_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/menu_bgm.mp3"));
     } else if (widget == achievementsWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/achievements_bgm.ogg"));
     } else if (widget == playMenuWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/playmenu_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/playmenu_bgm.mp3"));
     } else if (widget == settingWidget) {
         // 设置界面可以播放单独的背景音乐或暂停
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/setting_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/setting_bgm.mp3"));
     } else if (widget == storeWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/store_bgm.ogg"));
     } else if (widget == rankListWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.ogg"));
     } else if (widget == singleModeGameWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.mp3"));
     }
     
     if (!bgmPath.isEmpty()) {
