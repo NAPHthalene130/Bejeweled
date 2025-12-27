@@ -219,3 +219,166 @@ void Gemstone::setupMaterial() {
     m_material->setSpecular(Qt::white);
     m_material->setShininess(50.0f);
 }
+
+void Gemstone::setSpecial(bool special) {
+    if (this->special != special) {
+        this->special = special;
+        updateSpecialEffects();
+    }
+}
+
+bool Gemstone::isSpecial() const {
+    return special;
+}
+
+void Gemstone::updateSpecialEffects() {
+    clearSpecialEffects();
+
+    if (!special) {
+        return;
+    }
+
+    // 1. Halo Effect (Glowing ring/sphere)
+    m_haloEntity = new Qt3DCore::QEntity(this);
+    
+    // Use a torus for a "halo" ring effect, or a larger sphere for a "glow"
+    // Let's use a Torus for a visible halo ring
+    Qt3DExtras::QTorusMesh* haloMesh = new Qt3DExtras::QTorusMesh();
+    haloMesh->setRadius(0.7f);
+    haloMesh->setMinorRadius(0.05f);
+    haloMesh->setRings(30);
+    haloMesh->setSlices(30);
+
+    Qt3DExtras::QPhongMaterial* haloMat = new Qt3DExtras::QPhongMaterial();
+    haloMat->setDiffuse(QColor(255, 255, 200));
+    haloMat->setAmbient(QColor(255, 255, 200));
+    haloMat->setSpecular(Qt::white);
+    haloMat->setShininess(100.0f);
+    
+    Qt3DCore::QTransform* haloTransform = new Qt3DCore::QTransform();
+    // Tilt the halo slightly
+    haloTransform->setRotationX(30.0f);
+
+    m_haloEntity->addComponent(haloMesh);
+    m_haloEntity->addComponent(haloMat);
+    m_haloEntity->addComponent(haloTransform);
+
+    // Pulse animation for the halo
+    m_haloScaleAnimation = new QPropertyAnimation(haloTransform, "scale3D");
+    m_haloScaleAnimation->setStartValue(QVector3D(1.0f, 1.0f, 1.0f));
+    m_haloScaleAnimation->setEndValue(QVector3D(1.2f, 1.2f, 1.2f));
+    m_haloScaleAnimation->setDuration(1000);
+    m_haloScaleAnimation->setLoopCount(-1);
+    m_haloScaleAnimation->setEasingCurve(QEasingCurve::InOutSine);
+    m_haloScaleAnimation->start();
+
+    // 2. Particle Effects (Orbiting small spheres)
+    m_particlesRoot = new Qt3DCore::QEntity(this);
+    int particleCount = 6;
+    
+    for (int i = 0; i < particleCount; ++i) {
+        Qt3DCore::QEntity* pEntity = new Qt3DCore::QEntity(m_particlesRoot);
+        
+        Qt3DExtras::QSphereMesh* pMesh = new Qt3DExtras::QSphereMesh();
+        pMesh->setRadius(0.08f);
+        
+        Qt3DExtras::QPhongMaterial* pMat = new Qt3DExtras::QPhongMaterial();
+        // Gold/Light color
+        pMat->setDiffuse(QColor(255, 255, 100));
+        pMat->setAmbient(QColor(255, 255, 0));
+        pMat->setShininess(50.0f);
+        
+        Qt3DCore::QTransform* pTransform = new Qt3DCore::QTransform();
+        
+        pEntity->addComponent(pMesh);
+        pEntity->addComponent(pMat);
+        pEntity->addComponent(pTransform);
+        
+        m_particleEntities.push_back(pEntity);
+
+        // Orbit animation
+        // We animate the rotation of the particle around the center.
+        // Simple way: calculate position based on angle and radius in a property animation?
+        // Or cleaner: Parent the particle to a pivot, rotate the pivot.
+        
+        // Let's use pivot approach for simpler code, but wait, if I create a pivot for each particle...
+        // Actually, let's just make them orbit using simple circular math if possible, 
+        // but QPropertyAnimation works on properties.
+        // Let's create a pivot entity for EACH particle at (0,0,0) and parent the particle to it, 
+        // then offset the particle, then rotate the pivot.
+        
+        Qt3DCore::QEntity* pivot = new Qt3DCore::QEntity(m_particlesRoot);
+        Qt3DCore::QTransform* pivotTransform = new Qt3DCore::QTransform();
+        pivot->addComponent(pivotTransform);
+        
+        // Reparent particle to pivot
+        pEntity->setParent(pivot);
+        pTransform->setTranslation(QVector3D(0.9f, 0.0f, 0.0f)); // Radius 0.9
+        
+        // Rotate pivot
+        QPropertyAnimation* orbitAnim = new QPropertyAnimation(pivotTransform, "rotationY");
+        orbitAnim->setStartValue(0.0f);
+        orbitAnim->setEndValue(360.0f);
+        // Random speed and direction
+        int duration = 1500 + QRandomGenerator::global()->bounded(1500);
+        orbitAnim->setDuration(duration);
+        orbitAnim->setLoopCount(-1);
+        
+        // Randomize start angle
+        float startAngle = (360.0f / particleCount) * i;
+        pivotTransform->setRotationY(startAngle);
+        orbitAnim->setStartValue(startAngle);
+        orbitAnim->setEndValue(startAngle + 360.0f);
+        
+        // Random axis tilt
+        float tiltX = QRandomGenerator::global()->bounded(60) - 30;
+        float tiltZ = QRandomGenerator::global()->bounded(60) - 30;
+        QQuaternion tilt = QQuaternion::fromEulerAngles(tiltX, 0, tiltZ);
+        // We can't easily tilt the pivot AND rotate Y local without complex transform hierarchy.
+        // But for simplicity, let's just rotate Y.
+        // If we want tilted orbits, we can put the pivot inside ANOTHER pivot that is tilted.
+        
+        Qt3DCore::QEntity* tiltRoot = new Qt3DCore::QEntity(m_particlesRoot);
+        Qt3DCore::QTransform* tiltTransform = new Qt3DCore::QTransform();
+        tiltTransform->setRotation(tilt);
+        tiltRoot->addComponent(tiltTransform);
+        
+        pivot->setParent(tiltRoot);
+
+        orbitAnim->start();
+        m_particleAnimations.push_back(orbitAnim);
+    }
+}
+
+void Gemstone::clearSpecialEffects() {
+    if (m_haloEntity) {
+        m_haloEntity->setParent((Qt3DCore::QNode*)nullptr);
+        delete m_haloEntity;
+        m_haloEntity = nullptr;
+    }
+    if (m_haloScaleAnimation) {
+        // Animation is child of entity or we manage it? 
+        // We created it with parent as transform or similar? 
+        // Usually it's better to explicitly delete if we stored pointer and didn't parent it to QObject that gets deleted.
+        // But m_haloScaleAnimation parent is likely the target object or we didn't set parent.
+        // Let's safe delete.
+        delete m_haloScaleAnimation;
+        m_haloScaleAnimation = nullptr;
+    }
+
+    if (m_particlesRoot) {
+        m_particlesRoot->setParent((Qt3DCore::QNode*)nullptr);
+        delete m_particlesRoot;
+        m_particlesRoot = nullptr;
+    }
+    
+    m_particleEntities.clear();
+    // Animations are likely deleted when their parents (transforms/entities) are deleted if properly parented, 
+    // but here we created them with 'new QPropertyAnimation(target, prop)'. 
+    // If target is deleted, animation might dangle if not parented to a QObject.
+    // It is safer to delete them.
+    for (auto anim : m_particleAnimations) {
+        delete anim;
+    }
+    m_particleAnimations.clear();
+}
