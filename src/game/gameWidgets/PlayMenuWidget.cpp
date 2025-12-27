@@ -431,6 +431,7 @@ void PlayMenuWidget::multiModeButtonClicked() {
         GameNetData joinMsg;
         joinMsg.setType(0);
         joinMsg.setID(gameWindow->getUserID());
+        joinMsg.setData("ENTER");
         net->sendData(joinMsg);
     } else {
         AuthNoticeDialog* dialog = new AuthNoticeDialog("提示", "无法连接到服务器", 3, this);

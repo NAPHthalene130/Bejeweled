@@ -1,6 +1,8 @@
 #include "MultiGameWaitWidget.h"
 #include "PlayMenuWidget.h"
 #include "../GameWindow.h"
+#include "../data/NetDataIO.h"
+#include "../data/GameNetData.h"
 #include "../components/MenuButton.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -70,13 +72,18 @@ void MultiGameWaitWidget::resetRoomPeopleHaveLabel(int people) {
 
 void MultiGameWaitWidget::backButtonClicked() {
     if (gameWindow) {
+        NetDataIO* netDataIO = gameWindow->getNetDataIO();
+        if (netDataIO) {
+            GameNetData gameNetData;
+            gameNetData.setType(0);
+            gameNetData.setData("EXIT");
+            gameNetData.setID(gameWindow->getUserID());
+            netDataIO->sendData(gameNetData);
+        }
+
         if (gameWindow->getPlayMenuWidget()) {
              // 切换回PlayMenuWidget
              gameWindow->switchWidget(gameWindow->getPlayMenuWidget());
-             
-             // TODO: Network exit logic (Tell server we left the room)
-             // NetDataIO* net = gameWindow->getNetDataIO();
-             // if (net) { ... send exit room packet ... }
         }
     }
 }
