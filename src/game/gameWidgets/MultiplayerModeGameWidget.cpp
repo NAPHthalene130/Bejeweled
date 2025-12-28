@@ -197,7 +197,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     mainLayout->addStretch(1);
     
     rightPanel = new QWidget(this);
-    rightPanel->setFixedWidth(420);
+    rightPanel->setFixedWidth(480);  // 增加宽度以容纳两个小棋盘
     rightPanel->setStyleSheet(R"(
         QWidget {
             background-color: rgba(12, 14, 24, 120);
@@ -274,15 +274,15 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     infoLayout->addWidget(waitingLabel);
     panelLayout->addWidget(infoCard, 0, Qt::AlignTop);
 
-    // Other players' board panel
+    // Other players' board panel - 使用网格布局以支持两个并排的小棋盘
     otherPlayersPanelWidget = new QWidget(rightPanel);
     otherPlayersPanelWidget->setStyleSheet("QWidget { background: transparent; }");
     otherPlayersPanelLayout = new QVBoxLayout(otherPlayersPanelWidget);
     otherPlayersPanelLayout->setContentsMargins(0, 10, 0, 10);
-    otherPlayersPanelLayout->setSpacing(10);
-    panelLayout->addWidget(otherPlayersPanelWidget, 0, Qt::AlignTop);
+    otherPlayersPanelLayout->setSpacing(12);
+    panelLayout->addWidget(otherPlayersPanelWidget, 1, Qt::AlignTop);  // 使用stretch因子1使其占用更多空间
 
-    panelLayout->addStretch(1);
+    panelLayout->addStretch(0);  // 去掉多余的stretch，让棋盘区域占用更多空间
 
     backToMenuButton = new QPushButton("返回菜单", rightPanel);
     backToMenuButton->setFixedSize(180, 54);
@@ -1612,11 +1612,17 @@ void MultiplayerModeGameWidget::handleConnectivityTest(const GameNetData& data) 
 
     appendDebug(QString("Connectivity test received. Players in room: %1").arg(idToNum.size()));
 
+    // 限制最多3个玩家
+    if (idToNum.size() > 3) {
+        appendDebug("Warning: More than 3 players detected, limiting to 3");
+    }
+
     // Check if all players are ready (based on server's response)
-    if (idToNum.size() > 1) {
+    // 至少需要2个玩家（包括自己），最多3个玩家
+    if (idToNum.size() >= 2 && idToNum.size() <= 3) {
         allPlayersReady = true;
         if (waitingLabel) {
-            waitingLabel->setText("所有玩家已就绪！");
+            waitingLabel->setText(QString("所有玩家已就绪！(%1/3)").arg(idToNum.size()));
             waitingLabel->setStyleSheet("color: rgba(100,255,100,220); background: transparent;");
         }
 
@@ -1634,10 +1640,10 @@ void MultiplayerModeGameWidget::handleConnectivityTest(const GameNetData& data) 
             appendDebug("Started periodic board synchronization (every 5 seconds)");
         }
 
-        appendDebug("All players ready! Game can start.");
-    } else {
+        appendDebug(QString("All players ready! Game can start with %1 players.").arg(idToNum.size()));
+    } else if (idToNum.size() < 2) {
         if (waitingLabel) {
-            waitingLabel->setText("等待其他玩家...");
+            waitingLabel->setText(QString("等待其他玩家... (%1/3)").arg(idToNum.size()));
             waitingLabel->setStyleSheet("color: rgba(255,220,120,220); background: transparent;");
         }
         appendDebug("Still waiting for other players...");
@@ -1802,6 +1808,12 @@ void MultiplayerModeGameWidget::createOtherPlayerBoardWidget(const std::string& 
         return;
     }
 
+    // 限制最多2个其他玩家的棋盘（自己加上最多2个其他玩家 = 最多3人）
+    if (otherPlayersBoardWidgets.size() >= 2) {
+        appendDebug(QString("Cannot create board for player %1: Maximum 2 other players allowed").arg(QString::fromStdString(playerId)));
+        return;
+    }
+
     // Create container for this player
     QWidget* playerContainer = new QWidget(otherPlayersPanelWidget);
     playerContainer->setStyleSheet(R"(
@@ -1811,45 +1823,45 @@ void MultiplayerModeGameWidget::createOtherPlayerBoardWidget(const std::string& 
             border-radius: 12px;
         }
     )");
-    playerContainer->setFixedHeight(200);
+    playerContainer->setFixedSize(440, 350);  // 增加尺寸以容纳更大的棋盘
 
     QVBoxLayout* containerLayout = new QVBoxLayout(playerContainer);
-    containerLayout->setContentsMargins(8, 8, 8, 8);
-    containerLayout->setSpacing(5);
+    containerLayout->setContentsMargins(12, 12, 12, 12);
+    containerLayout->setSpacing(8);
 
     // Player info label
     QLabel* infoLabel = new QLabel(playerContainer);
     QFont infoFont = infoLabel->font();
     infoFont.setFamily("Microsoft YaHei");
-    infoFont.setPointSize(10);
+    infoFont.setPointSize(11);
     infoFont.setBold(true);
     infoLabel->setFont(infoFont);
-    infoLabel->setStyleSheet("color: rgba(255,255,255,220); background: transparent;");
+    infoLabel->setStyleSheet("color: rgba(255,255,255,235); background: transparent;");
     infoLabel->setText(QString("玩家 %1: 0分").arg(QString::fromStdString(playerId)));
     containerLayout->addWidget(infoLabel);
 
-    // Mini board widget
+    // Mini board widget - 更大的棋盘
     QWidget* boardWidget = new QWidget(playerContainer);
     boardWidget->setStyleSheet("QWidget { background: transparent; }");
     QGridLayout* boardLayout = new QGridLayout(boardWidget);
-    boardLayout->setSpacing(1);
+    boardLayout->setSpacing(2);  // 增加间距使棋盘更清晰
     boardLayout->setContentsMargins(0, 0, 0, 0);
 
     // Create 8x8 grid of labels
     std::vector<std::vector<QLabel*>> cells(8, std::vector<QLabel*>(8));
-    int cellSize = 16;  // Small cell size for mini board
+    int cellSize = 30;  // 增加单元格大小以提高可见性
 
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             QLabel* cell = new QLabel(boardWidget);
             cell->setFixedSize(cellSize, cellSize);
-            cell->setStyleSheet("QLabel { background-color: rgba(100,100,100,150); border: 1px solid rgba(80,80,80,100); }");
+            cell->setStyleSheet("QLabel { background-color: rgba(100,100,100,150); border: 1px solid rgba(80,80,80,120); border-radius: 3px; }");
             boardLayout->addWidget(cell, i, j);
             cells[i][j] = cell;
         }
     }
 
-    containerLayout->addWidget(boardWidget);
+    containerLayout->addWidget(boardWidget, 0, Qt::AlignCenter);
 
     // Store references
     otherPlayersBoardWidgets[playerId] = playerContainer;
@@ -1859,7 +1871,7 @@ void MultiplayerModeGameWidget::createOtherPlayerBoardWidget(const std::string& 
     // Add to layout
     otherPlayersPanelLayout->addWidget(playerContainer);
 
-    appendDebug(QString("Created board widget for player %1").arg(QString::fromStdString(playerId)));
+    appendDebug(QString("Created board widget for player %1 (total: %2/2)").arg(QString::fromStdString(playerId)).arg(otherPlayersBoardWidgets.size()));
 }
 
 void MultiplayerModeGameWidget::updateOtherPlayerBoardUI(const std::string& playerId) {
