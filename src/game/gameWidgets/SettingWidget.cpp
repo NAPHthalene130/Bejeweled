@@ -242,7 +242,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     qualityCombo->addItems({"低", "中", "高", "极致"});
     gemStyleCombo->addItems({"默认风格", "风格一", "风格二", "自定义"});
     eliminateSoundCombo->setStyleSheet(comboStyle);
-    eliminateSoundCombo->addItems({"Manbo", "原版"});
+    eliminateSoundCombo->addItems({"Manbo", "Original"});
 
     // 按钮样式（保留）
     QString btnStyle = R"(

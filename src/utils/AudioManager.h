@@ -6,6 +6,7 @@
 #include <QMediaDevices>
 #include <QAudioDevice>
 #include <QElapsedTimer>
+#include <QRandomGenerator> 
 
 class AudioManager : public QObject {
     Q_OBJECT
@@ -29,6 +30,7 @@ private:
     QMediaDevices* mediaDevices;
     QElapsedTimer throttleTimer;
     qint64 lastHoverPlayTime;
+    QRandomGenerator m_randomGenerator;  
 };
 
 #endif // AUDIO_MANAGER_H

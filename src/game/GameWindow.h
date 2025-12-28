@@ -15,6 +15,9 @@ class SingleModeGameWidget;
 class WhirlwindModeGameWidget;
 class MultiplayerModeGameWidget;
 class FinalWidget;
+class MultiGameWaitWidget;
+class NetDataIO;
+class LogWindow;
 
 #include <vector>
 #include "data/AchievementData.h"
@@ -32,15 +35,32 @@ public:
     SingleModeGameWidget* getSingleModeGameWidget() const { return singleModeGameWidget; }
     WhirlwindModeGameWidget* getWhirlwindModeGameWidget() const { return whirlwindModeGameWidget; }
     MultiplayerModeGameWidget* getMultiplayerModeGameWidget() const { return multiplayerModeGameWidget; }
+    PlayMenuWidget* getPlayMenuWidget() const { return playMenuWidget; }
     FinalWidget* getFinalWidget() const { return finalWidget; }
+    MultiGameWaitWidget* getMultiGameWaitWidget() const { return multiGameWaitWidget; }
+    void setMultiGameWaitWidget(MultiGameWaitWidget* widget) { multiGameWaitWidget = widget; }
+
+    // NetDataIO access
+    NetDataIO* getNetDataIO() const { return netDataIO; }
+    void setNetDataIO(NetDataIO* netDataIO) { this->netDataIO = netDataIO; }
+
+    LogWindow* getLogWindow() const { return logWindow; }
 
     // Achievements access
     std::vector<AchievementData>& getAchievements() { return achievementsContainer; }
     void addAchievement(const AchievementData& a) { achievementsContainer.push_back(a); }
     MenuWidget* getMenuWidget() const { return menuWidget; }
 
+    std::string getIp() const;
+    void setIp(const std::string& ip);
+
+    std::string getPort() const;
+    void setPort(const std::string& port);
+
 private:
     std::string userID;
+    std::string ip = "127.0.0.1";
+    std::string port = "10090";
     QWidget* currentWidget = nullptr;
     AchievementsWidget* achievementsWidget = nullptr;
     MenuWidget* menuWidget = nullptr;
@@ -52,6 +72,9 @@ private:
     WhirlwindModeGameWidget* whirlwindModeGameWidget = nullptr;
     MultiplayerModeGameWidget* multiplayerModeGameWidget = nullptr;
     FinalWidget* finalWidget = nullptr;
+    MultiGameWaitWidget* multiGameWaitWidget = nullptr;
+    NetDataIO* netDataIO = nullptr;
+    LogWindow* logWindow = nullptr;
 
     std::vector<AchievementData> achievementsContainer;
 

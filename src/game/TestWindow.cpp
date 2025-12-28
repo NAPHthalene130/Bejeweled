@@ -64,8 +64,16 @@ void TestWindow::setup3DScene() {
     int types = 8;
     float startX = -((types - 1) * 2.5f) / 2.0f;
     
+    // Normal gems (top row)
     for (int i = 0; i < types; ++i) {
         Gemstone* gem = new Gemstone(i, "default", rootEntity);
-        gem->transform()->setTranslation(QVector3D(startX + i * 2.5f, 0, 0));
+        gem->transform()->setTranslation(QVector3D(startX + i * 2.5f, 2.0f, 0));
+    }
+
+    // Special gems (bottom row)
+    for (int i = 0; i < types; ++i) {
+        Gemstone* gem = new Gemstone(i, "default", rootEntity);
+        gem->transform()->setTranslation(QVector3D(startX + i * 2.5f, -2.0f, 0));
+        gem->setSpecial(true);
     }
 }

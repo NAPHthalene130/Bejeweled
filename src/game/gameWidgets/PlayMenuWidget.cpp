@@ -2,7 +2,10 @@
 #include "../GameWindow.h"
 #include "SingleModeGameWidget.h"
 #include "MultiplayerModeGameWidget.h"
+#include "MultiGameWaitWidget.h"
 #include "../components/MenuButton.h"
+#include "../data/GameNetData.h"
+#include "../../auth/components/AuthNoticeDialog.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPropertyAnimation>
@@ -27,6 +30,10 @@
 #include <Qt3DRender/QPointLight>
 #include <QVector3D>
 #include <QRandomGenerator>
+#include <QTcpSocket>
+#include <QHostAddress>
+#include <json.hpp>
+#include "../data/NetDataIO.h"
 
 PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -168,9 +175,9 @@ void PlayMenuWidget::setup3DView() {
         intensityAnim->start();
     };
 
-    createOrbitingLight(7.0f, 4.0f, 10.0f, 9000, 1.1f, 2.4f);
-    createOrbitingLight(7.0f, -3.5f, 9.0f, 12000, 1.0f, 2.1f);
-    createOrbitingLight(6.0f, 0.0f, 11.0f, 7000, 0.9f, 2.0f);
+    createOrbitingLight(7.0f, 4.0f, 10.0f, 9000, 0.4f, 0.8f);
+    createOrbitingLight(7.0f, -3.5f, 9.0f, 12000, 0.3f, 0.7f);
+    createOrbitingLight(6.0f, 0.0f, 11.0f, 7000, 0.3f, 0.6f);
 
     // --- 炫酷效果：旋转的立方体环 ---
     
@@ -409,5 +416,31 @@ void PlayMenuWidget::resizeEvent(QResizeEvent* event) {
     if (view3DContainer) {
         view3DContainer->setGeometry(rect());
         view3DContainer->lower();
+    }
+}
+
+void PlayMenuWidget::multiModeButtonClicked() {
+    if (gameWindow->getUserID() == "$#SINGLE#$") {
+        AuthNoticeDialog* dialog = new AuthNoticeDialog("提示", "当前为离线模式无法进行多人游戏", 2, this);
+        dialog->exec();
+        return;
+    }
+
+    QTcpSocket socket;
+    socket.connectToHost(QString::fromStdString(gameWindow->getIp()), std::stoi(gameWindow->getPort()));
+
+    if (socket.waitForConnected(3000)) {
+        socket.disconnectFromHost();
+        NetDataIO* net = new NetDataIO(gameWindow->getIp(), gameWindow->getPort(), gameWindow);
+        gameWindow->setNetDataIO(net);
+
+        GameNetData joinMsg;
+        joinMsg.setType(0);
+        joinMsg.setID(gameWindow->getUserID());
+        joinMsg.setData("ENTER");
+        net->sendData(joinMsg);
+    } else {
+        AuthNoticeDialog* dialog = new AuthNoticeDialog("提示", "无法连接到服务器", 3, this);
+        dialog->exec();
     }
 }

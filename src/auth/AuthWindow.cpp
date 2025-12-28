@@ -91,8 +91,8 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
                 mainUI->show();
                 
                 // Show TestWindow
-                TestWindow* testWindow = new TestWindow();
-                testWindow->show();
+                // TestWindow* testWindow = new TestWindow();
+                // testWindow->show();
 
                 this->hide();
             } else {// 登录失败弹窗

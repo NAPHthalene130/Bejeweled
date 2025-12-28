@@ -36,6 +36,9 @@ private:
     void setupUI();
     void setup3DView();
 
+private slots:
+    void multiModeButtonClicked();
+
 signals:
     void backToMenu();
     void startNormalMode();

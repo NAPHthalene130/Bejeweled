@@ -9,6 +9,7 @@
 #include "gameWidgets/WhirlwindModeGameWidget.h"
 #include "gameWidgets/MultiplayerModeGameWidget.h"
 #include "gameWidgets/FinalWidget.h"
+#include "gameWidgets/MultiGameWaitWidget.h"
 #include "components/MenuButton.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
@@ -17,8 +18,13 @@
 #include <string>
 #include "../utils/BGMManager.h"
 #include "../utils/ResourceUtils.h"
+#include "../utils/LogWindow.h"
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
+    
+    logWindow = new LogWindow();
+    logWindow->show();
+
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
     connect(menuWidget, &MenuWidget::openAchievements, this, [this]() { this->switchWidget(achievementsWidget); });
@@ -31,6 +37,11 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     whirlwindModeGameWidget = new WhirlwindModeGameWidget(this, this);
     multiplayerModeGameWidget = new MultiplayerModeGameWidget(this, this, userID);
     finalWidget = new FinalWidget(this, this);
+    multiGameWaitWidget = new MultiGameWaitWidget(this, this);
+
+    // 连接排行榜信号
+    connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { this->switchWidget(rankListWidget); });
+    connect(rankListWidget, &RankListWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
 
     achievementsWidget->hide();
     playMenuWidget->hide();
@@ -41,6 +52,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     whirlwindModeGameWidget->hide();
     multiplayerModeGameWidget->hide();
     finalWidget->hide();
+    multiGameWaitWidget->hide();
 
     connect(menuWidget, &MenuWidget::startGame, [this]() {
         switchWidget(playMenuWidget);
@@ -92,6 +104,10 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 }
 
 GameWindow::~GameWindow() {
+    if (logWindow) {
+        delete logWindow;
+        logWindow = nullptr;
+    }
 }
 
 std::string GameWindow::getUserID() {
@@ -99,6 +115,22 @@ std::string GameWindow::getUserID() {
 }
 void GameWindow::setUserID(std::string userID) {
     this->userID = userID;
+}
+
+std::string GameWindow::getIp() const {
+    return ip;
+}
+
+void GameWindow::setIp(const std::string& ip) {
+    this->ip = ip;
+}
+
+std::string GameWindow::getPort() const {
+    return port;
+}
+
+void GameWindow::setPort(const std::string& port) {
+    this->port = port;
 }
 
 void GameWindow::switchWidget(QWidget* widget)
@@ -120,14 +152,14 @@ void GameWindow::switchWidget(QWidget* widget)
     widget->show();
     QString bgmPath;
     if (widget == menuWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/menu_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/menu_bgm.mp3"));
     } else if (widget == achievementsWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/achievements_bgm.ogg"));
     } else if (widget == playMenuWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/playmenu_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/playmenu_bgm.mp3"));
     } else if (widget == settingWidget) {
         // 设置界面可以播放单独的背景音乐或暂停
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/setting_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/setting_bgm.mp3"));
     } else if (widget == storeWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/store_bgm.ogg"));
     } else if (widget == rankListWidget) {

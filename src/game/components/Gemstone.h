@@ -22,6 +22,8 @@ public:
     void setStyle(const std::string& style);
 
     Qt3DCore::QTransform* transform() const;
+    bool isSpecial() const;
+    void setSpecial(bool special);
 
 signals:
     void clicked(Gemstone* self);
@@ -30,6 +32,7 @@ signals:
 private:
     int type;
     std::string style;
+    bool special = false;
 
     Qt3DCore::QTransform* m_transform;
     Qt3DExtras::QPhongMaterial* m_material;
@@ -37,9 +40,19 @@ private:
     Qt3DRender::QObjectPicker* m_picker;
     QPropertyAnimation* m_rotationAnimation;
 
+    // Special effects components
+    Qt3DCore::QEntity* m_haloEntity = nullptr;
+    QPropertyAnimation* m_haloScaleAnimation = nullptr;
+    
+    Qt3DCore::QEntity* m_particlesRoot = nullptr;
+    std::vector<Qt3DCore::QEntity*> m_particleEntities;
+    std::vector<QPropertyAnimation*> m_particleAnimations;
+
     void updateAppearance();
     void setupMesh();
     void setupMaterial();
+    void updateSpecialEffects();
+    void clearSpecialEffects();
 };
 
 #endif // GEMSTONE_H
