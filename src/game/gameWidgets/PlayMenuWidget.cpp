@@ -5,6 +5,7 @@
 #include "../components/MenuButton.h"
 #include "../data/GameNetData.h"
 #include "../../auth/components/AuthNoticeDialog.h"
+#include "../data/NetDataIO.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPropertyAnimation>
@@ -32,7 +33,7 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 #include <json.hpp>
-#include "../data/NetDataIO.h"
+
 
 PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
