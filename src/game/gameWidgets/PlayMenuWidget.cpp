@@ -1,6 +1,7 @@
 #include "PlayMenuWidget.h"
 #include "../GameWindow.h"
 #include "SingleModeGameWidget.h"
+#include "MultiplayerModeGameWidget.h"
 #include "MultiGameWaitWidget.h"
 #include "../components/MenuButton.h"
 #include "../data/GameNetData.h"
@@ -97,7 +98,12 @@ void PlayMenuWidget::setupUI() {
         emit startRotateMode();
     });
 
-    connect(multiModeButton, &QPushButton::clicked, this, &PlayMenuWidget::multiModeButtonClicked);
+    connect(multiModeButton, &QPushButton::clicked, this, [this]() {
+        if (gameWindow && gameWindow->getMultiplayerModeGameWidget()) {
+            gameWindow->getMultiplayerModeGameWidget()->reset(1);  // Normal mode for multiplayer
+            gameWindow->switchWidget(gameWindow->getMultiplayerModeGameWidget());
+        }
+    });
 }
 
 void PlayMenuWidget::setup3DView() {
