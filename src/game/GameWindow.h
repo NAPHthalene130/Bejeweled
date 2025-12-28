@@ -57,6 +57,8 @@ public:
     std::string getPort() const;
     void setPort(const std::string& port);
 
+    std::string getGemstoneStyle() const { return gemstoneStyle; }
+    void setGemstoneStyle(const std::string& style) { gemstoneStyle = style; }
 private:
     std::string userID;
     std::string ip = "127.0.0.1";
@@ -75,7 +77,7 @@ private:
     MultiGameWaitWidget* multiGameWaitWidget = nullptr;
     NetDataIO* netDataIO = nullptr;
     LogWindow* logWindow = nullptr;
-
+    std::string gemstoneStyle;
     std::vector<AchievementData> achievementsContainer;
 
 };

@@ -183,7 +183,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(960, 960);
+    container3d->setFixedSize(1000, 1000);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true); // 启用鼠标追踪
     container3d->setAttribute(Qt::WA_Hover, true); // 启用hover事件
@@ -194,28 +194,15 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     
     // 将容器对齐到左侧，垂直居中
     mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    mainLayout->addStretch(1);
     
-    rightPanel = new QWidget(this);
-    rightPanel->setFixedWidth(480);  // 增加宽度以容纳两个小棋盘
-    rightPanel->setStyleSheet(R"(
-        QWidget {
-            background-color: rgba(12, 14, 24, 120);
-            border: 1px solid rgba(255, 255, 255, 35);
-            border-radius: 18px;
-        }
-    )");
-    auto* panelShadow = new QGraphicsDropShadowEffect(rightPanel);
-    panelShadow->setBlurRadius(26);
-    panelShadow->setOffset(0, 10);
-    panelShadow->setColor(QColor(0, 0, 0, 140));
-    rightPanel->setGraphicsEffect(panelShadow);
+    // 中间布局用于放置状态信息
+    QVBoxLayout* centerLayout = new QVBoxLayout();
+    centerLayout->setContentsMargins(0, 50, 0, 50);
+    mainLayout->addLayout(centerLayout);
 
-    auto* panelLayout = new QVBoxLayout(rightPanel);
-    panelLayout->setContentsMargins(18, 18, 18, 18);
-    panelLayout->setSpacing(16);
-
-    auto* infoCard = new QWidget(rightPanel);
+    // 信息卡片
+    auto* infoCard = new QWidget(this);
+    infoCard->setFixedWidth(300);
     infoCard->setStyleSheet(R"(
         QWidget {
             background-color: rgba(255, 255, 255, 18);
@@ -272,19 +259,10 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     infoLayout->addWidget(timeBoardLabel);
     infoLayout->addWidget(connectionStatusLabel);
     infoLayout->addWidget(waitingLabel);
-    panelLayout->addWidget(infoCard, 0, Qt::AlignTop);
-
-    // Other players' board panel - 使用网格布局以支持两个并排的小棋盘
-    otherPlayersPanelWidget = new QWidget(rightPanel);
-    otherPlayersPanelWidget->setStyleSheet("QWidget { background: transparent; }");
-    otherPlayersPanelLayout = new QVBoxLayout(otherPlayersPanelWidget);
-    otherPlayersPanelLayout->setContentsMargins(0, 10, 0, 10);
-    otherPlayersPanelLayout->setSpacing(12);
-    panelLayout->addWidget(otherPlayersPanelWidget, 1, Qt::AlignTop);  // 使用stretch因子1使其占用更多空间
-
-    panelLayout->addStretch(0);  // 去掉多余的stretch，让棋盘区域占用更多空间
-
-    backToMenuButton = new QPushButton("返回菜单", rightPanel);
+    centerLayout->addWidget(infoCard, 0, Qt::AlignTop | Qt::AlignHCenter);
+    
+    // 返回按钮
+    backToMenuButton = new QPushButton("返回菜单", this);
     backToMenuButton->setFixedSize(180, 54);
     backToMenuButton->setCursor(Qt::PointingHandCursor);
     backToMenuButton->setStyleSheet(R"(
@@ -310,6 +288,57 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     backShadow->setOffset(0, 8);
     backShadow->setColor(QColor(0, 0, 0, 120));
     backToMenuButton->setGraphicsEffect(backShadow);
+    centerLayout->addStretch(1);
+    centerLayout->addWidget(backToMenuButton, 0, Qt::AlignBottom | Qt::AlignHCenter);
+
+    mainLayout->addStretch(1);
+    
+    rightPanel = new QWidget(this);
+    rightPanel->setFixedWidth(450); 
+    rightPanel->setStyleSheet(R"(
+        QWidget {
+            background-color: rgba(12, 14, 24, 120);
+            border: 1px solid rgba(255, 255, 255, 35);
+            border-radius: 18px;
+        }
+    )");
+    auto* panelShadow = new QGraphicsDropShadowEffect(rightPanel);
+    panelShadow->setBlurRadius(26);
+    panelShadow->setOffset(0, 10);
+    panelShadow->setColor(QColor(0, 0, 0, 140));
+    rightPanel->setGraphicsEffect(panelShadow);
+
+    auto* panelLayout = new QVBoxLayout(rightPanel);
+    panelLayout->setContentsMargins(18, 18, 18, 18);
+    panelLayout->setSpacing(16);
+
+    // Other players' board panel - 使用网格布局以支持两个并排的小棋盘
+    otherPlayersPanelWidget = new QWidget(rightPanel);
+    otherPlayersPanelWidget->setStyleSheet("QWidget { background: transparent; }");
+    otherPlayersPanelLayout = new QVBoxLayout(otherPlayersPanelWidget);
+    otherPlayersPanelLayout->setContentsMargins(0, 10, 0, 10);
+    otherPlayersPanelLayout->setSpacing(12);
+    panelLayout->addWidget(otherPlayersPanelWidget, 1, Qt::AlignCenter); 
+
+    // Initialize Player 1 Window (Top)
+    player1Window = new Qt3DExtras::Qt3DWindow();
+    setupSmall3DWindow(player1Window, &player1RootEntity, &player1Camera);
+    player1Container = QWidget::createWindowContainer(player1Window);
+    player1Container->setFixedSize(400, 400); // 400x400
+    otherPlayersPanelLayout->addWidget(player1Container, 0, Qt::AlignHCenter);
+
+    // Initialize Player 2 Window (Bottom)
+    player2Window = new Qt3DExtras::Qt3DWindow();
+    setupSmall3DWindow(player2Window, &player2RootEntity, &player2Camera);
+    player2Container = QWidget::createWindowContainer(player2Window);
+    player2Container->setFixedSize(400, 400); // 400x400
+    otherPlayersPanelLayout->addWidget(player2Container, 0, Qt::AlignHCenter);
+
+
+    panelLayout->addStretch(0);  // 去掉多余的stretch，让棋盘区域占用更多空间
+
+    mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
+
 
     connect(backToMenuButton, &QPushButton::clicked, this, [this]() {
         GameBackDialog dlg(this);
@@ -1905,6 +1934,103 @@ void MultiplayerModeGameWidget::updateOtherPlayerBoardUI(const std::string& play
         for (int j = 0; j < 8; ++j) {
             // This will be properly updated when we receive board sync data
             cells[i][j]->setStyleSheet("QLabel { background-color: rgba(150,150,150,180); border: 1px solid rgba(100,100,100,120); }");
+        }
+    }
+}
+
+/**
+ * @Author: NAPH130
+ * @Function: 获取ID到数字的映射
+ */
+std::map<std::string, int> MultiplayerModeGameWidget::getIdToNum() const {
+    return idToNum;
+}
+
+/**
+ * @Author: NAPH130
+ * @Function: 设置ID到数字的映射
+ */
+void MultiplayerModeGameWidget::setIdToNum(const std::map<std::string, int>& map) {
+    idToNum = map;
+}
+
+/**
+ * @Author: NAPH130
+ * @Function: 初始化小型3D窗口及其组件
+ */
+void MultiplayerModeGameWidget::setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera) {
+    window->defaultFrameGraph()->setClearColor(QColor(30, 30, 35));
+    *root = new Qt3DCore::QEntity();
+    window->setRootEntity(*root);
+
+    *camera = window->camera();
+    (*camera)->lens()->setPerspectiveProjection(45.0f, 1.0f, 0.1f, 1000.0f);
+    (*camera)->setPosition(QVector3D(0, 0, 18.0f)); 
+    (*camera)->setViewCenter(QVector3D(0, 0, 0));
+    
+    Qt3DCore::QEntity* lightEntity = new Qt3DCore::QEntity(*root);
+    Qt3DRender::QPointLight* light = new Qt3DRender::QPointLight(lightEntity);
+    light->setColor("white");
+    light->setIntensity(1.0f);
+    lightEntity->addComponent(light);
+    
+    Qt3DCore::QTransform* lightTransform = new Qt3DCore::QTransform(lightEntity);
+    lightTransform->setTranslation(QVector3D(0, 0, 20.0f));
+    lightEntity->addComponent(lightTransform);
+}
+
+/**
+ * @Author: NAPH130
+ * @Function: 刷新指定玩家的宝石表格
+ */
+void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vector<int>>& table) {
+    if (table.size() != 8 || table[0].size() != 8) return;
+
+    std::vector<std::vector<Gemstone*>>* targetTable;
+    Qt3DCore::QEntity* targetRoot;
+
+    if (num == 1) {
+        targetTable = &player1Table;
+        targetRoot = player1RootEntity;
+    } else if (num == 2) {
+        targetTable = &player2Table;
+        targetRoot = player2RootEntity;
+    } else {
+        return;
+    }
+
+    // Ensure target table is initialized
+    if (targetTable->empty()) {
+        targetTable->resize(8, std::vector<Gemstone*>(8, nullptr));
+    }
+
+    std::string currentStyle = gameWindow ? gameWindow->getGemstoneStyle() : "style1";
+
+    for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+            int type = table[r][c];
+            Gemstone* gem = (*targetTable)[r][c];
+            
+            if (gem) {
+                // Update existing gem
+                if (gem->getType() != type) {
+                    gem->setType(type);
+                }
+                if (gem->getStyle() != currentStyle) {
+                    gem->setStyle(currentStyle);
+                }
+            } else {
+                // Create new gem
+                gem = new Gemstone(type, currentStyle, targetRoot);
+                gem->setCanBeChosen(false);
+                
+                // Calculate position
+                float x = (c - 3.5f) * 1.1f;
+                float y = (3.5f - r) * 1.1f;
+                
+                gem->transform()->setTranslation(QVector3D(x, y, 0));
+                (*targetTable)[r][c] = gem;
+            }
         }
     }
 }

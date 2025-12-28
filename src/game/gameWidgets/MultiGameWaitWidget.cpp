@@ -44,8 +44,15 @@ void MultiGameWaitWidget::enterRoom() {
 }
 
 MultiGameWaitWidget::~MultiGameWaitWidget() {
-    // Qt3DWindow is managed by the container, but explicit cleanup can be safer if needed.
-    // Usually standard Qt parent-child cleanup works.
+    if (rootEntity) {
+        delete rootEntity;
+    }
+    // view3D is a QWindow, createWindowContainer wraps it.
+    // The container is a child of this widget, so it's deleted automatically.
+    // However, view3D itself (the QWindow) needs to be deleted if it doesn't have a parent.
+    if (view3D) {
+        delete view3D;
+    }
 }
 
 bool MultiGameWaitWidget::getIsInRoom() const {
@@ -168,7 +175,7 @@ void MultiGameWaitWidget::setup3DView() {
     pointLight->setColor(QColor(200, 255, 255));
     pointLight->setIntensity(1.5f);
     lightEntity->addComponent(pointLight);
-    auto* lightTransform = new Qt3DCore::QTransform();
+    auto* lightTransform = new Qt3DCore::QTransform(lightEntity);
     lightTransform->setTranslation(QVector3D(0.0f, 15.0f, 10.0f));
     lightEntity->addComponent(lightTransform);
 
@@ -185,7 +192,7 @@ void MultiGameWaitWidget::setup3DView() {
     coreMat->setMetalness(0.2f);
     coreMat->setRoughness(0.1f);
     
-    auto* coreTransform = new Qt3DCore::QTransform();
+    auto* coreTransform = new Qt3DCore::QTransform(coreEntity);
     coreEntity->addComponent(coreMesh);
     coreEntity->addComponent(coreMat);
     coreEntity->addComponent(coreTransform);
@@ -216,7 +223,7 @@ void MultiGameWaitWidget::setup3DView() {
         // ringMat->setOpacity(0.8f); // setOpacity not available in basic QPhongMaterial in some versions
 
 
-        auto* ringTransform = new Qt3DCore::QTransform();
+        auto* ringTransform = new Qt3DCore::QTransform(ringEntity);
         ringTransform->setRotation(QQuaternion::fromAxisAndAngle(axis, 0.0f));
 
         ringEntity->addComponent(ringMesh);
@@ -237,7 +244,7 @@ void MultiGameWaitWidget::setup3DView() {
 
     // --- Orbiting "Players" (Cubes) ---
     auto* orbitRoot = new Qt3DCore::QEntity(rootEntity);
-    auto* orbitRootTransform = new Qt3DCore::QTransform();
+    auto* orbitRootTransform = new Qt3DCore::QTransform(orbitRoot);
     orbitRoot->addComponent(orbitRootTransform);
     
     // Rotate the whole orbit system slowly
@@ -260,7 +267,7 @@ void MultiGameWaitWidget::setup3DView() {
         double hue = (360.0 / playerCount) * i;
         playerMat->setDiffuse(QColor::fromHsvF(hue/360.0, 0.8, 0.9));
         
-        auto* playerTransform = new Qt3DCore::QTransform();
+        auto* playerTransform = new Qt3DCore::QTransform(playerEntity);
         float angle = (2.0 * M_PI / playerCount) * i;
         float radius = 9.0f + std::sin(angle * 3) * 2.0f; // Wobbly orbit
         float y = std::cos(angle * 2) * 3.0f;
@@ -297,7 +304,7 @@ void MultiGameWaitWidget::setup3DView() {
         pMat->setDiffuse(QColor(200, 255, 200));
         pMat->setAmbient(Qt::black);
         
-        auto* pTransform = new Qt3DCore::QTransform();
+        auto* pTransform = new Qt3DCore::QTransform(pEntity);
         float range = 20.0f;
         float x = -range/2 + QRandomGenerator::global()->generateDouble() * range;
         float y = -range/2 + QRandomGenerator::global()->generateDouble() * range;

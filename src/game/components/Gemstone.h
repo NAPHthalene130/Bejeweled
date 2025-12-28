@@ -25,6 +25,9 @@ public:
     bool isSpecial() const;
     void setSpecial(bool special);
 
+    bool getCanBeChosen() const;
+    void setCanBeChosen(bool can);
+
 signals:
     void clicked(Gemstone* self);
     void pickEvent(const QString& info);
@@ -33,6 +36,7 @@ private:
     int type;
     std::string style;
     bool special = false;
+    bool canBeChosen = true;
 
     Qt3DCore::QTransform* m_transform;
     Qt3DExtras::QPhongMaterial* m_material;

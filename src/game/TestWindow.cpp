@@ -24,7 +24,9 @@ TestWindow::TestWindow(QWidget *parent) : QWidget(parent) {
 }
 
 TestWindow::~TestWindow() {
-    // Root entity cleanup handles children (gemstones, lights)
+    if (rootEntity) {
+        delete rootEntity;
+    }
     if (view3D) {
         delete view3D;
     }
@@ -55,7 +57,7 @@ void TestWindow::setup3DScene() {
     light->setIntensity(1.0f);
     lightEntity->addComponent(light);
     
-    Qt3DCore::QTransform *lightTransform = new Qt3DCore::QTransform();
+    Qt3DCore::QTransform *lightTransform = new Qt3DCore::QTransform(lightEntity);
     lightTransform->setTranslation(QVector3D(0, 0, 20.0f));
     lightEntity->addComponent(lightTransform);
     

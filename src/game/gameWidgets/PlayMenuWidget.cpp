@@ -66,6 +66,10 @@ void PlayMenuWidget::setupUI() {
     multiModeButton = new MenuButton(btnW, btnH, fontSize, QColor(255, 127, 80), "多人模式-对战", this); // 珊瑚色
     multiModeButton->setAttribute(Qt::WA_NativeWindow);
 
+    // 按钮 4：多人测试
+    testMultiButton = new MenuButton(btnW, btnH, fontSize, QColor(60, 179, 113), "多人测试", this); // MediumSeaGreen
+    testMultiButton->setAttribute(Qt::WA_NativeWindow);
+
     // 返回按钮（小型，左上角或底部）
     backButton = new MenuButton(150, 50, 16, QColor(200, 200, 200), "返回", this);
     backButton->setAttribute(Qt::WA_NativeWindow);
@@ -75,6 +79,7 @@ void PlayMenuWidget::setupUI() {
     mainLayout->addWidget(normalModeButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(rotateModeButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(multiModeButton, 0, Qt::AlignCenter);
+    mainLayout->addWidget(testMultiButton, 0, Qt::AlignCenter);
     mainLayout->addStretch(1);
     
     mainLayout->addWidget(backButton, 0, Qt::AlignCenter);
@@ -98,7 +103,9 @@ void PlayMenuWidget::setupUI() {
         emit startRotateMode();
     });
 
-    connect(multiModeButton, &QPushButton::clicked, this, [this]() {
+    connect(multiModeButton, &QPushButton::clicked, this, &PlayMenuWidget::multiModeButtonClicked);
+
+    connect(testMultiButton, &QPushButton::clicked, this, [this]() {
         if (gameWindow && gameWindow->getMultiplayerModeGameWidget()) {
             gameWindow->getMultiplayerModeGameWidget()->reset(1);  // Normal mode for multiplayer
             gameWindow->switchWidget(gameWindow->getMultiplayerModeGameWidget());

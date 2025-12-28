@@ -78,6 +78,14 @@ public:
     void sendNetData(const GameNetData& data);
     void handleReceivedData(const GameNetData& data);
 
+    std::map<std::string, int> getIdToNum() const;
+    void setIdToNum(const std::map<std::string, int>& map);
+    void refreshTabel(int num, const std::vector<std::vector<int>>& table);
+    
+    // Public access to player tables for testing/debug if needed, though usually internal
+    const std::vector<std::vector<Gemstone*>>& getPlayer1Table() const { return player1Table; }
+    const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -200,9 +208,26 @@ private:
     // Other players' board display
     QWidget* otherPlayersPanelWidget = nullptr;
     QVBoxLayout* otherPlayersPanelLayout = nullptr;
+    
+    // Player 1 (Top Small Window)
+    Qt3DExtras::Qt3DWindow* player1Window = nullptr;
+    QWidget* player1Container = nullptr;
+    Qt3DCore::QEntity* player1RootEntity = nullptr;
+    Qt3DRender::QCamera* player1Camera = nullptr;
+    std::vector<std::vector<Gemstone*>> player1Table;
+
+    // Player 2 (Bottom Small Window)
+    Qt3DExtras::Qt3DWindow* player2Window = nullptr;
+    QWidget* player2Container = nullptr;
+    Qt3DCore::QEntity* player2RootEntity = nullptr;
+    Qt3DRender::QCamera* player2Camera = nullptr;
+    std::vector<std::vector<Gemstone*>> player2Table;
+
     std::map<std::string, QLabel*> otherPlayersLabels;  // Player ID -> Score/Info Label
     std::map<std::string, QWidget*> otherPlayersBoardWidgets;  // Player ID -> Board Widget
     std::map<std::string, std::vector<std::vector<QLabel*>>> otherPlayersBoardCells;  // Player ID -> Board cells
+
+    void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H

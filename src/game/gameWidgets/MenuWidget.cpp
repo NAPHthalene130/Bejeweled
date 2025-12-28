@@ -42,6 +42,15 @@ MenuWidget::MenuWidget(QWidget* parent, GameWindow* gameWindow)
     setup3DView();
 }
 
+MenuWidget::~MenuWidget() {
+    if (rootEntity) {
+        delete rootEntity;
+    }
+    if (view3D) {
+        delete view3D;
+    }
+}
+
 void MenuWidget::setupUI() {
     setMinimumSize(1600, 1000);
     mainLayout = new QHBoxLayout(this);
@@ -273,7 +282,7 @@ void MenuWidget::setup3DView() {
     octahedronEntity = new Qt3DCore::QEntity(rootEntity);
     auto material = new Qt3DExtras::QPerVertexColorMaterial(octahedronEntity);
     
-    octahedronTransform = new Qt3DCore::QTransform();
+    octahedronTransform = new Qt3DCore::QTransform(octahedronEntity);
     octahedronTransform->setScale3D(QVector3D(2.5f, 2.5f, 2.5f));
     octahedronTransform->setRotationX(30.0f);
 
@@ -301,7 +310,7 @@ void MenuWidget::setup3DView() {
     torusMaterial->setShininess(120.0f);
     torusMaterial->setAmbient(QColor(0, 50, 100));
 
-    auto torusTransform = new Qt3DCore::QTransform();
+    auto torusTransform = new Qt3DCore::QTransform(torusEntity);
     torusTransform->setRotationX(60.0f);
 
     torusEntity->addComponent(torusMesh);
@@ -327,7 +336,7 @@ void MenuWidget::setup3DView() {
     haloMat->setAmbient(QColor(10, 20, 35));
     haloMat->setSpecular(QColor(255, 255, 255));
     haloMat->setShininess(180.0f);
-    auto* haloTr = new Qt3DCore::QTransform();
+    auto* haloTr = new Qt3DCore::QTransform(haloEntity);
     haloTr->setRotationZ(30.0f);
     haloEntity->addComponent(haloMesh);
     haloEntity->addComponent(haloMat);
@@ -347,7 +356,7 @@ void MenuWidget::setup3DView() {
         objMat->setDiffuse(color);
         objMat->setAmbient(color.darker());
         objMat->setSpecular(Qt::white);
-        objMat->setShininess(50.0f);
+        objMat->setShininess(150.0f);
         
         auto objTransform = new Qt3DCore::QTransform(objEntity);
         
@@ -362,6 +371,7 @@ void MenuWidget::setup3DView() {
         objEntity->setParent(pivotEntity);
         
         objTransform->setTranslation(QVector3D(radius, yOffset, 0.0f));
+        objTransform->setScale3D(QVector3D(0.6f, 0.6f, 0.6f));
         
         // Self rotation
         auto selfRotAnim = new QPropertyAnimation(objTransform, "rotationY", this);
