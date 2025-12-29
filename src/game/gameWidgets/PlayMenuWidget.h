@@ -27,6 +27,7 @@ private:
     MenuButton* rotateModeButton;
     MenuButton* multiModeButton;
     MenuButton* testMultiButton;
+    MenuButton* puzzleModeButton;
     MenuButton* backButton;
 
     // 3D View

@@ -71,6 +71,11 @@ void PlayMenuWidget::setupUI() {
     testMultiButton = new MenuButton(btnW, btnH, fontSize, QColor(60, 179, 113), "多人测试", this); // MediumSeaGreen
     testMultiButton->setAttribute(Qt::WA_NativeWindow);
 
+    //按钮5：解密模式
+    puzzleModeButton= new MenuButton(btnW, btnH, fontSize, QColor(255, 215, 0), "解密模式", this); // 金色
+    puzzleModeButton->setAttribute(Qt::WA_NativeWindow);
+
+
     // 返回按钮（小型，左上角或底部）
     backButton = new MenuButton(150, 50, 16, QColor(200, 200, 200), "返回", this);
     backButton->setAttribute(Qt::WA_NativeWindow);
@@ -81,6 +86,7 @@ void PlayMenuWidget::setupUI() {
     mainLayout->addWidget(rotateModeButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(multiModeButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(testMultiButton, 0, Qt::AlignCenter);
+    mainLayout->addWidget(puzzleModeButton, 0, Qt::AlignCenter);
     mainLayout->addStretch(1);
     
     mainLayout->addWidget(backButton, 0, Qt::AlignCenter);
@@ -113,6 +119,7 @@ void PlayMenuWidget::setupUI() {
         }
     });
 }
+    
 
 void PlayMenuWidget::setup3DView() {
     view3D = new Qt3DExtras::Qt3DWindow();
