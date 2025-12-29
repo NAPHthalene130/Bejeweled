@@ -323,10 +323,10 @@ void GemstoneModelManager::scanStyleDirectory(GemstoneStyle style) {
 Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent) 
     : Qt3DCore::QEntity(parent), type(type), style(style), m_externalMesh(nullptr) {
     
-    m_transform = new Qt3DCore::QTransform();
+    m_transform = new Qt3DCore::QTransform(this);
     addComponent(m_transform);
 
-    m_material = new Qt3DExtras::QPhongMaterial();
+    m_material = new Qt3DExtras::QPhongMaterial(this);
     addComponent(m_material);
 
     m_mesh = nullptr;
@@ -338,7 +338,7 @@ Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent)
     updateAppearance();
 
     // 设置旋转动画
-    m_rotationAnimation = new QPropertyAnimation(m_transform, "rotationY");
+    m_rotationAnimation = new QPropertyAnimation(m_transform, "rotationY", this);
     m_rotationAnimation->setStartValue(0.0f);
     m_rotationAnimation->setEndValue(360.0f);
     m_rotationAnimation->setDuration(3000 + QRandomGenerator::global()->bounded(2000));
@@ -380,6 +380,7 @@ void Gemstone::onGlobalStyleChanged(GemstoneStyle newStyle) {
     Q_UNUSED(newStyle);
     // 风格变化时重新加载模型
     reloadModel();
+    clearSpecialEffects();
 }
 
 int Gemstone::getType() const {
@@ -479,8 +480,87 @@ void Gemstone::setupExternalMesh() {
                 qDebug() << "[Gemstone] Error loading model:" << modelPath;
                 setupBuiltinMesh();
                 emit modelLoaded(false);
+    if (style == "XXXXX") {
+         // 特定样式的占位符 - 可能是文本网格或特定形状
+         Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh(this);
+         mesh->setXExtent(0.8f); mesh->setYExtent(0.8f); mesh->setZExtent(0.8f);
+         m_mesh = mesh;
+    } else {
+        // 默认样式：8种几何形状
+        switch (type % 8) {
+            case 0: // 球体
+            {
+                Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh(this);
+                mesh->setRadius(0.45f);
+                mesh->setRings(20); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 1: // 立方体
+            {
+                Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh(this);
+                mesh->setXExtent(0.8f); mesh->setYExtent(0.8f); mesh->setZExtent(0.8f);
+                m_mesh = mesh;
+                break;
+            }
+            case 2: // 圆锥体
+            {
+                Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh(this);
+                mesh->setBottomRadius(0.5f);
+                mesh->setLength(1.0f);
+                mesh->setRings(10); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 3: // 圆柱体
+            {
+                Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh(this);
+                mesh->setRadius(0.45f);
+                mesh->setLength(0.9f);
+                mesh->setRings(10); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 4: // 圆环体
+            {
+                Qt3DExtras::QTorusMesh* mesh = new Qt3DExtras::QTorusMesh(this);
+                mesh->setRadius(0.4f);
+                mesh->setMinorRadius(0.15f);
+                mesh->setRings(20); mesh->setSlices(20);
+                m_mesh = mesh;
+                break;
+            }
+            case 5: // 六棱柱
+            {
+                Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh(this);
+                mesh->setRadius(0.5f);
+                mesh->setLength(0.8f);
+                mesh->setRings(2); mesh->setSlices(6); // 六边形
+                m_mesh = mesh;
+                break;
+            }
+            case 6: // 金字塔（四棱锥）
+            {
+                Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh(this);
+                mesh->setBottomRadius(0.5f);
+                mesh->setLength(0.9f);
+                mesh->setRings(2); mesh->setSlices(4); // 正方形底座
+                m_mesh = mesh;
+                break;
+            }
+            case 7: // 三棱柱
+            {
+                Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh(this);
+                mesh->setRadius(0.5f);
+                mesh->setLength(0.8f);
+                mesh->setRings(2); mesh->setSlices(3); // 三角形
+                m_mesh = mesh;
                 break;
             default:
+            {
+                Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh(this);
+                mesh->setRadius(0.4f);
+                m_mesh = mesh;
                 break;
         }
     });
@@ -696,6 +776,17 @@ void Gemstone::setSpecial(bool special) {
 
 bool Gemstone::isSpecial() const {
     return special;
+}
+
+bool Gemstone::getCanBeChosen() const {
+    return canBeChosen;
+}
+
+void Gemstone::setCanBeChosen(bool can) {
+    canBeChosen = can;
+    if (m_picker) {
+        m_picker->setEnabled(can);
+    }
 }
 
 void Gemstone::updateSpecialEffects() {

@@ -33,6 +33,7 @@ class MenuWidget : public QWidget {
     Q_OBJECT
 public:
     explicit MenuWidget(QWidget* parent = nullptr, GameWindow* gameWindow = nullptr);
+    ~MenuWidget();
     void setBackgroundImage(const QPixmap& pixmap);
 signals:
     void startGame();

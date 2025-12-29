@@ -8,6 +8,7 @@
 #include <boost/asio.hpp>
 #include "../../auth/components/AuthNoticeDialog.h"
 #include "../gameWidgets/MultiGameWaitWidget.h"
+#include "../gameWidgets/MultiplayerModeGameWidget.h"
 
 using boost::asio::ip::tcp;
 
@@ -167,27 +168,39 @@ void NetDataIO::readerLoop() {
                         if (type == 0) {
                             std::string dataStr = receiveData.getData();
                             if (dataStr == "ENTER_ROOM") {
+                                 log("INFO", "readerLoop", "Handling ENTER_ROOM");
                                  QMetaObject::invokeMethod(gameWindow, [this]() {
                                     if (gameWindow->getMultiGameWaitWidget()) {
                                         gameWindow->getMultiGameWaitWidget()->enterRoom();
                                     }
                                  }, Qt::QueuedConnection);
                             } else if (dataStr == "GAME_STARTED") {
+                                 log("WARN", "readerLoop", "Game already started");
                                  QMetaObject::invokeMethod(gameWindow, [this]() {
                                     AuthNoticeDialog* dialog = new AuthNoticeDialog("提示", "房间已开始，请等待游戏结束", 3, gameWindow);
                                     dialog->exec();
                                  }, Qt::QueuedConnection);
                             }
-                        } else if (type == 1) {
-                            //TODO
-                        } else if (type == 2) {
-                            //TODO
-                        } else if (type == 3) {
-                            //TODO
+                        } else if (type == 1 || type == 2 || type == 3 || type == 4 || type == 14) {
+                            // Forward game play messages to MultiplayerModeGameWidget
+                            // Type 1: Swap, 2: Eliminate, 3: Generate, 4: Sync, 14: Connectivity Test
+                            QMetaObject::invokeMethod(gameWindow, [this, receiveData]() {
+                                if (gameWindow->getMultiplayerModeGameWidget()) {
+                                    gameWindow->getMultiplayerModeGameWidget()->handleReceivedData(receiveData);
+                                }
+                            }, Qt::QueuedConnection);
                         } else if (type == 10) {
                             //TODO
+                            std::map<std::string, int> idToNum = receiveData.getIdToNum();
+                            QMetaObject::invokeMethod(gameWindow, [this, idToNum]() {
+                                if (gameWindow->getMultiGameWaitWidget()) {
+                                    gameWindow->getMultiGameWaitWidget()->accept10(idToNum);
+                                    gameWindow->switchWidget(gameWindow->getMultiplayerModeGameWidget());
+                                }
+                            }, Qt::QueuedConnection);
                         } else if (type == 11) {
                             //TODO
+                            log("INFO", "readerLoop", "Handling Type 11 (Room People Count)");
                             int roomPeopleHave = std::stoi(receiveData.getData());
                             QMetaObject::invokeMethod(gameWindow, [this, roomPeopleHave]() {
                                 if (gameWindow->getMultiGameWaitWidget()) {

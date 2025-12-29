@@ -30,6 +30,7 @@ public:
     void resetRoomPeopleHaveLabel(int people);
 
     void enterRoom();
+    void accept10(std::map<std::string, int> idToNum);
 
 private slots:
     void backButtonClicked();

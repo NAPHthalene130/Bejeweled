@@ -12,6 +12,8 @@ class SettingWidget;
 class StoreWidget;
 class RankListWidget;
 class SingleModeGameWidget;
+class WhirlwindModeGameWidget;
+class MultiplayerModeGameWidget;
 class FinalWidget;
 class MultiGameWaitWidget;
 class NetDataIO;
@@ -31,6 +33,8 @@ public:
     
     // Public getter for singleModeGameWidget if needed, or just make it public/accessible via switch
     SingleModeGameWidget* getSingleModeGameWidget() const { return singleModeGameWidget; }
+    WhirlwindModeGameWidget* getWhirlwindModeGameWidget() const { return whirlwindModeGameWidget; }
+    MultiplayerModeGameWidget* getMultiplayerModeGameWidget() const { return multiplayerModeGameWidget; }
     PlayMenuWidget* getPlayMenuWidget() const { return playMenuWidget; }
     FinalWidget* getFinalWidget() const { return finalWidget; }
     MultiGameWaitWidget* getMultiGameWaitWidget() const { return multiGameWaitWidget; }
@@ -53,6 +57,8 @@ public:
     std::string getPort() const;
     void setPort(const std::string& port);
 
+    std::string getGemstoneStyle() const { return gemstoneStyle; }
+    void setGemstoneStyle(const std::string& style) { gemstoneStyle = style; }
 private:
     std::string userID;
     std::string ip = "127.0.0.1";
@@ -65,11 +71,13 @@ private:
     StoreWidget* storeWidget = nullptr;
     RankListWidget* rankListWidget = nullptr;
     SingleModeGameWidget* singleModeGameWidget = nullptr;
+    WhirlwindModeGameWidget* whirlwindModeGameWidget = nullptr;
+    MultiplayerModeGameWidget* multiplayerModeGameWidget = nullptr;
     FinalWidget* finalWidget = nullptr;
     MultiGameWaitWidget* multiGameWaitWidget = nullptr;
     NetDataIO* netDataIO = nullptr;
     LogWindow* logWindow = nullptr;
-
+    std::string gemstoneStyle;
     std::vector<AchievementData> achievementsContainer;
 
 };

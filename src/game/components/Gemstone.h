@@ -141,6 +141,9 @@ public:
     // 重新加载模型（风格变化时调用）
     void reloadModel();
 
+    bool getCanBeChosen() const;
+    void setCanBeChosen(bool can);
+
 signals:
     void clicked(Gemstone* self);
     void pickEvent(const QString& info);
@@ -155,6 +158,7 @@ private:
     std::string style;
     bool special = false;
     bool m_usingExternalModel = false;
+    bool canBeChosen = true;
 
     Qt3DCore::QTransform* m_transform;
     Qt3DExtras::QPhongMaterial* m_material;
