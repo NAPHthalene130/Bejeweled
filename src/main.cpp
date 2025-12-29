@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     GameWindow gameWindow(nullptr, std::to_string(randNum));
     gameWindow.show();
 
-    TestWindow testWindow;
-    testWindow.show();
+    // TestWindow testWindow;
+    // testWindow.show();
     return a.exec();
 }

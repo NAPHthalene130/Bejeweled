@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QString>
 #include <QVBoxLayout>
 #include <Qt3DExtras/Qt3DWindow>
@@ -82,7 +83,7 @@ public:
     void refreshTabel(int num, const std::vector<std::vector<int>>& table);
 
     void accept10(std::map<std::string, int> idToNum);
-    
+    void accept2(std::string id, std::vector<std::pair<int, int>> coordinates, std::string score);
     // Public access to player tables for testing/debug if needed, though usually internal
     const std::vector<std::vector<Gemstone*>>& getPlayer1Table() const { return player1Table; }
     const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
@@ -148,11 +149,14 @@ private:
     class GameTimeKeeper {
     public:
         void reset();
-        void tick();
+        void start();
+        void pause();
         int totalSeconds() const;
         QString displayText() const;
     private:
-        int seconds = 0;
+        QElapsedTimer timer;
+        qint64 accumulatedMs = 0;
+        bool isRunning = false;
     };
 
     GameTimeKeeper gameTimeKeeper;
@@ -214,7 +218,7 @@ private:
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
     void sendCoordinates(std::vector<std::pair<int, int>> coordinates);
-    void accept2(std::string id, std::vector<std::pair<int, int>> coordinates, std::string score);
+    
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H
