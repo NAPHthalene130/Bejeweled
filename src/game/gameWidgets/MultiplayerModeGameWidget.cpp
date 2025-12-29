@@ -612,6 +612,13 @@ void MultiplayerModeGameWidget::eliminate() {
         canOpe = true;
         resetInactivityTimer();
         appendDebug("No matches found, game can continue");
+
+        // 当判断无法再进行消除且新的宝石已经下坠完全时，创建一个 GameNetData
+        GameNetData data;
+        data.setType(4);
+        data.setID(myUserId);
+        data.setMyBoard(getCurrentBoardState());
+        sendNetData(data);
     }
 }
 
@@ -1878,4 +1885,23 @@ void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap
     }
     startGame();
 }
-
+/**
+ * @Author: NAPH130
+ * @Function: 发送消除坐标和游戏分数
+ */
+void MultiplayerModeGameWidget::sendCoordinates(std::vector<std::pair<int, int>> coordinates) {
+    GameNetData data;
+    data.setType(2);
+    data.setID(gameWindow->getUserID());
+    data.setCoordinates(coordinates);
+    data.setData(std::to_string(gameScore));
+    sendNetData(data);
+}
+/**
+ * @Author: NAPH130
+ * @Function: 接收type == 2
+ */
+void MultiplayerModeGameWidget::accept2(std::string id, std::vector<std::pair<int, int>> coordinates, std::string score) {
+    if (idToNum.find(id) == idToNum.end()) return;
+    int num = idToNum[id];
+}

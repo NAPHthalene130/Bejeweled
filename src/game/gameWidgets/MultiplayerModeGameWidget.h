@@ -213,6 +213,8 @@ private:
     QLabel* player2ScoreLabel = nullptr;
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
+    void sendCoordinates(std::vector<std::pair<int, int>> coordinates);
+    void accept2(std::string id, std::vector<std::pair<int, int>> coordinates, std::string score);
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H
