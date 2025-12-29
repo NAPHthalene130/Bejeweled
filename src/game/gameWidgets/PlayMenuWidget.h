@@ -45,6 +45,7 @@ signals:
     void backToMenu();
     void startNormalMode();
     void startRotateMode();
+    void startPuzzleMode();
 };
 
 #endif // PLAY_MENU_WIDGET_H

@@ -8,6 +8,7 @@
 #include "gameWidgets/SingleModeGameWidget.h"
 #include "gameWidgets/WhirlwindModeGameWidget.h"
 #include "gameWidgets/MultiplayerModeGameWidget.h"
+#include "gameWidgets/PuzzleModeGameWidget.h"
 #include "gameWidgets/FinalWidget.h"
 #include "gameWidgets/MultiGameWaitWidget.h"
 #include "components/MenuButton.h"
@@ -36,6 +37,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     singleModeGameWidget = new SingleModeGameWidget(this, this);
     whirlwindModeGameWidget = new WhirlwindModeGameWidget(this, this);
     multiplayerModeGameWidget = new MultiplayerModeGameWidget(this, this, userID);
+    puzzleModeGameWidget = new PuzzleModeGameWidget(this, this);
     finalWidget = new FinalWidget(this, this);
     multiGameWaitWidget = new MultiGameWaitWidget(this, this);
 
@@ -51,6 +53,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     singleModeGameWidget->hide();
     whirlwindModeGameWidget->hide();
     multiplayerModeGameWidget->hide();
+    puzzleModeGameWidget->hide();
     finalWidget->hide();
     multiGameWaitWidget->hide();
 
@@ -82,6 +85,11 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
         whirlwindModeGameWidget->reset(2);
         switchWidget(whirlwindModeGameWidget);
+    });
+
+    connect(playMenuWidget, &PlayMenuWidget::startPuzzleMode, [this]() {
+        puzzleModeGameWidget->reset(1);
+        switchWidget(puzzleModeGameWidget);
     });
 
     // Add test achievements

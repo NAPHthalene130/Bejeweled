@@ -3,6 +3,7 @@
 #include "SingleModeGameWidget.h"
 #include "MultiplayerModeGameWidget.h"
 #include "MultiGameWaitWidget.h"
+#include "PuzzleModeGameWidget.h"
 #include "../components/MenuButton.h"
 #include "../data/GameNetData.h"
 #include "../../auth/components/AuthNoticeDialog.h"
@@ -118,8 +119,14 @@ void PlayMenuWidget::setupUI() {
             gameWindow->switchWidget(gameWindow->getMultiplayerModeGameWidget());
         }
     });
+
+    connect(puzzleModeButton, &QPushButton::clicked, this, [this]() {
+        if (gameWindow && gameWindow->getPuzzleModeGameWidget()) {
+            gameWindow->getPuzzleModeGameWidget()->reset(1); // Puzzle mode
+        }
+        emit startPuzzleMode();
+    });
 }
-    
 
 void PlayMenuWidget::setup3DView() {
     view3D = new Qt3DExtras::Qt3DWindow();
