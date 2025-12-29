@@ -373,7 +373,13 @@ Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent)
 }
 
 Gemstone::~Gemstone() {
-    // Qt3D 节点会自动清理
+    // Qt3D 节点会自动清理子节点，但未设置父节点的组件需要手动清理
+    if (m_mesh) {
+        delete m_mesh;
+    }
+    if (m_externalMesh) {
+        delete m_externalMesh;
+    }
 }
 
 void Gemstone::onGlobalStyleChanged(GemstoneStyle newStyle) {

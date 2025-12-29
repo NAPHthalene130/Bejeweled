@@ -65,6 +65,7 @@
 #define __BFLT16_MAX_10_EXP__ 38
 #define __BFLT16_MAX_EXP__ 128
 #define __LDBL_IS_IEC_60559__ 1
+#define QT_NO_DEBUG 1
 #define __FLT64X_HAS_QUIET_NAN__ 1
 #define __UINT_LEAST8_MAX__ 0xff
 #define __GCC_ATOMIC_BOOL_LOCK_FREE 2
@@ -428,6 +429,7 @@
 #define __FLT32_DIG__ 6
 #define __UINT64_TYPE__ long long unsigned int
 #define __UINT32_C(c) c ## U
+#define ARCHITECTURE_ID "x86_64"
 #define __cpp_alias_templates 200704L
 #define WINNT 1
 #define __FLT_DENORM_MIN__ 1.40129846432481707092372958328991613e-45F
@@ -489,4 +491,4 @@
 #define __ATOMIC_ACQ_REL 4
 #define __ATOMIC_RELEASE 3
 #define __declspec(x) __attribute__((x))
-#define PROJECT_SOURCE_DIR "E:/20570/Documentsfor20251208/project/Bejeweled"
+#define PROJECT_SOURCE_DIR "H:/CODE/Trae/Bejeweled"

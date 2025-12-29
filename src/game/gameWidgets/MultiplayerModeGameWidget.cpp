@@ -163,10 +163,9 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     
     // 初始化定时器
     timer = new QTimer(this);
-    timer->setInterval(16);
+    timer->setInterval(100);
     connect(timer, &QTimer::timeout, this, [this]() {
         if (isFinishing) return;
-        gameTimeKeeper.tick();
         nowTimeHave = gameTimeKeeper.totalSeconds();
         updateTimeBoard();
     });
@@ -354,6 +353,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
         GameBackDialog dlg(this);
         if (dlg.exec() == QDialog::Accepted) {
             if (timer && timer->isActive()) timer->stop();
+            gameTimeKeeper.pause();
             if (inactivityTimer) inactivityTimer->stop();
             if (this->gameWindow && this->gameWindow->getMenuWidget()) {
                 this->gameWindow->switchWidget(this->gameWindow->getMenuWidget());
@@ -401,20 +401,38 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
 }
 
 void MultiplayerModeGameWidget::GameTimeKeeper::reset() {
-    seconds = 0;
+    accumulatedMs = 0;
+    if (isRunning) {
+        timer.restart();
+    }
 }
 
-void MultiplayerModeGameWidget::GameTimeKeeper::tick() {
-    ++seconds;
+void MultiplayerModeGameWidget::GameTimeKeeper::start() {
+    if (!isRunning) {
+        timer.start();
+        isRunning = true;
+    }
+}
+
+void MultiplayerModeGameWidget::GameTimeKeeper::pause() {
+    if (isRunning) {
+        accumulatedMs += timer.elapsed();
+        isRunning = false;
+    }
 }
 
 int MultiplayerModeGameWidget::GameTimeKeeper::totalSeconds() const {
-    return seconds;
+    qint64 total = accumulatedMs;
+    if (isRunning) {
+        total += timer.elapsed();
+    }
+    return total / 1000;
 }
 
 QString MultiplayerModeGameWidget::GameTimeKeeper::displayText() const {
-    int m = seconds / 60;
-    int s = seconds % 60;
+    int total = totalSeconds();
+    int m = total / 60;
+    int s = total % 60;
     return QString("游戏进行时间：%1:%2")
         .arg(m, 2, 10, QChar('0'))
         .arg(s, 2, 10, QChar('0'));
@@ -442,6 +460,7 @@ void MultiplayerModeGameWidget::finishToFinalWidget() {
     canOpe = false;
 
     if (timer && timer->isActive()) timer->stop();
+    gameTimeKeeper.pause();
     if (inactivityTimer) inactivityTimer->stop();
     clearHighlights();
     if (selectionRing1) selectionRing1->setVisible(false);
@@ -570,7 +589,7 @@ void MultiplayerModeGameWidget::removeMatches(const std::vector<std::pair<int, i
         // Send eliminate message to server (type=2)
         GameNetData eliminateData;
         eliminateData.setType(2);
-        eliminateData.setID(myUserId);
+        eliminateData.setID(gameWindow->getUserID());
         eliminateData.setCoordinates(matches);
         eliminateData.setMyScore(gameScore);
         sendNetData(eliminateData);
@@ -899,6 +918,7 @@ void MultiplayerModeGameWidget::showEvent(QShowEvent* event) {
     updateTimeBoard();
     if (!isFinishing && timer && !timer->isActive()) {
         timer->start();
+        gameTimeKeeper.start();
     }
     resetInactivityTimer();
 }
@@ -908,6 +928,7 @@ void MultiplayerModeGameWidget::hideEvent(QHideEvent* event) {
     if (timer && timer->isActive()) {
         timer->stop();
     }
+    gameTimeKeeper.pause();
     if (inactivityTimer) {
         inactivityTimer->stop();
     }
@@ -946,16 +967,47 @@ bool MultiplayerModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
 
 MultiplayerModeGameWidget::~MultiplayerModeGameWidget() {
     clearHighlights();
-    delete inactivityTimer;
+    if (inactivityTimer) delete inactivityTimer;
 
+    // 清理主3D场景
     if (rootEntity) {
         delete rootEntity;
+        rootEntity = nullptr;
     }
     if (game3dWindow) {
         delete game3dWindow;
+        game3dWindow = nullptr;
     }
+
     if (debugTimer && debugTimer->isActive()) {
         debugTimer->stop();
+    }
+    
+    // 清理网络同步定时器
+    if (syncTimer && syncTimer->isActive()) {
+        syncTimer->stop();
+    }
+
+    // 清理玩家1的小窗口资源
+    if (player1Window) {
+        player1Window->setRootEntity(nullptr);
+        delete player1Window;
+        player1Window = nullptr;
+    }
+    if (player1RootEntity) {
+        delete player1RootEntity;
+        player1RootEntity = nullptr;
+    }
+
+    // 清理玩家2的小窗口资源
+    if (player2Window) {
+        player2Window->setRootEntity(nullptr);
+        delete player2Window;
+        player2Window = nullptr;
+    }
+    if (player2RootEntity) {
+        delete player2RootEntity;
+        player2RootEntity = nullptr;
     }
 }
 
@@ -1163,6 +1215,7 @@ void MultiplayerModeGameWidget::reset(int mode) {
     if (timer->isActive()) {
         timer->stop();
     }
+    gameTimeKeeper.pause();
 }
 
 void MultiplayerModeGameWidget::appendDebug(const QString& text) {
@@ -1565,23 +1618,46 @@ void MultiplayerModeGameWidget::handleReceivedData(const GameNetData& data) {
 
 void MultiplayerModeGameWidget::handleConnectivityTest(const GameNetData& data) {
     // Type 14: Server sends connectivity test to all players in room
-    // Update ID mappings
-    idToNum = data.getIdToNum();
-    numToId = data.getNumToId();
+    // Update ID mappings using logic similar to accept10 (assign 1, 2 to others)
+    std::map<std::string, int> incomingMap = data.getIdToNum();
+    
+    this->idToNum.clear();
+    this->numToId.clear();
+    int index = 1;
+    for (auto& pair : incomingMap) {
+        std::string id = pair.first;
+        if (id == myUserId) continue;
+        this->numToId[index] = id;
+        this->idToNum[id] = index;
+        index++;
+    }
+    
+    // Update labels with initial IDs
+    if (numToId.count(1)) {
+        player1ScoreLabel->setText(QString("玩家 %1: 0分").arg(QString::fromStdString(numToId[1])));
+    } else {
+        player1ScoreLabel->setText("等待玩家...");
+    }
+    
+    if (numToId.count(2)) {
+        player2ScoreLabel->setText(QString("玩家 %1: 0分").arg(QString::fromStdString(numToId[2])));
+    } else {
+        player2ScoreLabel->setText("等待玩家...");
+    }
 
-    appendDebug(QString("Connectivity test received. Players in room: %1").arg(idToNum.size()));
+    appendDebug(QString("Connectivity test received. Players in room: %1").arg(incomingMap.size()));
 
     // 限制最多3个玩家
-    if (idToNum.size() > 3) {
+    if (incomingMap.size() > 3) {
         appendDebug("Warning: More than 3 players detected, limiting to 3");
     }
 
     // Check if all players are ready (based on server's response)
     // 至少需要2个玩家（包括自己），最多3个玩家
-    if (idToNum.size() >= 2 && idToNum.size() <= 3) {
+    if (incomingMap.size() >= 2 && incomingMap.size() <= 3) {
         allPlayersReady = true;
         if (waitingLabel) {
-            waitingLabel->setText(QString("所有玩家已就绪！(%1/3)").arg(idToNum.size()));
+            waitingLabel->setText(QString("所有玩家已就绪！(%1/3)").arg(incomingMap.size()));
             waitingLabel->setStyleSheet("color: rgba(100,255,100,220); background: transparent;");
         }
 
@@ -1591,6 +1667,7 @@ void MultiplayerModeGameWidget::handleConnectivityTest(const GameNetData& data) 
         // Start timer if not already started
         if (timer && !timer->isActive()) {
             timer->start();
+            gameTimeKeeper.start();
         }
 
         // Start sync timer for periodic board synchronization
@@ -1599,10 +1676,10 @@ void MultiplayerModeGameWidget::handleConnectivityTest(const GameNetData& data) 
             appendDebug("Started periodic board synchronization (every 5 seconds)");
         }
 
-        appendDebug(QString("All players ready! Game can start with %1 players.").arg(idToNum.size()));
-    } else if (idToNum.size() < 2) {
+        appendDebug(QString("All players ready! Game can start with %1 players.").arg(incomingMap.size()));
+    } else if (incomingMap.size() < 2) {
         if (waitingLabel) {
-            waitingLabel->setText(QString("等待其他玩家... (%1/3)").arg(idToNum.size()));
+            waitingLabel->setText(QString("等待其他玩家... (%1/3)").arg(incomingMap.size()));
             waitingLabel->setStyleSheet("color: rgba(255,220,120,220); background: transparent;");
         }
         appendDebug("Still waiting for other players...");
@@ -1644,8 +1721,8 @@ void MultiplayerModeGameWidget::handleEliminateMessage(const GameNetData& data) 
             .arg(coords.size())
             .arg(score));
 
-        // Update other player's score
-        updateOtherPlayerScore(playerId, score);
+        // Use accept2 to handle visual update and score
+        accept2(playerId, coords, std::to_string(score));
     }
 }
 
@@ -1863,8 +1940,12 @@ void MultiplayerModeGameWidget::startGame() {
  * @Function: 从服务端接收type == 4后执行方法
  */
 void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::vector<int>>& table) {
-    if (idToNum.find(id) == idToNum.end()) return;
+    if (idToNum.find(id) == idToNum.end()) {
+        appendDebug(QString("accept4: ID %1 not found in idToNum map").arg(QString::fromStdString(id)));
+        return;
+    }
     int num = idToNum[id];
+    appendDebug(QString("accept4: Syncing board for player %1 (Slot %2)").arg(QString::fromStdString(id)).arg(num));
     refreshTabel(num, table);
 }
 
@@ -1883,6 +1964,20 @@ void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap
         this->idToNum[id] = index;
         index++;
     }
+    
+    // Update labels
+    if (numToId.count(1)) {
+        player1ScoreLabel->setText(QString("玩家 %1: 0分").arg(QString::fromStdString(numToId[1])));
+    } else {
+        player1ScoreLabel->setText("等待玩家...");
+    }
+    
+    if (numToId.count(2)) {
+        player2ScoreLabel->setText(QString("玩家 %1: 0分").arg(QString::fromStdString(numToId[2])));
+    } else {
+        player2ScoreLabel->setText("等待玩家...");
+    }
+
     startGame();
 }
 /**
@@ -1904,4 +1999,36 @@ void MultiplayerModeGameWidget::sendCoordinates(std::vector<std::pair<int, int>>
 void MultiplayerModeGameWidget::accept2(std::string id, std::vector<std::pair<int, int>> coordinates, std::string score) {
     if (idToNum.find(id) == idToNum.end()) return;
     int num = idToNum[id];
+    
+    // Update score
+    try {
+        int scoreInt = std::stoi(score);
+        updateOtherPlayerScore(id, scoreInt);
+    } catch (...) {
+        appendDebug("Failed to parse score in accept2: " + QString::fromStdString(score));
+    }
+
+    // Eliminate gems
+    std::vector<std::vector<Gemstone*>>* targetTable = nullptr;
+    if (num == 1) targetTable = &player1Table;
+    else if (num == 2) targetTable = &player2Table;
+
+    if (targetTable) {
+        // Ensure table is initialized
+        if (targetTable->empty()) return;
+
+         for (const auto& coord : coordinates) {
+            int r = coord.first;
+            int c = coord.second;
+            if (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                if (targetTable->size() > r && (*targetTable)[r].size() > c) {
+                    Gemstone* gem = (*targetTable)[r][c];
+                    if (gem) {
+                        eliminateAnime(gem);
+                        (*targetTable)[r][c] = nullptr;
+                    }
+                }
+            }
+        }
+    }
 }

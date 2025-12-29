@@ -1,5 +1,5 @@
-E:/20570/Documentsfor20251208/project/Bejeweled/build/CMakeFiles/Bejeweled.dir
-E:/20570/Documentsfor20251208/project/Bejeweled/build/CMakeFiles/edit_cache.dir
-E:/20570/Documentsfor20251208/project/Bejeweled/build/CMakeFiles/rebuild_cache.dir
-E:/20570/Documentsfor20251208/project/Bejeweled/build/CMakeFiles/Bejeweled_autogen_timestamp_deps.dir
-E:/20570/Documentsfor20251208/project/Bejeweled/build/CMakeFiles/Bejeweled_autogen.dir
+H:/CODE/Trae/Bejeweled/build/CMakeFiles/Bejeweled.dir
+H:/CODE/Trae/Bejeweled/build/CMakeFiles/edit_cache.dir
+H:/CODE/Trae/Bejeweled/build/CMakeFiles/rebuild_cache.dir
+H:/CODE/Trae/Bejeweled/build/CMakeFiles/Bejeweled_autogen_timestamp_deps.dir
+H:/CODE/Trae/Bejeweled/build/CMakeFiles/Bejeweled_autogen.dir
