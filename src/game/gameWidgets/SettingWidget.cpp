@@ -2,6 +2,7 @@
 #include "../GameWindow.h"
 #include "../../utils/BackgroundManager.h"
 #include "../../utils/ResourceUtils.h"
+#include "../../game/components/Gemstone.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFileDialog>
@@ -15,10 +16,10 @@
 #include <QGraphicsDropShadowEffect>
 #include "MenuWidget.h"
 #include "../../utils/BGMManager.h"
-// 修复点1：添加QSettings头文件包含（必须）
 #include <QSettings>
 
-// 静态成员初始化（不变）
+// ==================== 静态方法 ====================
+
 int SettingWidget::getBackgroundMusicVolume() {
     QSettings settings("GemMatch", "Settings");
     return settings.value("Music/BgVolume", 50).toInt();
@@ -45,22 +46,29 @@ QString SettingWidget::getMenuBackgroundImage() {
     return settings.value("Image/MenuBg", defaultBg).toString();
 }
 
+QString SettingWidget::getGemStyle() {
+    QSettings settings("GemMatch", "Settings");
+    return settings.value("Game/GemStyle", "几何体").toString();
+}
+
+// ==================== 构造函数 ====================
+
 SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow), animTime(0) {
     settings = new QSettings("GemMatch", "Settings");
     setWindowTitle("设置");
 
-    // ========== 仅修改点1：恢复窗口大小调整功能（移除强制固定，保留原有尺寸逻辑） ==========
     setMinimumSize(800, 600);
     resize(1600, 1000);
 
-    // ====================== 1. 初始化动画相关（不变） ======================
+    // ====================== 1. 初始化动画 ======================
     initParticles();
     animTimer = new QTimer(this);
     connect(animTimer, &QTimer::timeout, this, &SettingWidget::updateAnimation);
     animTimer->start(33);
 
-    // ====================== 2. 初始化所有控件（不变） ======================
+    // ====================== 2. 初始化控件 ======================
+    
     // 音乐设置控件
     bgMusicSlider = new QSlider(Qt::Horizontal, this);
     eliminateSoundSlider = new QSlider(Qt::Horizontal, this);
@@ -70,7 +78,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     QLabel* eliminateSoundLabel = new QLabel("消除音效", this);
     bgVolLabel = new QLabel("50%", this);
     eliminateVolLabel = new QLabel("50%", this);
-    eliminateSoundSelectLabel = new QLabel("消除音效", this);
+    eliminateSoundSelectLabel = new QLabel("音效类型", this);
     eliminateSoundCombo = new QComboBox(this);
 
     // 图像设置控件
@@ -85,23 +93,23 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     // 游戏设置控件
     switchInterfaceBtn = new QPushButton("切换备用界面（预留）", this);
     QLabel* gameTipLabel = new QLabel("游戏功能设置", this);
-
-    // 宝石风格接口控件
     QLabel* gemStyleLabel = new QLabel("宝石风格", this);
     gemStyleCombo = new QComboBox(this);
+    gemStyleDescLabel = new QLabel("", this);
 
-    // 保存按钮
+    // 按钮
     saveBtn = new QPushButton("保存设置", this);
-    // 返回按钮
     backBtn = new QPushButton("返回菜单", this);
 
-    // 标签页容器
+    // 标签页
     tabWidget = new QTabWidget(this);
 
-    // ====================== 3. 美化控件样式（修复点2：修改复选框样式表，移除无效的dot伪元素） ======================
-    // 标签样式（保留）
+    // ====================== 3. 样式设置 ======================
+    
+    // 标签样式
     QList<QLabel*> labels = {bgMusicLabel, eliminateSoundLabel, bgVolLabel, eliminateVolLabel,
-                             resolutionLabel, qualityLabel, bgLabel, gameTipLabel, gemStyleLabel, eliminateSoundSelectLabel};
+                             resolutionLabel, qualityLabel, bgLabel, gameTipLabel, gemStyleLabel, 
+                             eliminateSoundSelectLabel, gemStyleDescLabel};
     for (QLabel* label : labels) {
         label->setStyleSheet(R"(
             color: #FFF5E6;
@@ -115,8 +123,18 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     bgVolLabel->setAlignment(Qt::AlignCenter);
     eliminateVolLabel->setFixedWidth(56);
     eliminateVolLabel->setAlignment(Qt::AlignCenter);
+    
+    // 风格描述标签特殊样式
+    gemStyleDescLabel->setStyleSheet(R"(
+        color: #FFD700;
+        font-size: 14px;
+        font-style: italic;
+        text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+    )");
+    gemStyleDescLabel->setFixedHeight(24);
+    gemStyleDescLabel->setWordWrap(true);
 
-    // 修复点2：修改复选框样式表，移除无效的dot伪元素，改用Qt标准的勾选样式绘制
+    // 复选框样式
     QString checkBoxStyle = R"(
         QCheckBox {
             color: #FFF5E6;
@@ -134,20 +152,14 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
                                        stop:0 #FFA54F, stop:1 #FF8C00);
             border: 2px solid #FF7F24;
-            /* 修复：添加勾选的对勾绘制（使用Qt内置的对勾图标或手动绘制） */
-            image: url(:/qt-project.org/styles/commonstyle/images/checkbox-checked.png);
-            /* 如果没有内置图标，也可以用下面的方式绘制对勾（二选一）：
-            image: svg('<svg width="24" height="24" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="2" fill="none"/></svg>');
-            */
         }
-        /* 移除无效的dot伪元素 */
     )";
     bgMusicEnableBox->setStyleSheet(checkBoxStyle);
     eliminateSoundEnableBox->setStyleSheet(checkBoxStyle);
     bgMusicEnableBox->setFixedHeight(28);
     eliminateSoundEnableBox->setFixedHeight(28);
 
-    // 滑块样式（新增：滑块禁用样式，可选）
+    // 滑块样式
     QString sliderStyle = R"(
         QSlider::groove:horizontal {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:0, 
@@ -164,21 +176,17 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
             height: 28px;
             margin: -9px 0;
             border-radius: 14px;
-            box-shadow: 0 0 10px rgba(255, 160, 60, 0.8);
         }
         QSlider::handle:horizontal:hover {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
                                        stop:0 #FFC14F, stop:1 #FFA500);
-            transform: scale(1.1);
         }
-        /* 新增：滑块禁用时的样式 */
         QSlider:disabled::groove:horizontal {
             background: rgba(255, 160, 60, 0.1);
         }
         QSlider:disabled::handle:horizontal {
             background: rgba(255, 160, 60, 0.5);
             border: 2px solid rgba(255, 245, 230, 0.5);
-            box-shadow: none;
         }
     )";
     bgMusicSlider->setStyleSheet(sliderStyle);
@@ -190,7 +198,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     bgMusicSlider->setMinimumWidth(550);
     eliminateSoundSlider->setMinimumWidth(550);
 
-    // 下拉框样式（保留）
+    // 下拉框样式
     QString comboStyle = R"(
         QComboBox {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
@@ -201,7 +209,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
             border-radius: 6px;
             padding: 6px 12px;
             font-size: 16px;
-            min-width: 240px;
+            min-width: 200px;
             height: 40px;
         }
         QComboBox::drop-down {
@@ -210,41 +218,34 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
             border-bottom-right-radius: 4px;
             width: 40px;
         }
-        QComboBox::down-arrow {
-            image: url(:/images/arrow_down_orange.png);
-            width: 16px;
-            height: 16px;
+        QComboBox QAbstractItemView {
+            background: rgba(60, 40, 20, 0.95);
+            color: #FFF5E6;
+            selection-background-color: #FF8C00;
+            border: 2px solid #FFA54F;
+            border-radius: 4px;
         }
         QComboBox::item {
-            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
-                                       stop:0 rgba(255, 120, 30, 0.8), 
-                                       stop:1 rgba(255, 100, 20, 0.9));
-            color: #FFF5E6;
-            padding: 6px 12px;
-            font-size: 14px;
-            height: 40px;
+            padding: 8px 12px;
+            min-height: 32px;
         }
         QComboBox::item:selected {
-            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
-                                       stop:0 #FF8C00, stop:1 #FF7F24);
-            color: #FFF5E6;
-        }
-        QComboBox::item:hover {
-            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
-                                       stop:0 rgba(255, 140, 40, 0.6), 
-                                       stop:1 rgba(255, 120, 30, 0.6));
+            background: #FF8C00;
         }
     )";
     resolutionCombo->setStyleSheet(comboStyle);
     qualityCombo->setStyleSheet(comboStyle);
     gemStyleCombo->setStyleSheet(comboStyle);
+    eliminateSoundCombo->setStyleSheet(comboStyle);
+    
     resolutionCombo->addItems({"1280x720", "1600x1000", "1920x1080", "2560x1440"});
     qualityCombo->addItems({"低", "中", "高", "极致"});
-    gemStyleCombo->addItems({"默认风格", "风格一", "风格二", "自定义"});
-    eliminateSoundCombo->setStyleSheet(comboStyle);
     eliminateSoundCombo->addItems({"Manbo", "Original"});
+    
+    // 更新宝石风格下拉框选项
+    updateGemStyleComboItems();
 
-    // 按钮样式（保留）
+    // 按钮样式
     QString btnStyle = R"(
         QPushButton {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
@@ -256,25 +257,19 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
             font-size: 16px;
             font-weight: 500;
             height: 44px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), 
-                        0 0 15px rgba(255, 160, 60, 0.3);
         }
         QPushButton:hover {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
                                        stop:0 #FFA54F, stop:1 #FF8C00);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 
-                        0 0 20px rgba(255, 180, 80, 0.5);
         }
         QPushButton:pressed {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
                                        stop:0 #FF7F24, stop:1 #FF6347);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
     )";
     selectBgBtn->setStyleSheet(btnStyle);
     switchInterfaceBtn->setStyleSheet(btnStyle);
 
-    // 保存按钮样式（保留）
     saveBtn->setStyleSheet(R"(
         QPushButton {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
@@ -286,24 +281,14 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
             font-size: 18px;
             font-weight: bold;
             height: 44px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), 
-                        0 0 15px rgba(255, 160, 60, 0.4);
         }
         QPushButton:hover {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
                                        stop:0 #FFC14F, stop:1 #FFA54F);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 
-                        0 0 20px rgba(255, 180, 80, 0.6);
-        }
-        QPushButton:pressed {
-            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
-                                       stop:0 #FF8C00, stop:1 #FF7F24);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
     )");
     saveBtn->setFixedSize(200, 44);
 
-    // 返回按钮样式（保留）
     backBtn->setStyleSheet(R"(
         QPushButton {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
@@ -314,28 +299,21 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
             font-size: 18px;
             border-radius: 6px;
             height: 44px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2), 
-                        0 0 15px rgba(100, 200, 255, 0.3);
         }
         QPushButton:hover {
             background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
                                        stop:0 #B0E0E6, stop:1 #5F9EA0);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3), 
-                        0 0 20px rgba(150, 220, 255, 0.5);
         }
     )");
     backBtn->setFixedSize(200, 44);
 
-    // 背景预览标签（保留）
     bgPreviewLabel->setFixedSize(160, 96);
     bgPreviewLabel->setStyleSheet(R"(
         border: 2px solid #FFA54F;
         border-radius: 4px;
-        box-shadow: 0 0 10px rgba(255, 160, 60, 0.5);
         background: rgba(255, 245, 230, 0.1);
     )");
 
-    // 标签页样式（保留）
     tabWidget->setStyleSheet(R"(
         QTabWidget::pane {
             border: 2px solid #FFF5E6;
@@ -360,27 +338,21 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
         QTabBar::tab:selected {
             background: qlineargradient(x1:0,y1:0,x2:0,y2:1, 
                                        stop:0 #FF8C00, stop:1 #FF7F24);
-            color: #FFF5E6;
             font-weight: 500;
-            box-shadow: 0 -2px 5px rgba(255, 160, 60, 0.3);
-        }
-        QTabBar::tab:hover:!selected {
-            background: qlineargradient(x1:0,y1:0,x2:0,y2:1, 
-                                       stop:0 rgba(255, 180, 80, 0.4), 
-                                       stop:1 rgba(255, 160, 60, 0.6));
         }
     )");
     tabWidget->setMinimumHeight(500);
 
-    // ====================== 4. 构建布局（保留） ======================
+    // ====================== 4. 构建布局 ======================
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(60, 20, 60, 20);
     mainLayout->setSpacing(20);
 
-    // 音乐设置标签页（保留）
+    // 音乐设置标签页
     QWidget* musicWidget = new QWidget();
     QVBoxLayout* musicLayout = new QVBoxLayout(musicWidget);
     musicLayout->setSpacing(18);
+    
     QHBoxLayout* bgMusicLayout = new QHBoxLayout();
     bgMusicLayout->addWidget(bgMusicLabel);
     bgMusicLayout->addSpacing(20);
@@ -389,6 +361,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     bgMusicLayout->addWidget(bgMusicSlider);
     bgMusicLayout->addSpacing(20);
     bgMusicLayout->addWidget(bgVolLabel);
+    
     QHBoxLayout* eliminateSoundLayout = new QHBoxLayout();
     eliminateSoundLayout->addWidget(eliminateSoundLabel);
     eliminateSoundLayout->addSpacing(20);
@@ -397,30 +370,35 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     eliminateSoundLayout->addWidget(eliminateSoundSlider);
     eliminateSoundLayout->addSpacing(20);
     eliminateSoundLayout->addWidget(eliminateVolLabel);
-    musicLayout->addLayout(bgMusicLayout);
-    musicLayout->addLayout(eliminateSoundLayout);
-    musicLayout->addStretch();
+    
     QHBoxLayout* eliminateSoundSelectLayout = new QHBoxLayout();
     eliminateSoundSelectLayout->addWidget(eliminateSoundSelectLabel);
     eliminateSoundSelectLayout->addSpacing(20);
     eliminateSoundSelectLayout->addWidget(eliminateSoundCombo);
     eliminateSoundSelectLayout->addStretch();
-    musicLayout->insertLayout(2, eliminateSoundSelectLayout);
+    
+    musicLayout->addLayout(bgMusicLayout);
+    musicLayout->addLayout(eliminateSoundLayout);
+    musicLayout->addLayout(eliminateSoundSelectLayout);
+    musicLayout->addStretch();
 
-    // 图像设置标签页（保留）
+    // 图像设置标签页
     QWidget* imageWidget = new QWidget();
     QVBoxLayout* imageLayout = new QVBoxLayout(imageWidget);
     imageLayout->setSpacing(18);
+    
     QHBoxLayout* resolutionLayout = new QHBoxLayout();
     resolutionLayout->addWidget(resolutionLabel);
     resolutionLayout->addSpacing(20);
     resolutionLayout->addWidget(resolutionCombo);
     resolutionLayout->addStretch();
+    
     QHBoxLayout* qualityLayout = new QHBoxLayout();
     qualityLayout->addWidget(qualityLabel);
     qualityLayout->addSpacing(20);
     qualityLayout->addWidget(qualityCombo);
     qualityLayout->addStretch();
+    
     QVBoxLayout* bgLayout = new QVBoxLayout();
     QHBoxLayout* bgCtrlLayout = new QHBoxLayout();
     bgCtrlLayout->addWidget(selectBgBtn);
@@ -429,31 +407,40 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     bgCtrlLayout->addStretch();
     bgLayout->addWidget(bgLabel);
     bgLayout->addLayout(bgCtrlLayout);
+    
     imageLayout->addLayout(resolutionLayout);
     imageLayout->addLayout(qualityLayout);
     imageLayout->addLayout(bgLayout);
     imageLayout->addStretch();
 
-    // 游戏设置标签页（保留）
+    // 游戏设置标签页
     QWidget* gameWidget = new QWidget();
     QVBoxLayout* gameLayout = new QVBoxLayout(gameWidget);
     gameLayout->setSpacing(18);
+    
     gameLayout->addWidget(gameTipLabel);
-    gameLayout->addWidget(switchInterfaceBtn);
+    
+    // 宝石风格选择
     QHBoxLayout* gemStyleLayout = new QHBoxLayout();
     gemStyleLayout->addWidget(gemStyleLabel);
     gemStyleLayout->addSpacing(20);
     gemStyleLayout->addWidget(gemStyleCombo);
     gemStyleLayout->addStretch();
     gameLayout->addLayout(gemStyleLayout);
+    
+    // 风格描述
+    gameLayout->addWidget(gemStyleDescLabel);
+    
+    gameLayout->addSpacing(20);
+    gameLayout->addWidget(switchInterfaceBtn);
     gameLayout->addStretch();
 
-    // 添加标签页（不变）
+    // 添加标签页
     tabWidget->addTab(musicWidget, "音乐");
     tabWidget->addTab(imageWidget, "图像");
     tabWidget->addTab(gameWidget, "游戏");
 
-    // 按钮水平布局（保留）
+    // 按钮布局
     QHBoxLayout* btnLayout = new QHBoxLayout();
     btnLayout->setSpacing(30);
     btnLayout->addStretch();
@@ -461,17 +448,16 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     btnLayout->addWidget(backBtn);
     btnLayout->addStretch();
 
-    // 按钮容器（保留）
     QWidget* btnWidget = new QWidget(this);
     btnWidget->setLayout(btnLayout);
     btnWidget->setMinimumHeight(80);
 
-    // 主布局（保留）
     mainLayout->addWidget(tabWidget, 1);
     mainLayout->addWidget(btnWidget);
 
-    // ====================== 5. 信号与槽连接（修复点3：添加复选框与滑块的联动，确保交互正常） ======================
-    // 音量数值联动
+    // ====================== 5. 信号与槽 ======================
+    
+    // 音量联动
     connect(bgMusicSlider, &QSlider::valueChanged, [=](int val) {
         bgVolLabel->setText(QString("%1%").arg(val));
     });
@@ -479,20 +465,20 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
         eliminateVolLabel->setText(QString("%1%").arg(val));
     });
 
-    // 修复点3：添加复选框与滑块的联动（勾选时启用滑块，取消时禁用，同时确保复选框点击响应）
+    // 复选框与滑块联动
     connect(bgMusicEnableBox, &QCheckBox::toggled, [=](bool checked) {
         bgMusicSlider->setEnabled(checked);
         bgVolLabel->setEnabled(checked);
-        // 手动触发一次状态更新（可选，确保视觉同步）
-        bgMusicEnableBox->update();
     });
     connect(eliminateSoundEnableBox, &QCheckBox::toggled, [=](bool checked) {
         eliminateSoundSlider->setEnabled(checked);
         eliminateVolLabel->setEnabled(checked);
         eliminateSoundCombo->setEnabled(checked);
-        // 手动触发一次状态更新（可选）
-        eliminateSoundEnableBox->update();
     });
+
+    // 宝石风格变化
+    connect(gemStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &SettingWidget::onGemStyleChanged);
 
     // 保存按钮
     connect(saveBtn, &QPushButton::clicked, this, &SettingWidget::saveSettings);
@@ -505,14 +491,172 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
         }
     });
 
-    // 选择背景图按钮
+    // 选择背景图
     connect(selectBgBtn, &QPushButton::clicked, this, &SettingWidget::selectMenuBackground);
 
-    // ====================== 6. 加载设置（修复点4：调整顺序，先设置复选框状态，再设置滑块值） ======================
+    // ====================== 6. 加载设置 ======================
     loadSettings();
 }
 
-// 以下函数（不变，仅修改loadSettings函数）
+// ==================== 更新宝石风格下拉框 ====================
+
+void SettingWidget::updateGemStyleComboItems() {
+    gemStyleCombo->clear();
+    
+    // 获取可用风格
+    QStringList availableStyles = GemstoneModelManager::instance().getAvailableStyles();
+    
+    // 如果没有可用风格，至少添加几何体
+    if (availableStyles.isEmpty()) {
+        availableStyles << "几何体";
+    }
+    
+    // 添加到下拉框
+    gemStyleCombo->addItems(availableStyles);
+    
+    qDebug() << "[SettingWidget] Available gem styles:" << availableStyles;
+}
+
+// ==================== 宝石风格变化处理 ====================
+
+void SettingWidget::onGemStyleChanged(int index) {
+    Q_UNUSED(index);
+    
+    QString styleName = gemStyleCombo->currentText();
+    
+    // 更新描述
+    if (styleName == "几何体") {
+        gemStyleDescLabel->setText("使用基础几何形状：球体、立方体、圆锥等");
+    } else if (styleName == "宝石") {
+        gemStyleDescLabel->setText("精美的宝石模型：水晶、钻石、翡翠等");
+    } else if (styleName == "八大行星") {
+        gemStyleDescLabel->setText("太阳系行星：水星、金星、地球、火星...");
+    } else if (styleName == "美食") {
+        gemStyleDescLabel->setText("诱人的美食：薯条、汉堡、披萨、冰淇淋...");
+    } else if (styleName == "自定义风格1") {
+        gemStyleDescLabel->setText("用户自定义风格1");
+    } else if (styleName == "自定义风格2") {
+        gemStyleDescLabel->setText("用户自定义风格2");
+    } else {
+        gemStyleDescLabel->setText("");
+    }
+    
+    qDebug() << "[SettingWidget] Gem style selected:" << styleName;
+}
+
+// ==================== 加载设置 ====================
+
+void SettingWidget::loadSettings() {
+    if (!bgMusicSlider || !eliminateSoundSlider || !bgMusicEnableBox || !eliminateSoundEnableBox) {
+        QMessageBox::critical(this, "错误", "控件未初始化，无法加载设置！");
+        return;
+    }
+
+    // 音乐设置
+    int bgVolume = settings->value("Music/BgVolume", 50).toInt();
+    int eliminateVol = settings->value("Music/EliminateVolume", 50).toInt();
+    bool bgEnable = settings->value("Music/BgEnable", true).toBool();
+    bool eliminateEnable = settings->value("Music/EliminateEnable", true).toBool();
+    QString soundType = settings->value("Music/EliminateType", "Manbo").toString();
+
+    bgMusicEnableBox->setChecked(bgEnable);
+    eliminateSoundEnableBox->setChecked(eliminateEnable);
+    bgMusicSlider->setValue(bgVolume);
+    bgMusicSlider->setEnabled(bgEnable);
+    eliminateSoundSlider->setValue(eliminateVol);
+    eliminateSoundSlider->setEnabled(eliminateEnable);
+    eliminateSoundCombo->setCurrentText(soundType);
+    eliminateSoundCombo->setEnabled(eliminateEnable);
+    bgVolLabel->setText(QString("%1%").arg(bgVolume));
+    bgVolLabel->setEnabled(bgEnable);
+    eliminateVolLabel->setText(QString("%1%").arg(eliminateVol));
+    eliminateVolLabel->setEnabled(eliminateEnable);
+
+    // 图像设置
+    QString resolution = settings->value("Image/Resolution", "1600x1000").toString();
+    QString quality = settings->value("Image/Quality", "中").toString();
+    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
+    currentBgPath = settings->value("Image/MenuBg", defaultBg).toString();
+    resolutionCombo->setCurrentText(resolution);
+    qualityCombo->setCurrentText(quality);
+
+    QPixmap bgPixmap(currentBgPath);
+    if (!bgPixmap.isNull()) {
+        bgPreviewLabel->setPixmap(bgPixmap.scaled(bgPreviewLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+
+    // 游戏设置 - 宝石风格
+    QString gemStyle = settings->value("Game/GemStyle", "几何体").toString();
+    int styleIndex = gemStyleCombo->findText(gemStyle);
+    if (styleIndex >= 0) {
+        gemStyleCombo->setCurrentIndex(styleIndex);
+    } else {
+        gemStyleCombo->setCurrentIndex(0);  // 默认几何体
+    }
+    
+    // 触发一次风格变化以更新描述
+    onGemStyleChanged(gemStyleCombo->currentIndex());
+}
+
+// ==================== 保存设置 ====================
+
+void SettingWidget::saveSettings() {
+    if (!bgMusicSlider || !eliminateSoundSlider || !bgMusicEnableBox || !eliminateSoundEnableBox) {
+        QMessageBox::critical(this, "错误", "控件未初始化，无法保存设置！");
+        return;
+    }
+
+    // 保存音乐设置
+    settings->setValue("Music/BgVolume", bgMusicSlider->value());
+    settings->setValue("Music/EliminateVolume", eliminateSoundSlider->value());
+    settings->setValue("Music/BgEnable", bgMusicEnableBox->isChecked());
+    settings->setValue("Music/EliminateEnable", eliminateSoundEnableBox->isChecked());
+    settings->setValue("Music/EliminateType", eliminateSoundCombo->currentText());
+
+    // 保存图像设置
+    settings->setValue("Image/Resolution", resolutionCombo->currentText());
+    settings->setValue("Image/Quality", qualityCombo->currentText());
+    settings->setValue("Image/MenuBg", currentBgPath);
+
+    // 保存游戏设置 - 宝石风格
+    QString selectedStyle = gemStyleCombo->currentText();
+    settings->setValue("Game/GemStyle", selectedStyle);
+    
+    // 应用宝石风格变化
+    GemstoneModelManager::instance().setCurrentStyleByName(selectedStyle);
+    
+    // 发送风格变化信号
+    emit gemStyleChanged(selectedStyle);
+
+    // 应用背景音乐设置
+    BGMManager::instance().setVolume(bgMusicSlider->value());
+    if (bgMusicEnableBox->isChecked()) {
+        BGMManager::instance().resume();
+    } else {
+        BGMManager::instance().pause();
+    }
+
+    emit backgroundImageChanged(currentBgPath);
+    
+    QMessageBox::information(this, "成功", "设置已保存！\n宝石风格已切换为：" + selectedStyle);
+}
+
+// ==================== 其他方法 ====================
+
+void SettingWidget::selectMenuBackground() {
+    QString defaultDir = QString::fromStdString(ResourceUtils::getPath("images/"));
+    QString filePath = QFileDialog::getOpenFileName(
+        this, "选择背景图片", defaultDir, "图片文件 (*.png *.jpg *.jpeg *.bmp)"
+    );
+    if (!filePath.isEmpty()) {
+        currentBgPath = filePath;
+        QPixmap bgPixmap(filePath);
+        if (!bgPixmap.isNull()) {
+            bgPreviewLabel->setPixmap(bgPixmap.scaled(bgPreviewLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        }
+    }
+}
+
 void SettingWidget::initParticles() {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -642,91 +786,3 @@ void SettingWidget::paintEvent(QPaintEvent* event) {
 
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &p, this);
 }
-
-// 修复点4：修改loadSettings函数，调整设置顺序，先设置复选框状态，再设置滑块值
-void SettingWidget::loadSettings() {
-    if (!bgMusicSlider || !eliminateSoundSlider || !bgMusicEnableBox || !eliminateSoundEnableBox) {
-        QMessageBox::critical(this, "错误", "控件未初始化，无法加载设置！");
-        return;
-    }
-
-    int bgVolume = settings->value("Music/BgVolume", 50).toInt();
-    int eliminateVol = settings->value("Music/EliminateVolume", 50).toInt();
-    bool bgEnable = settings->value("Music/BgEnable", true).toBool();
-    bool eliminateEnable = settings->value("Music/EliminateEnable", true).toBool();
-    QString soundType = settings->value("Music/EliminateType", "Manbo").toString();
-
-    // 修复：先设置复选框状态，再设置滑块值
-    bgMusicEnableBox->setChecked(bgEnable);
-    eliminateSoundEnableBox->setChecked(eliminateEnable);
-    // 再设置滑块值，并同步启用状态
-    bgMusicSlider->setValue(bgVolume);
-    bgMusicSlider->setEnabled(bgEnable);
-    eliminateSoundSlider->setValue(eliminateVol);
-    eliminateSoundSlider->setEnabled(eliminateEnable);
-    // 设置下拉框
-    eliminateSoundCombo->setCurrentText(soundType);
-    eliminateSoundCombo->setEnabled(eliminateEnable);
-    // 更新标签
-    bgVolLabel->setText(QString("%1%").arg(bgVolume));
-    bgVolLabel->setEnabled(bgEnable);
-    eliminateVolLabel->setText(QString("%1%").arg(eliminateVol));
-    eliminateVolLabel->setEnabled(eliminateEnable);
-
-    // 图像设置加载（不变）
-    QString resolution = settings->value("Image/Resolution", "1600x1000").toString();
-    QString quality = settings->value("Image/Quality", "中").toString();
-    QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
-    currentBgPath = settings->value("Image/MenuBg", defaultBg).toString();
-    resolutionCombo->setCurrentText(resolution);
-    qualityCombo->setCurrentText(quality);
-
-    QPixmap bgPixmap(currentBgPath);
-    if (!bgPixmap.isNull()) {
-        bgPreviewLabel->setPixmap(bgPixmap.scaled(bgPreviewLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    }
-}
-
-void SettingWidget::saveSettings() {
-    if (!bgMusicSlider || !eliminateSoundSlider || !bgMusicEnableBox || !eliminateSoundEnableBox) {
-        QMessageBox::critical(this, "错误", "控件未初始化，无法保存设置！");
-        return;
-    }
-
-    settings->setValue("Music/BgVolume", bgMusicSlider->value());
-    settings->setValue("Music/EliminateVolume", eliminateSoundSlider->value());
-    settings->setValue("Music/BgEnable", bgMusicEnableBox->isChecked());
-    settings->setValue("Music/EliminateEnable", eliminateSoundEnableBox->isChecked());
-    settings->setValue("Music/EliminateType", eliminateSoundCombo->currentText());
-
-    settings->setValue("Image/Resolution", resolutionCombo->currentText());
-    settings->setValue("Image/Quality", qualityCombo->currentText());
-    settings->setValue("Image/MenuBg", currentBgPath);
-
-    // 应用背景音乐设置
-    BGMManager::instance().setVolume(bgMusicSlider->value());
-    if (bgMusicEnableBox->isChecked()) {
-        BGMManager::instance().resume();
-    } else {
-        BGMManager::instance().pause();
-    }
-
-    emit backgroundImageChanged(currentBgPath);
-    QMessageBox::information(this, "成功", "设置已保存！");
-}
-
-void SettingWidget::selectMenuBackground() {
-    QString defaultDir = QString::fromStdString(ResourceUtils::getPath("images/"));
-    QString filePath = QFileDialog::getOpenFileName(
-        this, "选择背景图片", defaultDir, "图片文件 (*.png *.jpg *.jpeg *.bmp)"
-    );
-    if (!filePath.isEmpty()) {
-        currentBgPath = filePath;
-        QPixmap bgPixmap(filePath);
-        if (!bgPixmap.isNull()) {
-            bgPreviewLabel->setPixmap(bgPixmap.scaled(bgPreviewLabel->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        }
-    }
-}
-
-
