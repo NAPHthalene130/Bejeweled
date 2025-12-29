@@ -5,6 +5,8 @@
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../data/GameNetData.h"
+#include "../data/NetDataIO.h"
+#include "../../utils/LogWindow.h"
 #include "../../utils/AudioManager.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -30,7 +32,7 @@
 #include <QPainterPath>
 #include <QDateTime>
 #include <QApplication>
-#include <QAbstractSocket>
+
 #include <json.hpp>
 #include <cmath>
 #include <limits>
@@ -157,7 +159,7 @@ protected:
 MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow* gameWindow, const std::string& userId)
     : QWidget(parent), gameWindow(gameWindow), canOpe(false), nowTimeHave(0), mode(1),
       firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0),
-      myUserId(userId), socket(new QTcpSocket(this)) {
+      myUserId(userId) {
     
     // 初始化定时器
     timer = new QTimer(this);
@@ -321,6 +323,10 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     panelLayout->addWidget(otherPlayersPanelWidget, 1, Qt::AlignCenter); 
 
     // Initialize Player 1 Window (Top)
+    player1ScoreLabel = new QLabel("玩家1: 0分", rightPanel);
+    player1ScoreLabel->setStyleSheet("color: white; font-size: 14px; font-weight: bold; background: transparent;");
+    otherPlayersPanelLayout->addWidget(player1ScoreLabel, 0, Qt::AlignHCenter);
+
     player1Window = new Qt3DExtras::Qt3DWindow();
     setupSmall3DWindow(player1Window, &player1RootEntity, &player1Camera);
     player1Container = QWidget::createWindowContainer(player1Window);
@@ -328,6 +334,10 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     otherPlayersPanelLayout->addWidget(player1Container, 0, Qt::AlignHCenter);
 
     // Initialize Player 2 Window (Bottom)
+    player2ScoreLabel = new QLabel("玩家2: 0分", rightPanel);
+    player2ScoreLabel->setStyleSheet("color: white; font-size: 14px; font-weight: bold; background: transparent;");
+    otherPlayersPanelLayout->addWidget(player2ScoreLabel, 0, Qt::AlignHCenter);
+
     player2Window = new Qt3DExtras::Qt3DWindow();
     setupSmall3DWindow(player2Window, &player2RootEntity, &player2Camera);
     player2Container = QWidget::createWindowContainer(player2Window);
@@ -384,19 +394,10 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     updateTimeBoard();
     appendDebug("MultiplayerModeGameWidget initialized - EventFilter installed on both container and 3D window");
 
-    // Network initialization
-    connect(socket, &QTcpSocket::connected, this, &MultiplayerModeGameWidget::onConnected);
-    connect(socket, &QTcpSocket::disconnected, this, &MultiplayerModeGameWidget::onDisconnected);
-    connect(socket, &QTcpSocket::readyRead, this, &MultiplayerModeGameWidget::onReadyRead);
-    connect(socket, &QTcpSocket::errorOccurred, this, &MultiplayerModeGameWidget::onSocketError);
-
     // Initialize sync timer for periodic board synchronization (every 5 seconds)
     syncTimer = new QTimer(this);
     syncTimer->setInterval(5000);  // 5 seconds
     connect(syncTimer, &QTimer::timeout, this, &MultiplayerModeGameWidget::sendBoardSyncMessage);
-
-    // Connect to server (127.0.0.1:10090)
-    connectToServer("127.0.0.1", 10090);
 }
 
 void MultiplayerModeGameWidget::GameTimeKeeper::reset() {
@@ -1515,96 +1516,18 @@ int MultiplayerModeGameWidget::getDifficulty() const {
 
 // ==================== Network Functions ====================
 
-void MultiplayerModeGameWidget::connectToServer(const QString& host, int port) {
-    appendDebug(QString("Connecting to server %1:%2").arg(host).arg(port));
-    socket->connectToHost(host, port);
-}
-
-void MultiplayerModeGameWidget::onConnected() {
-    isConnected = true;
-    appendDebug("Connected to server successfully!");
-    if (connectionStatusLabel) {
-        connectionStatusLabel->setText("已连接");
-        connectionStatusLabel->setStyleSheet("color: rgba(100,255,100,220); background: transparent;");
-    }
-
-    // Send enter room message (type=0)
-    sendEnterRoomMessage();
-}
-
-void MultiplayerModeGameWidget::onDisconnected() {
-    isConnected = false;
-    allPlayersReady = false;
-    appendDebug("Disconnected from server!");
-    if (connectionStatusLabel) {
-        connectionStatusLabel->setText("连接断开");
-        connectionStatusLabel->setStyleSheet("color: rgba(255,100,100,220); background: transparent;");
-    }
-}
-
-void MultiplayerModeGameWidget::onReadyRead() {
-    // Read incoming data
-    receiveBuffer.append(socket->readAll());
-
-    // Try to parse JSON messages (assuming each message ends with a newline or is complete JSON)
-    // For simplicity, we'll assume each message is a complete JSON object
-    while (receiveBuffer.contains('\n')) {
-        int newlineIndex = receiveBuffer.indexOf('\n');
-        QByteArray jsonData = receiveBuffer.left(newlineIndex);
-        receiveBuffer.remove(0, newlineIndex + 1);
-
-        try {
-            nlohmann::json j = nlohmann::json::parse(jsonData.toStdString());
-            GameNetData data;
-            from_json(j, data);
-            handleReceivedData(data);
-        } catch (const std::exception& e) {
-            appendDebug(QString("Failed to parse JSON: %1").arg(e.what()));
-        }
-    }
-}
-
-void MultiplayerModeGameWidget::onSocketError(QAbstractSocket::SocketError error) {
-    appendDebug(QString("Socket error: %1").arg(socket->errorString()));
-    if (connectionStatusLabel) {
-        connectionStatusLabel->setText(QString("连接错误"));
-        connectionStatusLabel->setStyleSheet("color: rgba(255,100,100,220); background: transparent;");
-    }
-}
-
 void MultiplayerModeGameWidget::sendNetData(const GameNetData& data) {
-    if (!isConnected) {
-        appendDebug("Cannot send data: not connected to server");
+    if (!gameWindow || !gameWindow->getNetDataIO()) {
+        appendDebug("Cannot send data: NetDataIO is not available");
         return;
     }
 
     try {
-        nlohmann::json j;
-        to_json(j, data);
-        std::string jsonStr = j.dump();
-        jsonStr += "\n";  // Add newline as message delimiter
-
-        socket->write(jsonStr.c_str(), jsonStr.length());
-        socket->flush();
-
+        gameWindow->getNetDataIO()->sendData(data);
         appendDebug(QString("Sent data type=%1").arg(data.getType()));
     } catch (const std::exception& e) {
         appendDebug(QString("Failed to send data: %1").arg(e.what()));
     }
-}
-
-void MultiplayerModeGameWidget::sendEnterRoomMessage() {
-    GameNetData data;
-    data.setType(0);
-    data.setID(myUserId);
-    sendNetData(data);
-
-    // Show waiting label
-    if (waitingLabel) {
-        waitingLabel->setVisible(true);
-    }
-
-    appendDebug("Sent enter room message (type=0)");
 }
 
 void MultiplayerModeGameWidget::handleReceivedData(const GameNetData& data) {
@@ -1738,59 +1661,26 @@ void MultiplayerModeGameWidget::handleSyncMessage(const GameNetData& data) {
         std::vector<std::vector<int>> board = data.getMyBoard();
         appendDebug(QString("Player %1 synced board").arg(QString::fromStdString(playerId)));
 
-        // Update other player's board (visual update to be implemented)
-        updateOtherPlayerBoard(playerId, board);
-    }
-}
-
-void MultiplayerModeGameWidget::updateOtherPlayerBoard(const std::string& playerId, const std::vector<std::vector<int>>& board) {
-    // Store board state
-    otherPlayersBoards[playerId] = board;
-
-    // Create widget if it doesn't exist
-    if (otherPlayersBoardWidgets.find(playerId) == otherPlayersBoardWidgets.end()) {
-        createOtherPlayerBoardWidget(playerId);
-    }
-
-    // Update board cells
-    if (otherPlayersBoardCells.find(playerId) != otherPlayersBoardCells.end() && board.size() == 8) {
-        auto& cells = otherPlayersBoardCells[playerId];
-
-        // Define colors for different gemstone types
-        QColor colors[6] = {
-            QColor(255, 100, 100),  // Type 0: Red
-            QColor(100, 100, 255),  // Type 1: Blue
-            QColor(100, 255, 100),  // Type 2: Green
-            QColor(255, 255, 100),  // Type 3: Yellow
-            QColor(255, 100, 255),  // Type 4: Purple
-            QColor(100, 255, 255)   // Type 5: Cyan
-        };
-
-        for (int i = 0; i < 8; ++i) {
-            if (board[i].size() != 8) continue;
-            for (int j = 0; j < 8; ++j) {
-                int type = board[i][j];
-                if (type >= 0 && type < 6) {
-                    QColor color = colors[type];
-                    cells[i][j]->setStyleSheet(QString("QLabel { background-color: rgb(%1,%2,%3); border: 1px solid rgba(80,80,80,120); }")
-                        .arg(color.red()).arg(color.green()).arg(color.blue()));
-                } else {
-                    // Empty cell or invalid type
-                    cells[i][j]->setStyleSheet("QLabel { background-color: rgba(50,50,50,180); border: 1px solid rgba(80,80,80,120); }");
-                }
-            }
+        // Update other player's board using 3D window
+        accept4(playerId, board);
+        
+        // Update score
+        int score = data.getMyScore();
+        if (score >= 0) {
+            updateOtherPlayerScore(playerId, score);
         }
     }
-
-    appendDebug(QString("Updated board for player %1").arg(QString::fromStdString(playerId)));
 }
 
 void MultiplayerModeGameWidget::updateOtherPlayerScore(const std::string& playerId, int score) {
-    otherPlayersScores[playerId] = score;
-
-    // Update UI label if exists
-    if (otherPlayersLabels.find(playerId) != otherPlayersLabels.end()) {
-        QLabel* label = otherPlayersLabels[playerId];
+    if (idToNum.find(playerId) == idToNum.end()) return;
+    int num = idToNum[playerId];
+    
+    QLabel* label = nullptr;
+    if (num == 1) label = player1ScoreLabel;
+    else if (num == 2) label = player2ScoreLabel;
+    
+    if (label) {
         label->setText(QString("玩家 %1: %2分").arg(QString::fromStdString(playerId)).arg(score));
     }
 
@@ -1812,8 +1702,8 @@ std::vector<std::vector<int>> MultiplayerModeGameWidget::getCurrentBoardState() 
 }
 
 void MultiplayerModeGameWidget::sendBoardSyncMessage() {
-    if (!isConnected || !allPlayersReady) {
-        return;  // Don't send sync if not connected or game not started
+    if (!allPlayersReady) {
+        return;  // Don't send sync if game not started
     }
 
     // Get current board state
@@ -1831,112 +1721,7 @@ void MultiplayerModeGameWidget::sendBoardSyncMessage() {
     appendDebug(QString("Sent periodic board sync (score=%1, time=%2s)").arg(gameScore).arg(nowTimeHave));
 }
 
-void MultiplayerModeGameWidget::createOtherPlayerBoardWidget(const std::string& playerId) {
-    // Check if widget already exists
-    if (otherPlayersBoardWidgets.find(playerId) != otherPlayersBoardWidgets.end()) {
-        return;
-    }
 
-    // 限制最多2个其他玩家的棋盘（自己加上最多2个其他玩家 = 最多3人）
-    if (otherPlayersBoardWidgets.size() >= 2) {
-        appendDebug(QString("Cannot create board for player %1: Maximum 2 other players allowed").arg(QString::fromStdString(playerId)));
-        return;
-    }
-
-    // Create container for this player
-    QWidget* playerContainer = new QWidget(otherPlayersPanelWidget);
-    playerContainer->setStyleSheet(R"(
-        QWidget {
-            background-color: rgba(255, 255, 255, 12);
-            border: 1px solid rgba(255, 255, 255, 30);
-            border-radius: 12px;
-        }
-    )");
-    playerContainer->setFixedSize(440, 350);  // 增加尺寸以容纳更大的棋盘
-
-    QVBoxLayout* containerLayout = new QVBoxLayout(playerContainer);
-    containerLayout->setContentsMargins(12, 12, 12, 12);
-    containerLayout->setSpacing(8);
-
-    // Player info label
-    QLabel* infoLabel = new QLabel(playerContainer);
-    QFont infoFont = infoLabel->font();
-    infoFont.setFamily("Microsoft YaHei");
-    infoFont.setPointSize(11);
-    infoFont.setBold(true);
-    infoLabel->setFont(infoFont);
-    infoLabel->setStyleSheet("color: rgba(255,255,255,235); background: transparent;");
-    infoLabel->setText(QString("玩家 %1: 0分").arg(QString::fromStdString(playerId)));
-    containerLayout->addWidget(infoLabel);
-
-    // Mini board widget - 更大的棋盘
-    QWidget* boardWidget = new QWidget(playerContainer);
-    boardWidget->setStyleSheet("QWidget { background: transparent; }");
-    QGridLayout* boardLayout = new QGridLayout(boardWidget);
-    boardLayout->setSpacing(2);  // 增加间距使棋盘更清晰
-    boardLayout->setContentsMargins(0, 0, 0, 0);
-
-    // Create 8x8 grid of labels
-    std::vector<std::vector<QLabel*>> cells(8, std::vector<QLabel*>(8));
-    int cellSize = 30;  // 增加单元格大小以提高可见性
-
-    for (int i = 0; i < 8; ++i) {
-        for (int j = 0; j < 8; ++j) {
-            QLabel* cell = new QLabel(boardWidget);
-            cell->setFixedSize(cellSize, cellSize);
-            cell->setStyleSheet("QLabel { background-color: rgba(100,100,100,150); border: 1px solid rgba(80,80,80,120); border-radius: 3px; }");
-            boardLayout->addWidget(cell, i, j);
-            cells[i][j] = cell;
-        }
-    }
-
-    containerLayout->addWidget(boardWidget, 0, Qt::AlignCenter);
-
-    // Store references
-    otherPlayersBoardWidgets[playerId] = playerContainer;
-    otherPlayersLabels[playerId] = infoLabel;
-    otherPlayersBoardCells[playerId] = cells;
-
-    // Add to layout
-    otherPlayersPanelLayout->addWidget(playerContainer);
-
-    appendDebug(QString("Created board widget for player %1 (total: %2/2)").arg(QString::fromStdString(playerId)).arg(otherPlayersBoardWidgets.size()));
-}
-
-void MultiplayerModeGameWidget::updateOtherPlayerBoardUI(const std::string& playerId) {
-    // Check if board exists
-    if (otherPlayersBoardCells.find(playerId) == otherPlayersBoardCells.end()) {
-        return;
-    }
-
-    // Get board state for this player
-    if (otherPlayersBoards.find(playerId) == otherPlayersBoards.end()) {
-        return;
-    }
-
-    // Update board cells with colors
-    auto& cells = otherPlayersBoardCells[playerId];
-
-    // Define colors for different gemstone types (matching main game)
-    QColor colors[6] = {
-        QColor(255, 100, 100),  // Red
-        QColor(100, 100, 255),  // Blue
-        QColor(100, 255, 100),  // Green
-        QColor(255, 255, 100),  // Yellow
-        QColor(255, 100, 255),  // Purple
-        QColor(100, 255, 255)   // Cyan
-    };
-
-    // Note: otherPlayersBoards stores Gemstone pointers, but we only have int board from network
-    // We need to use the board from GameNetData instead
-    // For now, just show placeholder colors
-    for (int i = 0; i < 8; ++i) {
-        for (int j = 0; j < 8; ++j) {
-            // This will be properly updated when we receive board sync data
-            cells[i][j]->setStyleSheet("QLabel { background-color: rgba(150,150,150,180); border: 1px solid rgba(100,100,100,120); }");
-        }
-    }
-}
 
 /**
  * @Author: NAPH130
@@ -2019,6 +1804,15 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
                 if (gem->getStyle() != currentStyle) {
                     gem->setStyle(currentStyle);
                 }
+                // Ensure it cannot be chosen
+                if (gem->getCanBeChosen()) {
+                    gem->setCanBeChosen(false);
+                }
+                
+                // Update position (in case of layout changes)
+                float x = (c - 3.5f) * 1.1f;
+                float y = (3.5f - r) * 1.1f;
+                gem->transform()->setTranslation(QVector3D(x, y, 0));
             } else {
                 // Create new gem
                 gem = new Gemstone(type, currentStyle, targetRoot);
@@ -2048,12 +1842,12 @@ void MultiplayerModeGameWidget::startGame() {
 
     // 发送 GameNetData
     GameNetData data;
-    data.setType(11);
+    data.setType(4);
     data.setID(myUserId);
     data.setMyBoard(myBoard);
     
     sendNetData(data);
-    appendDebug("Game started, sent initial board (type=11)");
+    appendDebug("Game started, sent initial board (type=4)");
 }
 
 
@@ -2071,15 +1865,15 @@ void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::v
  * @Author: NAPH130
  * @Function: 从服务端接收type == 10后执行方法,初始化ID映射
  */
-void MultiplayerModeGameWidget::accept10( std::map<std::string, int> idToNum) {
-    idToNum.clear();
-    numToId.clear();
+void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap) {
+    this->idToNum.clear();
+    this->numToId.clear();
     int index = 1;
-    for (auto& pair : idToNum) {
+    for (auto& pair : incomingMap) {
         std::string id = pair.first;
         if (id == myUserId) continue;
-        numToId[index] = id;
-        idToNum[id] = index;
+        this->numToId[index] = id;
+        this->idToNum[id] = index;
         index++;
     }
     startGame();

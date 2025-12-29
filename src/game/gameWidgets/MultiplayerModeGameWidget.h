@@ -6,7 +6,6 @@
 #include <string>
 #include <QTimer>
 #include <QString>
-#include <QTcpSocket>
 #include <QVBoxLayout>
 #include <Qt3DExtras/Qt3DWindow>
 #include <Qt3DCore/QEntity>
@@ -75,18 +74,20 @@ public:
     int getDifficulty() const;
 
     // Network-related methods
-    void connectToServer(const QString& host, int port);
     void sendNetData(const GameNetData& data);
     void handleReceivedData(const GameNetData& data);
 
     std::map<std::string, int> getIdToNum() const;
     void setIdToNum(const std::map<std::string, int>& map);
     void refreshTabel(int num, const std::vector<std::vector<int>>& table);
+
+    void accept10(std::map<std::string, int> idToNum);
     
     // Public access to player tables for testing/debug if needed, though usually internal
     const std::vector<std::vector<Gemstone*>>& getPlayer1Table() const { return player1Table; }
     const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
 
+    void accept4(std::string id, const std::vector<std::vector<int>>& table);
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -94,7 +95,6 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
-    void accept4(std::string id, const std::vector<std::vector<int>>& table);
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
     void handleManualClick(const QPoint& screenPos);
@@ -115,24 +115,14 @@ private:
     void performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2);
 
     // Network private methods
-    void sendEnterRoomMessage();
-    void onConnected();
-    void onDisconnected();
-    void onReadyRead();
-    void onSocketError(QAbstractSocket::SocketError error);
     void handleSwapMessage(const GameNetData& data);
     void handleEliminateMessage(const GameNetData& data);
     void handleGenerateMessage(const GameNetData& data);
     void handleSyncMessage(const GameNetData& data);
     void handleConnectivityTest(const GameNetData& data);
-    void updateOtherPlayerBoard(const std::string& playerId, const std::vector<std::vector<int>>& board);
     void updateOtherPlayerScore(const std::string& playerId, int score);
     void sendBoardSyncMessage();  // Send type=4 sync message
     std::vector<std::vector<int>> getCurrentBoardState() const;  // Get current board state as int array
-
-    // UI methods for other players' boards
-    void createOtherPlayerBoardWidget(const std::string& playerId);
-    void updateOtherPlayerBoardUI(const std::string& playerId);
 
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;
@@ -149,15 +139,10 @@ private:
     GameWindow* gameWindow;
 
     // Network members
-    QTcpSocket* socket;
     std::string myUserId;
     std::map<std::string, int> idToNum;  // Player ID -> Player number mapping
     std::map<int, std::string> numToId;  // Player number -> Player ID mapping
-    std::map<std::string, std::vector<std::vector<int>>> otherPlayersBoards;  // Other players' board states (as int types)
-    std::map<std::string, int> otherPlayersScores;  // Other players' scores
-    bool isConnected = false;
     bool allPlayersReady = false;
-    QByteArray receiveBuffer;  // Buffer for incomplete messages
     QTimer* syncTimer;  // Timer for periodic board synchronization
 
     class GameTimeKeeper {
@@ -217,6 +202,7 @@ private:
     Qt3DCore::QEntity* player1RootEntity = nullptr;
     Qt3DRender::QCamera* player1Camera = nullptr;
     std::vector<std::vector<Gemstone*>> player1Table;
+    QLabel* player1ScoreLabel = nullptr;
 
     // Player 2 (Bottom Small Window)
     Qt3DExtras::Qt3DWindow* player2Window = nullptr;
@@ -224,13 +210,9 @@ private:
     Qt3DCore::QEntity* player2RootEntity = nullptr;
     Qt3DRender::QCamera* player2Camera = nullptr;
     std::vector<std::vector<Gemstone*>> player2Table;
-
-    std::map<std::string, QLabel*> otherPlayersLabels;  // Player ID -> Score/Info Label
-    std::map<std::string, QWidget*> otherPlayersBoardWidgets;  // Player ID -> Board Widget
-    std::map<std::string, std::vector<std::vector<QLabel*>>> otherPlayersBoardCells;  // Player ID -> Board cells
+    QLabel* player2ScoreLabel = nullptr;
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
-    void accept10( std::map<std::string, int> idToNum);
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H

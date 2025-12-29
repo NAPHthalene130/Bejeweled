@@ -1,5 +1,6 @@
 #include "MultiGameWaitWidget.h"
 #include "PlayMenuWidget.h"
+#include "MultiplayerModeGameWidget.h"
 #include "../GameWindow.h"
 #include "../data/NetDataIO.h"
 #include "../data/GameNetData.h"
@@ -98,6 +99,12 @@ void MultiGameWaitWidget::backButtonClicked() {
 void MultiGameWaitWidget::updateInfoLabel() {
     if (infoLabel) {
         infoLabel->setText(QString("当前玩家人数: %1 人").arg(roomPeopleHave));
+    }
+}
+
+void MultiGameWaitWidget::accept10(std::map<std::string, int> idToNum) {
+    if (gameWindow && gameWindow->getMultiplayerModeGameWidget()) {
+        gameWindow->getMultiplayerModeGameWidget()->accept10(idToNum);
     }
 }
 
