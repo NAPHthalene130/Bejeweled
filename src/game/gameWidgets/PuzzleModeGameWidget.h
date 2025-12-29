@@ -69,6 +69,8 @@ public:
 
     void setDifficulty(int diff);
     int getDifficulty() const;
+
+    void backToLastGemstoneState(std::vector<std::vector<Gemstone*>> PresentGem , std::string LastState);
     
 protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -107,9 +109,10 @@ private:
     QTimer* timer;
     int nowTimeHave;
     int mode; // 1: Normal, 2: Rotate
-    int comboCount = 0; 
+    int comboCount = 0;
     
     int difficulty = 4;
+    int GemNumber = 0;
 
     GameWindow* gameWindow;
 
