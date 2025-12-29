@@ -14,6 +14,7 @@ class RankListWidget;
 class SingleModeGameWidget;
 class WhirlwindModeGameWidget;
 class MultiplayerModeGameWidget;
+class PuzzleModeGameWidget;
 class FinalWidget;
 class MultiGameWaitWidget;
 class NetDataIO;
@@ -35,6 +36,7 @@ public:
     SingleModeGameWidget* getSingleModeGameWidget() const { return singleModeGameWidget; }
     WhirlwindModeGameWidget* getWhirlwindModeGameWidget() const { return whirlwindModeGameWidget; }
     MultiplayerModeGameWidget* getMultiplayerModeGameWidget() const { return multiplayerModeGameWidget; }
+    PuzzleModeGameWidget* getPuzzleModeGameWidget() const { return puzzleModeGameWidget; }
     PlayMenuWidget* getPlayMenuWidget() const { return playMenuWidget; }
     FinalWidget* getFinalWidget() const { return finalWidget; }
     MultiGameWaitWidget* getMultiGameWaitWidget() const { return multiGameWaitWidget; }
@@ -73,6 +75,7 @@ private:
     SingleModeGameWidget* singleModeGameWidget = nullptr;
     WhirlwindModeGameWidget* whirlwindModeGameWidget = nullptr;
     MultiplayerModeGameWidget* multiplayerModeGameWidget = nullptr;
+    PuzzleModeGameWidget* puzzleModeGameWidget = nullptr;
     FinalWidget* finalWidget = nullptr;
     MultiGameWaitWidget* multiGameWaitWidget = nullptr;
     NetDataIO* netDataIO = nullptr;

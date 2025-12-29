@@ -27,6 +27,7 @@ private:
     MenuButton* rotateModeButton;
     MenuButton* multiModeButton;
     MenuButton* testMultiButton;
+    MenuButton* puzzleModeButton;
     MenuButton* backButton;
 
     // 3D View
@@ -44,6 +45,7 @@ signals:
     void backToMenu();
     void startNormalMode();
     void startRotateMode();
+    void startPuzzleMode();
 };
 
 #endif // PLAY_MENU_WIDGET_H

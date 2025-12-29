@@ -1,0 +1,206 @@
+[
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\Bejeweled_autogen\\mocs_compilation.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\build\\Bejeweled_autogen\\mocs_compilation.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/build/Bejeweled_autogen/mocs_compilation.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/Bejeweled_autogen/mocs_compilation.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\auth\\AuthNetData.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\auth\\AuthNetData.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/auth/AuthNetData.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/auth/AuthNetData.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\auth\\AuthWindow.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\auth\\AuthWindow.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/auth/AuthWindow.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/auth/AuthWindow.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\auth\\authWidgets\\LoginWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\auth\\authWidgets\\LoginWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/auth/authWidgets/LoginWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/auth/authWidgets/LoginWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\auth\\authWidgets\\RegisterWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\auth\\authWidgets\\RegisterWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/auth/authWidgets/RegisterWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/auth/authWidgets/RegisterWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\auth\\components\\AuthButton.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\auth\\components\\AuthButton.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/auth/components/AuthButton.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/auth/components/AuthButton.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\auth\\components\\AuthLineEdit.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\auth\\components\\AuthLineEdit.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/auth/components/AuthLineEdit.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/auth/components/AuthLineEdit.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\auth\\components\\AuthNoticeDialog.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\auth\\components\\AuthNoticeDialog.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/auth/components/AuthNoticeDialog.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/auth/components/AuthNoticeDialog.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\GameWindow.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\GameWindow.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/GameWindow.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/GameWindow.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\TestWindow.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\TestWindow.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/TestWindow.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/TestWindow.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\components\\Gemstone.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\components\\Gemstone.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/components/Gemstone.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/components/Gemstone.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\components\\MenuButton.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\components\\MenuButton.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/components/MenuButton.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/components/MenuButton.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\components\\RotationSquare.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\components\\RotationSquare.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/components/RotationSquare.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/components/RotationSquare.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\components\\SelectedCircle.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\components\\SelectedCircle.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/components/SelectedCircle.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/components/SelectedCircle.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\data\\GameNetData.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\data\\GameNetData.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/data/GameNetData.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/data/GameNetData.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\data\\NetDataIO.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\data\\NetDataIO.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/data/NetDataIO.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/data/NetDataIO.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\AchievementsWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\AchievementsWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/AchievementsWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/AchievementsWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\FinalWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\FinalWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/FinalWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/FinalWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\MenuWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\MenuWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/MenuWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/MenuWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\MultiGameWaitWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\MultiGameWaitWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/MultiGameWaitWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/MultiGameWaitWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\MultiplayerModeGameWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\MultiplayerModeGameWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/MultiplayerModeGameWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/MultiplayerModeGameWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\PlayMenuWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\PlayMenuWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/PlayMenuWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/PlayMenuWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\PuzzleModeGameWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\PuzzleModeGameWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/PuzzleModeGameWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/PuzzleModeGameWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\RankListWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\RankListWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/RankListWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/RankListWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\SettingWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\SettingWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/SettingWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/SettingWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\SingleModeGameWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\SingleModeGameWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/SingleModeGameWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/SingleModeGameWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\StoreWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\StoreWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/StoreWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/StoreWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\game\\gameWidgets\\WhirlwindModeGameWidget.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\game\\gameWidgets\\WhirlwindModeGameWidget.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/game/gameWidgets/WhirlwindModeGameWidget.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/game/gameWidgets/WhirlwindModeGameWidget.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\main.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\main.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/main.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/main.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\utils\\AudioManager.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\utils\\AudioManager.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/utils/AudioManager.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/utils/AudioManager.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\utils\\BGMManager.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\utils\\BGMManager.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/utils/BGMManager.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/utils/BGMManager.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\utils\\BackgroundManager.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\utils\\BackgroundManager.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/utils/BackgroundManager.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/utils/BackgroundManager.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\utils\\LogWindow.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\utils\\LogWindow.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/utils/LogWindow.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/utils/LogWindow.cpp.obj"
+},
+{
+  "directory": "E:/20570/Documentsfor20251208/project/Bejeweled/build",
+  "command": "e:\\Qt\\Tools\\mingw1310_64\\bin\\g++.exe -DMINGW_HAS_SECURE_API=1 -DPROJECT_SOURCE_DIR=\\\"E:/20570/Documentsfor20251208/project/Bejeweled\\\" -DQT_3DCORE_LIB -DQT_3DEXTRAS_LIB -DQT_3DINPUT_LIB -DQT_3DLOGIC_LIB -DQT_3DRENDER_LIB -DQT_CONCURRENT_LIB -DQT_CORE_LIB -DQT_GUI_LIB -DQT_MULTIMEDIA_LIB -DQT_NEEDS_QMAIN -DQT_NETWORK_LIB -DQT_OPENGL_LIB -DQT_WIDGETS_LIB -DUNICODE -DWIN32 -DWIN64 -D_ENABLE_EXTENDED_ALIGNED_STORAGE -D_UNICODE -D_WIN64 @CMakeFiles/Bejeweled.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\Bejeweled.dir\\src\\utils\\ResourceUtils.cpp.obj -c E:\\20570\\Documentsfor20251208\\project\\Bejeweled\\src\\utils\\ResourceUtils.cpp",
+  "file": "E:/20570/Documentsfor20251208/project/Bejeweled/src/utils/ResourceUtils.cpp",
+  "output": "CMakeFiles/Bejeweled.dir/src/utils/ResourceUtils.cpp.obj"
+}
+]
