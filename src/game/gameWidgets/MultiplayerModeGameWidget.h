@@ -56,6 +56,7 @@ public:
     int getMode() const;
     void setMode(int mode);
     void reset(int mode);
+    void startGame();
 
     void eliminate();
     void drop();
@@ -93,6 +94,7 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
+    void accept4(std::string id, const std::vector<std::vector<int>>& table);
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
     void handleManualClick(const QPoint& screenPos);
@@ -228,6 +230,7 @@ private:
     std::map<std::string, std::vector<std::vector<QLabel*>>> otherPlayersBoardCells;  // Player ID -> Board cells
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
+    void accept10( std::map<std::string, int> idToNum);
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H

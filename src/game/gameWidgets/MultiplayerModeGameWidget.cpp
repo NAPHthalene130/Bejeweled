@@ -2034,3 +2034,54 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
         }
     }
 }
+
+/**
+ * @Author: NAPH130
+ * @Function: 开始游戏
+ */
+void MultiplayerModeGameWidget::startGame() {
+    // 首先刷新自己的棋盘
+    reset(1);
+
+    // 获取棋盘数据
+    std::vector<std::vector<int>> myBoard = getCurrentBoardState();
+
+    // 发送 GameNetData
+    GameNetData data;
+    data.setType(11);
+    data.setID(myUserId);
+    data.setMyBoard(myBoard);
+    
+    sendNetData(data);
+    appendDebug("Game started, sent initial board (type=11)");
+}
+
+
+/**
+ * @Author: NAPH130
+ * @Function: 从服务端接收type == 4后执行方法
+ */
+void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::vector<int>>& table) {
+    if (idToNum.find(id) == idToNum.end()) return;
+    int num = idToNum[id];
+    refreshTabel(num, table);
+}
+
+/**
+ * @Author: NAPH130
+ * @Function: 从服务端接收type == 10后执行方法,初始化ID映射
+ */
+void MultiplayerModeGameWidget::accept10( std::map<std::string, int> idToNum) {
+    idToNum.clear();
+    numToId.clear();
+    int index = 1;
+    for (auto& pair : idToNum) {
+        std::string id = pair.first;
+        if (id == myUserId) continue;
+        numToId[index] = id;
+        idToNum[id] = index;
+        index++;
+    }
+    startGame();
+}
+
