@@ -1,0 +1,3 @@
+set(__QT_DEPLOY_TARGET_Bejeweled_FILE E:/20570/Documentsfor20251208/project/Bejeweled/build/Bejeweled.exe)
+set(__QT_DEPLOY_TARGET_Bejeweled_TYPE EXECUTABLE)
+set(__QT_DEPLOY_TARGET_Bejeweled_RUNTIME_DLLS E:/Qt/6.9.3/mingw_64/bin/Qt6Widgets.dll;E:/Qt/6.9.3/mingw_64/bin/Qt6Multimedia.dll;E:/Qt/6.9.3/mingw_64/bin/Qt63DExtras.dll;E:/Qt/6.9.3/mingw_64/bin/Qt63DInput.dll;E:/Qt/6.9.3/mingw_64/bin/Qt63DRender.dll;E:/Qt/6.9.3/mingw_64/bin/Qt6OpenGL.dll;E:/Qt/6.9.3/mingw_64/bin/Qt63DLogic.dll;E:/Qt/6.9.3/mingw_64/bin/Qt63DCore.dll;E:/Qt/6.9.3/mingw_64/bin/Qt6Concurrent.dll;E:/Qt/6.9.3/mingw_64/bin/Qt6Network.dll;E:/Qt/6.9.3/mingw_64/bin/Qt6Gui.dll;E:/Qt/6.9.3/mingw_64/bin/Qt6Core.dll)
