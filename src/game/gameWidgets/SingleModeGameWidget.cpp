@@ -4,6 +4,7 @@
 #include "../GameWindow.h"
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
+#include "../data/CoinSystem.h"
 #include "../../utils/AudioManager.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -503,9 +504,10 @@ void SingleModeGameWidget::finishToFinalWidget() {
         .arg(m, 2, 10, QChar('0'))
         .arg(s, 2, 10, QChar('0'));
 
-    QString gradeText = QString("本局得分：%1\n用时：%2\n评价：Excellent!")
+    QString gradeText = QString("本局得分：%1\n用时：%2\n获得金币：%3\n评价：Excellent!")
         .arg(gameScore)
-        .arg(timeText);
+        .arg(timeText)
+        .arg(earnedCoins);
 
     QTimer::singleShot(650, this, [this, gradeText]() {
         if (!gameWindow) return;
@@ -604,6 +606,12 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
 
         if (gem) {
             removedCount += 1;
+
+            // 如果是金币宝石，先收集金币
+            if (gem->isCoinGem()) {
+                collectCoinGem(gem);
+            }
+
             // 播放消除动画
             eliminateAnime(gem);
             // 从容器中移除
@@ -1114,6 +1122,11 @@ void SingleModeGameWidget::reset(int mode) {
     this->targetScore = 300;
     this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
+
+    // 记录游戏开始时的金币数
+    this->initialCoins = CoinSystem::instance().getCoins();
+    this->earnedCoins = 0;
+
     updateScoreBoard();
     updateTimeBoard();
     appendDebug(QString("reset mode=%1").arg(mode));
@@ -1170,7 +1183,11 @@ void SingleModeGameWidget::reset(int mode) {
         }
     }
     appendDebug("created 8x8 gemstones with no initial matches");
-    
+
+    // 生成金币宝石 (随机1-3个)
+    int coinCount = QRandomGenerator::global()->bounded(1, 4);
+    generateCoinGems(coinCount);
+
     // 重置选择状态
     selectedNum = 0;
     firstSelectedGemstone = nullptr;
@@ -1528,4 +1545,78 @@ void SingleModeGameWidget::setDifficulty(int diff) {
 
 int SingleModeGameWidget::getDifficulty() const {
     return difficulty;
+}
+
+// ============================================================================
+// 金币系统实现
+// ============================================================================
+
+void SingleModeGameWidget::generateCoinGems(int count) {
+    if (count <= 0) return;
+    if (gemstoneContainer.empty() || gemstoneContainer.size() != 8) return;
+
+    // 收集所有非空宝石的位置
+    std::vector<std::pair<int, int>> validPositions;
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            if (gemstoneContainer[row][col] != nullptr) {
+                validPositions.push_back({row, col});
+            }
+        }
+    }
+
+    if (validPositions.empty()) return;
+
+    // 随机选择指定数量的宝石设置为金币
+    int actualCount = std::min(count, static_cast<int>(validPositions.size()));
+
+    // 打乱位置顺序
+    for (int i = validPositions.size() - 1; i > 0; --i) {
+        int j = QRandomGenerator::global()->bounded(i + 1);
+        std::swap(validPositions[i], validPositions[j]);
+    }
+
+    // 设置前actualCount个宝石为金币
+    for (int i = 0; i < actualCount; ++i) {
+        int row = validPositions[i].first;
+        int col = validPositions[i].second;
+        Gemstone* gem = gemstoneContainer[row][col];
+
+        if (gem) {
+            // 随机金币价值 1-5
+            int coinValue = QRandomGenerator::global()->bounded(1, 6);
+            gem->setCoinValue(coinValue);
+            gem->setCoinGem(true);
+
+            qDebug() << "[SingleMode] Generated coin gem at (" << row << "," << col
+                     << ") with value:" << coinValue;
+        }
+    }
+
+    appendDebug(QString("Generated %1 coin gems on the board").arg(actualCount));
+}
+
+void SingleModeGameWidget::collectCoinGem(Gemstone* gem) {
+    if (!gem || !gem->isCoinGem()) return;
+
+    int coinValue = gem->getCoinValue();
+
+    // 添加金币到系统
+    CoinSystem::instance().addCoins(coinValue, true);
+
+    // 累加本局获得的金币
+    earnedCoins += coinValue;
+
+    appendDebug(QString("Collected coin gem with value: %1. Total coins: %2, Earned this game: %3")
+                .arg(coinValue)
+                .arg(CoinSystem::instance().getCoins())
+                .arg(earnedCoins));
+
+    qDebug() << "[SingleMode] Collected coin with value:" << coinValue
+             << "Total coins:" << CoinSystem::instance().getCoins()
+             << "Earned this game:" << earnedCoins;
+}
+
+int SingleModeGameWidget::getEarnedCoins() const {
+    return earnedCoins;
 }

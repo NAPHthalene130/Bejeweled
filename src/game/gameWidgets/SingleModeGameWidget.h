@@ -69,7 +69,12 @@ public:
 
     void setDifficulty(int diff);
     int getDifficulty() const;
-    
+
+    // 金币系统相关
+    void generateCoinGems(int count);
+    void collectCoinGem(Gemstone* gem);
+    int getEarnedCoins() const; // 获取本局获得的金币数
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -158,6 +163,10 @@ private:
     QLabel* timeBoardLabel = nullptr;
     QPushButton* backToMenuButton = nullptr;
     ScoreProgressBar* scoreProgressBar = nullptr;
+
+    // 金币统计
+    int initialCoins = 0;  // 游戏开始时的金币数
+    int earnedCoins = 0;   // 本局获得的金币数
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H

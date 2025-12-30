@@ -11,6 +11,7 @@
 #include "gameWidgets/FinalWidget.h"
 #include "gameWidgets/MultiGameWaitWidget.h"
 #include "components/MenuButton.h"
+#include "data/CoinSystem.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QString>
@@ -21,7 +22,11 @@
 #include "../utils/LogWindow.h"
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
-    
+
+    // 初始化金币系统
+    CoinSystem::instance().initialize(userID);
+    qDebug() << "[GameWindow] CoinSystem initialized for user:" << QString::fromStdString(userID);
+
     logWindow = new LogWindow();
     logWindow->show();
 
@@ -77,6 +82,10 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     
     connect(menuWidget, &MenuWidget::openSettings, this, [this]() {
     switchWidget(settingWidget); // 点击设置时切换到设置界面
+    });
+
+    connect(menuWidget, &MenuWidget::openStore, this, [this]() {
+        switchWidget(storeWidget); // 点击商店时切换到商店界面
     });
     
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
