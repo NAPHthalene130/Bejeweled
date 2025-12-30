@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'MultiGameWaitWidget.h'
 **
-** Created by: The Qt Meta Object Compiler version 69 (Qt 6.9.3)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.5.3)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
@@ -10,16 +10,19 @@
 #include <QtGui/qtextcursor.h>
 #include <QtCore/qmetatype.h>
 
+#if __has_include(<QtCore/qtmochelpers.h>)
 #include <QtCore/qtmochelpers.h>
+#else
+QT_BEGIN_MOC_NAMESPACE
+#endif
+
 
 #include <memory>
 
-
-#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'MultiGameWaitWidget.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 69
-#error "This file was generated using the moc from 6.9.3. It"
+#elif Q_MOC_OUTPUT_REVISION != 68
+#error "This file was generated using the moc from 6.5.3. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -32,56 +35,107 @@ QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
-struct qt_meta_tag_ZN19MultiGameWaitWidgetE_t {};
+
+#ifdef QT_MOC_HAS_STRINGDATA
+struct qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS_t {};
+static constexpr auto qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS = QtMocHelpers::stringData(
+    "MultiGameWaitWidget",
+    "backToMenu",
+    "",
+    "backButtonClicked"
+);
+#else  // !QT_MOC_HAS_STRING_DATA
+struct qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS_t {
+    uint offsetsAndSizes[8];
+    char stringdata0[20];
+    char stringdata1[11];
+    char stringdata2[1];
+    char stringdata3[18];
+};
+#define QT_MOC_LITERAL(ofs, len) \
+    uint(sizeof(qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS_t::offsetsAndSizes) + ofs), len 
+Q_CONSTINIT static const qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS_t qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS = {
+    {
+        QT_MOC_LITERAL(0, 19),  // "MultiGameWaitWidget"
+        QT_MOC_LITERAL(20, 10),  // "backToMenu"
+        QT_MOC_LITERAL(31, 0),  // ""
+        QT_MOC_LITERAL(32, 17)   // "backButtonClicked"
+    },
+    "MultiGameWaitWidget",
+    "backToMenu",
+    "",
+    "backButtonClicked"
+};
+#undef QT_MOC_LITERAL
+#endif // !QT_MOC_HAS_STRING_DATA
 } // unnamed namespace
 
-template <> constexpr inline auto MultiGameWaitWidget::qt_create_metaobjectdata<qt_meta_tag_ZN19MultiGameWaitWidgetE_t>()
-{
-    namespace QMC = QtMocConstants;
-    QtMocHelpers::StringRefStorage qt_stringData {
-        "MultiGameWaitWidget",
-        "backToMenu",
-        "",
-        "backButtonClicked"
-    };
+Q_CONSTINIT static const uint qt_meta_data_CLASSMultiGameWaitWidgetENDCLASS[] = {
 
-    QtMocHelpers::UintData qt_methods {
-        // Signal 'backToMenu'
-        QtMocHelpers::SignalData<void()>(1, 2, QMC::AccessPublic, QMetaType::Void),
-        // Slot 'backButtonClicked'
-        QtMocHelpers::SlotData<void()>(3, 2, QMC::AccessPrivate, QMetaType::Void),
-    };
-    QtMocHelpers::UintData qt_properties {
-    };
-    QtMocHelpers::UintData qt_enums {
-    };
-    return QtMocHelpers::metaObjectData<MultiGameWaitWidget, qt_meta_tag_ZN19MultiGameWaitWidgetE_t>(QMC::MetaObjectFlag{}, qt_stringData,
-            qt_methods, qt_properties, qt_enums);
-}
+ // content:
+      11,       // revision
+       0,       // classname
+       0,    0, // classinfo
+       2,   14, // methods
+       0,    0, // properties
+       0,    0, // enums/sets
+       0,    0, // constructors
+       0,       // flags
+       1,       // signalCount
+
+ // signals: name, argc, parameters, tag, flags, initial metatype offsets
+       1,    0,   26,    2, 0x06,    1 /* Public */,
+
+ // slots: name, argc, parameters, tag, flags, initial metatype offsets
+       3,    0,   27,    2, 0x08,    2 /* Private */,
+
+ // signals: parameters
+    QMetaType::Void,
+
+ // slots: parameters
+    QMetaType::Void,
+
+       0        // eod
+};
+
 Q_CONSTINIT const QMetaObject MultiGameWaitWidget::staticMetaObject = { {
     QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN19MultiGameWaitWidgetE_t>.stringdata,
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN19MultiGameWaitWidgetE_t>.data,
+    qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSMultiGameWaitWidgetENDCLASS,
     qt_static_metacall,
     nullptr,
-    qt_staticMetaObjectRelocatingContent<qt_meta_tag_ZN19MultiGameWaitWidgetE_t>.metaTypes,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS_t,
+        // Q_OBJECT / Q_GADGET
+        QtPrivate::TypeAndForceComplete<MultiGameWaitWidget, std::true_type>,
+        // method 'backToMenu'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'backButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>
+    >,
     nullptr
 } };
 
 void MultiGameWaitWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
-    auto *_t = static_cast<MultiGameWaitWidget *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
+        auto *_t = static_cast<MultiGameWaitWidget *>(_o);
+        (void)_t;
         switch (_id) {
         case 0: _t->backToMenu(); break;
         case 1: _t->backButtonClicked(); break;
         default: ;
         }
+    } else if (_c == QMetaObject::IndexOfMethod) {
+        int *result = reinterpret_cast<int *>(_a[0]);
+        {
+            using _t = void (MultiGameWaitWidget::*)();
+            if (_t _q_method = &MultiGameWaitWidget::backToMenu; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 0;
+                return;
+            }
+        }
     }
-    if (_c == QMetaObject::IndexOfMethod) {
-        if (QtMocHelpers::indexOfMethod<void (MultiGameWaitWidget::*)()>(_a, &MultiGameWaitWidget::backToMenu, 0))
-            return;
-    }
+    (void)_a;
 }
 
 const QMetaObject *MultiGameWaitWidget::metaObject() const
@@ -92,7 +146,7 @@ const QMetaObject *MultiGameWaitWidget::metaObject() const
 void *MultiGameWaitWidget::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_staticMetaObjectStaticContent<qt_meta_tag_ZN19MultiGameWaitWidgetE_t>.strings))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSMultiGameWaitWidgetENDCLASS.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -106,8 +160,7 @@ int MultiGameWaitWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         if (_id < 2)
             qt_static_metacall(this, _c, _id, _a);
         _id -= 2;
-    }
-    if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 2)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 2;

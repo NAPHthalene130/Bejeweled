@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'MenuWidget.h'
 **
-** Created by: The Qt Meta Object Compiler version 69 (Qt 6.9.3)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.5.3)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
@@ -9,16 +9,19 @@
 #include "../../../src/game/gameWidgets/MenuWidget.h"
 #include <QtCore/qmetatype.h>
 
+#if __has_include(<QtCore/qtmochelpers.h>)
 #include <QtCore/qtmochelpers.h>
+#else
+QT_BEGIN_MOC_NAMESPACE
+#endif
+
 
 #include <memory>
 
-
-#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'MenuWidget.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 69
-#error "This file was generated using the moc from 6.9.3. It"
+#elif Q_MOC_OUTPUT_REVISION != 68
+#error "This file was generated using the moc from 6.5.3. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -31,73 +34,163 @@ QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
-struct qt_meta_tag_ZN10MenuWidgetE_t {};
+
+#ifdef QT_MOC_HAS_STRINGDATA
+struct qt_meta_stringdata_CLASSMenuWidgetENDCLASS_t {};
+static constexpr auto qt_meta_stringdata_CLASSMenuWidgetENDCLASS = QtMocHelpers::stringData(
+    "MenuWidget",
+    "startGame",
+    "",
+    "openStore",
+    "openAchievements",
+    "openLeaderboard",
+    "openSettings",
+    "playMenuButtonClicked",
+    "storeButtonClicked",
+    "achievementsButtonClicked",
+    "ranklistButtonClicked",
+    "settingsButtonClicked",
+    "exitButtonClicked"
+);
+#else  // !QT_MOC_HAS_STRING_DATA
+struct qt_meta_stringdata_CLASSMenuWidgetENDCLASS_t {
+    uint offsetsAndSizes[26];
+    char stringdata0[11];
+    char stringdata1[10];
+    char stringdata2[1];
+    char stringdata3[10];
+    char stringdata4[17];
+    char stringdata5[16];
+    char stringdata6[13];
+    char stringdata7[22];
+    char stringdata8[19];
+    char stringdata9[26];
+    char stringdata10[22];
+    char stringdata11[22];
+    char stringdata12[18];
+};
+#define QT_MOC_LITERAL(ofs, len) \
+    uint(sizeof(qt_meta_stringdata_CLASSMenuWidgetENDCLASS_t::offsetsAndSizes) + ofs), len 
+Q_CONSTINIT static const qt_meta_stringdata_CLASSMenuWidgetENDCLASS_t qt_meta_stringdata_CLASSMenuWidgetENDCLASS = {
+    {
+        QT_MOC_LITERAL(0, 10),  // "MenuWidget"
+        QT_MOC_LITERAL(11, 9),  // "startGame"
+        QT_MOC_LITERAL(21, 0),  // ""
+        QT_MOC_LITERAL(22, 9),  // "openStore"
+        QT_MOC_LITERAL(32, 16),  // "openAchievements"
+        QT_MOC_LITERAL(49, 15),  // "openLeaderboard"
+        QT_MOC_LITERAL(65, 12),  // "openSettings"
+        QT_MOC_LITERAL(78, 21),  // "playMenuButtonClicked"
+        QT_MOC_LITERAL(100, 18),  // "storeButtonClicked"
+        QT_MOC_LITERAL(119, 25),  // "achievementsButtonClicked"
+        QT_MOC_LITERAL(145, 21),  // "ranklistButtonClicked"
+        QT_MOC_LITERAL(167, 21),  // "settingsButtonClicked"
+        QT_MOC_LITERAL(189, 17)   // "exitButtonClicked"
+    },
+    "MenuWidget",
+    "startGame",
+    "",
+    "openStore",
+    "openAchievements",
+    "openLeaderboard",
+    "openSettings",
+    "playMenuButtonClicked",
+    "storeButtonClicked",
+    "achievementsButtonClicked",
+    "ranklistButtonClicked",
+    "settingsButtonClicked",
+    "exitButtonClicked"
+};
+#undef QT_MOC_LITERAL
+#endif // !QT_MOC_HAS_STRING_DATA
 } // unnamed namespace
 
-template <> constexpr inline auto MenuWidget::qt_create_metaobjectdata<qt_meta_tag_ZN10MenuWidgetE_t>()
-{
-    namespace QMC = QtMocConstants;
-    QtMocHelpers::StringRefStorage qt_stringData {
-        "MenuWidget",
-        "startGame",
-        "",
-        "openStore",
-        "openAchievements",
-        "openLeaderboard",
-        "openSettings",
-        "playMenuButtonClicked",
-        "storeButtonClicked",
-        "achievementsButtonClicked",
-        "ranklistButtonClicked",
-        "settingsButtonClicked",
-        "exitButtonClicked"
-    };
+Q_CONSTINIT static const uint qt_meta_data_CLASSMenuWidgetENDCLASS[] = {
 
-    QtMocHelpers::UintData qt_methods {
-        // Signal 'startGame'
-        QtMocHelpers::SignalData<void()>(1, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'openStore'
-        QtMocHelpers::SignalData<void()>(3, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'openAchievements'
-        QtMocHelpers::SignalData<void()>(4, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'openLeaderboard'
-        QtMocHelpers::SignalData<void()>(5, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'openSettings'
-        QtMocHelpers::SignalData<void()>(6, 2, QMC::AccessPublic, QMetaType::Void),
-        // Slot 'playMenuButtonClicked'
-        QtMocHelpers::SlotData<void()>(7, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'storeButtonClicked'
-        QtMocHelpers::SlotData<void()>(8, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'achievementsButtonClicked'
-        QtMocHelpers::SlotData<void()>(9, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'ranklistButtonClicked'
-        QtMocHelpers::SlotData<void()>(10, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'settingsButtonClicked'
-        QtMocHelpers::SlotData<void()>(11, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'exitButtonClicked'
-        QtMocHelpers::SlotData<void()>(12, 2, QMC::AccessPrivate, QMetaType::Void),
-    };
-    QtMocHelpers::UintData qt_properties {
-    };
-    QtMocHelpers::UintData qt_enums {
-    };
-    return QtMocHelpers::metaObjectData<MenuWidget, qt_meta_tag_ZN10MenuWidgetE_t>(QMC::MetaObjectFlag{}, qt_stringData,
-            qt_methods, qt_properties, qt_enums);
-}
+ // content:
+      11,       // revision
+       0,       // classname
+       0,    0, // classinfo
+      11,   14, // methods
+       0,    0, // properties
+       0,    0, // enums/sets
+       0,    0, // constructors
+       0,       // flags
+       5,       // signalCount
+
+ // signals: name, argc, parameters, tag, flags, initial metatype offsets
+       1,    0,   80,    2, 0x06,    1 /* Public */,
+       3,    0,   81,    2, 0x06,    2 /* Public */,
+       4,    0,   82,    2, 0x06,    3 /* Public */,
+       5,    0,   83,    2, 0x06,    4 /* Public */,
+       6,    0,   84,    2, 0x06,    5 /* Public */,
+
+ // slots: name, argc, parameters, tag, flags, initial metatype offsets
+       7,    0,   85,    2, 0x08,    6 /* Private */,
+       8,    0,   86,    2, 0x08,    7 /* Private */,
+       9,    0,   87,    2, 0x08,    8 /* Private */,
+      10,    0,   88,    2, 0x08,    9 /* Private */,
+      11,    0,   89,    2, 0x08,   10 /* Private */,
+      12,    0,   90,    2, 0x08,   11 /* Private */,
+
+ // signals: parameters
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+
+ // slots: parameters
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+
+       0        // eod
+};
+
 Q_CONSTINIT const QMetaObject MenuWidget::staticMetaObject = { {
     QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN10MenuWidgetE_t>.stringdata,
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN10MenuWidgetE_t>.data,
+    qt_meta_stringdata_CLASSMenuWidgetENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSMenuWidgetENDCLASS,
     qt_static_metacall,
     nullptr,
-    qt_staticMetaObjectRelocatingContent<qt_meta_tag_ZN10MenuWidgetE_t>.metaTypes,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSMenuWidgetENDCLASS_t,
+        // Q_OBJECT / Q_GADGET
+        QtPrivate::TypeAndForceComplete<MenuWidget, std::true_type>,
+        // method 'startGame'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'openStore'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'openAchievements'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'openLeaderboard'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'openSettings'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'playMenuButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'storeButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'achievementsButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'ranklistButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'settingsButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'exitButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>
+    >,
     nullptr
 } };
 
 void MenuWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
-    auto *_t = static_cast<MenuWidget *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
+        auto *_t = static_cast<MenuWidget *>(_o);
+        (void)_t;
         switch (_id) {
         case 0: _t->startGame(); break;
         case 1: _t->openStore(); break;
@@ -112,19 +205,45 @@ void MenuWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, 
         case 10: _t->exitButtonClicked(); break;
         default: ;
         }
+    } else if (_c == QMetaObject::IndexOfMethod) {
+        int *result = reinterpret_cast<int *>(_a[0]);
+        {
+            using _t = void (MenuWidget::*)();
+            if (_t _q_method = &MenuWidget::startGame; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 0;
+                return;
+            }
+        }
+        {
+            using _t = void (MenuWidget::*)();
+            if (_t _q_method = &MenuWidget::openStore; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 1;
+                return;
+            }
+        }
+        {
+            using _t = void (MenuWidget::*)();
+            if (_t _q_method = &MenuWidget::openAchievements; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 2;
+                return;
+            }
+        }
+        {
+            using _t = void (MenuWidget::*)();
+            if (_t _q_method = &MenuWidget::openLeaderboard; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 3;
+                return;
+            }
+        }
+        {
+            using _t = void (MenuWidget::*)();
+            if (_t _q_method = &MenuWidget::openSettings; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 4;
+                return;
+            }
+        }
     }
-    if (_c == QMetaObject::IndexOfMethod) {
-        if (QtMocHelpers::indexOfMethod<void (MenuWidget::*)()>(_a, &MenuWidget::startGame, 0))
-            return;
-        if (QtMocHelpers::indexOfMethod<void (MenuWidget::*)()>(_a, &MenuWidget::openStore, 1))
-            return;
-        if (QtMocHelpers::indexOfMethod<void (MenuWidget::*)()>(_a, &MenuWidget::openAchievements, 2))
-            return;
-        if (QtMocHelpers::indexOfMethod<void (MenuWidget::*)()>(_a, &MenuWidget::openLeaderboard, 3))
-            return;
-        if (QtMocHelpers::indexOfMethod<void (MenuWidget::*)()>(_a, &MenuWidget::openSettings, 4))
-            return;
-    }
+    (void)_a;
 }
 
 const QMetaObject *MenuWidget::metaObject() const
@@ -135,7 +254,7 @@ const QMetaObject *MenuWidget::metaObject() const
 void *MenuWidget::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_staticMetaObjectStaticContent<qt_meta_tag_ZN10MenuWidgetE_t>.strings))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSMenuWidgetENDCLASS.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -149,8 +268,7 @@ int MenuWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         if (_id < 11)
             qt_static_metacall(this, _c, _id, _a);
         _id -= 11;
-    }
-    if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 11)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 11;

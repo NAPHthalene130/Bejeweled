@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'RankListWidget.h'
 **
-** Created by: The Qt Meta Object Compiler version 69 (Qt 6.9.3)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.5.3)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
@@ -9,16 +9,19 @@
 #include "../../../src/game/gameWidgets/RankListWidget.h"
 #include <QtCore/qmetatype.h>
 
+#if __has_include(<QtCore/qtmochelpers.h>)
 #include <QtCore/qtmochelpers.h>
+#else
+QT_BEGIN_MOC_NAMESPACE
+#endif
+
 
 #include <memory>
 
-
-#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'RankListWidget.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 69
-#error "This file was generated using the moc from 6.9.3. It"
+#elif Q_MOC_OUTPUT_REVISION != 68
+#error "This file was generated using the moc from 6.5.3. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -31,52 +34,107 @@ QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
-struct qt_meta_tag_ZN14RankListWidgetE_t {};
+
+#ifdef QT_MOC_HAS_STRINGDATA
+struct qt_meta_stringdata_CLASSRankListWidgetENDCLASS_t {};
+static constexpr auto qt_meta_stringdata_CLASSRankListWidgetENDCLASS = QtMocHelpers::stringData(
+    "RankListWidget",
+    "backToMenu",
+    "",
+    "onBackClicked",
+    "updateGoldenAnimation",
+    "updateBackgroundAnimation"
+);
+#else  // !QT_MOC_HAS_STRING_DATA
+struct qt_meta_stringdata_CLASSRankListWidgetENDCLASS_t {
+    uint offsetsAndSizes[12];
+    char stringdata0[15];
+    char stringdata1[11];
+    char stringdata2[1];
+    char stringdata3[14];
+    char stringdata4[22];
+    char stringdata5[26];
+};
+#define QT_MOC_LITERAL(ofs, len) \
+    uint(sizeof(qt_meta_stringdata_CLASSRankListWidgetENDCLASS_t::offsetsAndSizes) + ofs), len 
+Q_CONSTINIT static const qt_meta_stringdata_CLASSRankListWidgetENDCLASS_t qt_meta_stringdata_CLASSRankListWidgetENDCLASS = {
+    {
+        QT_MOC_LITERAL(0, 14),  // "RankListWidget"
+        QT_MOC_LITERAL(15, 10),  // "backToMenu"
+        QT_MOC_LITERAL(26, 0),  // ""
+        QT_MOC_LITERAL(27, 13),  // "onBackClicked"
+        QT_MOC_LITERAL(41, 21),  // "updateGoldenAnimation"
+        QT_MOC_LITERAL(63, 25)   // "updateBackgroundAnimation"
+    },
+    "RankListWidget",
+    "backToMenu",
+    "",
+    "onBackClicked",
+    "updateGoldenAnimation",
+    "updateBackgroundAnimation"
+};
+#undef QT_MOC_LITERAL
+#endif // !QT_MOC_HAS_STRING_DATA
 } // unnamed namespace
 
-template <> constexpr inline auto RankListWidget::qt_create_metaobjectdata<qt_meta_tag_ZN14RankListWidgetE_t>()
-{
-    namespace QMC = QtMocConstants;
-    QtMocHelpers::StringRefStorage qt_stringData {
-        "RankListWidget",
-        "backToMenu",
-        "",
-        "onBackClicked",
-        "updateGoldenAnimation",
-        "updateBackgroundAnimation"
-    };
+Q_CONSTINIT static const uint qt_meta_data_CLASSRankListWidgetENDCLASS[] = {
 
-    QtMocHelpers::UintData qt_methods {
-        // Signal 'backToMenu'
-        QtMocHelpers::SignalData<void()>(1, 2, QMC::AccessPublic, QMetaType::Void),
-        // Slot 'onBackClicked'
-        QtMocHelpers::SlotData<void()>(3, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'updateGoldenAnimation'
-        QtMocHelpers::SlotData<void()>(4, 2, QMC::AccessPrivate, QMetaType::Void),
-        // Slot 'updateBackgroundAnimation'
-        QtMocHelpers::SlotData<void()>(5, 2, QMC::AccessPrivate, QMetaType::Void),
-    };
-    QtMocHelpers::UintData qt_properties {
-    };
-    QtMocHelpers::UintData qt_enums {
-    };
-    return QtMocHelpers::metaObjectData<RankListWidget, qt_meta_tag_ZN14RankListWidgetE_t>(QMC::MetaObjectFlag{}, qt_stringData,
-            qt_methods, qt_properties, qt_enums);
-}
+ // content:
+      11,       // revision
+       0,       // classname
+       0,    0, // classinfo
+       4,   14, // methods
+       0,    0, // properties
+       0,    0, // enums/sets
+       0,    0, // constructors
+       0,       // flags
+       1,       // signalCount
+
+ // signals: name, argc, parameters, tag, flags, initial metatype offsets
+       1,    0,   38,    2, 0x06,    1 /* Public */,
+
+ // slots: name, argc, parameters, tag, flags, initial metatype offsets
+       3,    0,   39,    2, 0x08,    2 /* Private */,
+       4,    0,   40,    2, 0x08,    3 /* Private */,
+       5,    0,   41,    2, 0x08,    4 /* Private */,
+
+ // signals: parameters
+    QMetaType::Void,
+
+ // slots: parameters
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+
+       0        // eod
+};
+
 Q_CONSTINIT const QMetaObject RankListWidget::staticMetaObject = { {
     QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN14RankListWidgetE_t>.stringdata,
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN14RankListWidgetE_t>.data,
+    qt_meta_stringdata_CLASSRankListWidgetENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSRankListWidgetENDCLASS,
     qt_static_metacall,
     nullptr,
-    qt_staticMetaObjectRelocatingContent<qt_meta_tag_ZN14RankListWidgetE_t>.metaTypes,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSRankListWidgetENDCLASS_t,
+        // Q_OBJECT / Q_GADGET
+        QtPrivate::TypeAndForceComplete<RankListWidget, std::true_type>,
+        // method 'backToMenu'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'onBackClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'updateGoldenAnimation'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'updateBackgroundAnimation'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>
+    >,
     nullptr
 } };
 
 void RankListWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
-    auto *_t = static_cast<RankListWidget *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
+        auto *_t = static_cast<RankListWidget *>(_o);
+        (void)_t;
         switch (_id) {
         case 0: _t->backToMenu(); break;
         case 1: _t->onBackClicked(); break;
@@ -84,11 +142,17 @@ void RankListWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
         case 3: _t->updateBackgroundAnimation(); break;
         default: ;
         }
+    } else if (_c == QMetaObject::IndexOfMethod) {
+        int *result = reinterpret_cast<int *>(_a[0]);
+        {
+            using _t = void (RankListWidget::*)();
+            if (_t _q_method = &RankListWidget::backToMenu; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 0;
+                return;
+            }
+        }
     }
-    if (_c == QMetaObject::IndexOfMethod) {
-        if (QtMocHelpers::indexOfMethod<void (RankListWidget::*)()>(_a, &RankListWidget::backToMenu, 0))
-            return;
-    }
+    (void)_a;
 }
 
 const QMetaObject *RankListWidget::metaObject() const
@@ -99,7 +163,7 @@ const QMetaObject *RankListWidget::metaObject() const
 void *RankListWidget::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_staticMetaObjectStaticContent<qt_meta_tag_ZN14RankListWidgetE_t>.strings))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSRankListWidgetENDCLASS.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -113,8 +177,7 @@ int RankListWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         if (_id < 4)
             qt_static_metacall(this, _c, _id, _a);
         _id -= 4;
-    }
-    if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 4)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 4;

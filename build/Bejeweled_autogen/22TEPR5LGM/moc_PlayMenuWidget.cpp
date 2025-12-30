@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'PlayMenuWidget.h'
 **
-** Created by: The Qt Meta Object Compiler version 69 (Qt 6.9.3)
+** Created by: The Qt Meta Object Compiler version 68 (Qt 6.5.3)
 **
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
@@ -9,16 +9,19 @@
 #include "../../../src/game/gameWidgets/PlayMenuWidget.h"
 #include <QtCore/qmetatype.h>
 
+#if __has_include(<QtCore/qtmochelpers.h>)
 #include <QtCore/qtmochelpers.h>
+#else
+QT_BEGIN_MOC_NAMESPACE
+#endif
+
 
 #include <memory>
 
-
-#include <QtCore/qxptype_traits.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
 #error "The header file 'PlayMenuWidget.h' doesn't include <QObject>."
-#elif Q_MOC_OUTPUT_REVISION != 69
-#error "This file was generated using the moc from 6.9.3. It"
+#elif Q_MOC_OUTPUT_REVISION != 68
+#error "This file was generated using the moc from 6.5.3. It"
 #error "cannot be used with the include files from this version of Qt."
 #error "(The moc has changed too much.)"
 #endif
@@ -31,55 +34,115 @@ QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 QT_WARNING_DISABLE_GCC("-Wuseless-cast")
 namespace {
-struct qt_meta_tag_ZN14PlayMenuWidgetE_t {};
+
+#ifdef QT_MOC_HAS_STRINGDATA
+struct qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS_t {};
+static constexpr auto qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS = QtMocHelpers::stringData(
+    "PlayMenuWidget",
+    "backToMenu",
+    "",
+    "startNormalMode",
+    "startRotateMode",
+    "startPuzzleMode",
+    "multiModeButtonClicked"
+);
+#else  // !QT_MOC_HAS_STRING_DATA
+struct qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS_t {
+    uint offsetsAndSizes[14];
+    char stringdata0[15];
+    char stringdata1[11];
+    char stringdata2[1];
+    char stringdata3[16];
+    char stringdata4[16];
+    char stringdata5[16];
+    char stringdata6[23];
+};
+#define QT_MOC_LITERAL(ofs, len) \
+    uint(sizeof(qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS_t::offsetsAndSizes) + ofs), len 
+Q_CONSTINIT static const qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS_t qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS = {
+    {
+        QT_MOC_LITERAL(0, 14),  // "PlayMenuWidget"
+        QT_MOC_LITERAL(15, 10),  // "backToMenu"
+        QT_MOC_LITERAL(26, 0),  // ""
+        QT_MOC_LITERAL(27, 15),  // "startNormalMode"
+        QT_MOC_LITERAL(43, 15),  // "startRotateMode"
+        QT_MOC_LITERAL(59, 15),  // "startPuzzleMode"
+        QT_MOC_LITERAL(75, 22)   // "multiModeButtonClicked"
+    },
+    "PlayMenuWidget",
+    "backToMenu",
+    "",
+    "startNormalMode",
+    "startRotateMode",
+    "startPuzzleMode",
+    "multiModeButtonClicked"
+};
+#undef QT_MOC_LITERAL
+#endif // !QT_MOC_HAS_STRING_DATA
 } // unnamed namespace
 
-template <> constexpr inline auto PlayMenuWidget::qt_create_metaobjectdata<qt_meta_tag_ZN14PlayMenuWidgetE_t>()
-{
-    namespace QMC = QtMocConstants;
-    QtMocHelpers::StringRefStorage qt_stringData {
-        "PlayMenuWidget",
-        "backToMenu",
-        "",
-        "startNormalMode",
-        "startRotateMode",
-        "startPuzzleMode",
-        "multiModeButtonClicked"
-    };
+Q_CONSTINIT static const uint qt_meta_data_CLASSPlayMenuWidgetENDCLASS[] = {
 
-    QtMocHelpers::UintData qt_methods {
-        // Signal 'backToMenu'
-        QtMocHelpers::SignalData<void()>(1, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'startNormalMode'
-        QtMocHelpers::SignalData<void()>(3, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'startRotateMode'
-        QtMocHelpers::SignalData<void()>(4, 2, QMC::AccessPublic, QMetaType::Void),
-        // Signal 'startPuzzleMode'
-        QtMocHelpers::SignalData<void()>(5, 2, QMC::AccessPublic, QMetaType::Void),
-        // Slot 'multiModeButtonClicked'
-        QtMocHelpers::SlotData<void()>(6, 2, QMC::AccessPrivate, QMetaType::Void),
-    };
-    QtMocHelpers::UintData qt_properties {
-    };
-    QtMocHelpers::UintData qt_enums {
-    };
-    return QtMocHelpers::metaObjectData<PlayMenuWidget, qt_meta_tag_ZN14PlayMenuWidgetE_t>(QMC::MetaObjectFlag{}, qt_stringData,
-            qt_methods, qt_properties, qt_enums);
-}
+ // content:
+      11,       // revision
+       0,       // classname
+       0,    0, // classinfo
+       5,   14, // methods
+       0,    0, // properties
+       0,    0, // enums/sets
+       0,    0, // constructors
+       0,       // flags
+       4,       // signalCount
+
+ // signals: name, argc, parameters, tag, flags, initial metatype offsets
+       1,    0,   44,    2, 0x06,    1 /* Public */,
+       3,    0,   45,    2, 0x06,    2 /* Public */,
+       4,    0,   46,    2, 0x06,    3 /* Public */,
+       5,    0,   47,    2, 0x06,    4 /* Public */,
+
+ // slots: name, argc, parameters, tag, flags, initial metatype offsets
+       6,    0,   48,    2, 0x08,    5 /* Private */,
+
+ // signals: parameters
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+    QMetaType::Void,
+
+ // slots: parameters
+    QMetaType::Void,
+
+       0        // eod
+};
+
 Q_CONSTINIT const QMetaObject PlayMenuWidget::staticMetaObject = { {
     QMetaObject::SuperData::link<QWidget::staticMetaObject>(),
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN14PlayMenuWidgetE_t>.stringdata,
-    qt_staticMetaObjectStaticContent<qt_meta_tag_ZN14PlayMenuWidgetE_t>.data,
+    qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS.offsetsAndSizes,
+    qt_meta_data_CLASSPlayMenuWidgetENDCLASS,
     qt_static_metacall,
     nullptr,
-    qt_staticMetaObjectRelocatingContent<qt_meta_tag_ZN14PlayMenuWidgetE_t>.metaTypes,
+    qt_incomplete_metaTypeArray<qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS_t,
+        // Q_OBJECT / Q_GADGET
+        QtPrivate::TypeAndForceComplete<PlayMenuWidget, std::true_type>,
+        // method 'backToMenu'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'startNormalMode'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'startRotateMode'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'startPuzzleMode'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>,
+        // method 'multiModeButtonClicked'
+        QtPrivate::TypeAndForceComplete<void, std::false_type>
+    >,
     nullptr
 } };
 
 void PlayMenuWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
 {
-    auto *_t = static_cast<PlayMenuWidget *>(_o);
     if (_c == QMetaObject::InvokeMetaMethod) {
+        auto *_t = static_cast<PlayMenuWidget *>(_o);
+        (void)_t;
         switch (_id) {
         case 0: _t->backToMenu(); break;
         case 1: _t->startNormalMode(); break;
@@ -88,17 +151,38 @@ void PlayMenuWidget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _
         case 4: _t->multiModeButtonClicked(); break;
         default: ;
         }
+    } else if (_c == QMetaObject::IndexOfMethod) {
+        int *result = reinterpret_cast<int *>(_a[0]);
+        {
+            using _t = void (PlayMenuWidget::*)();
+            if (_t _q_method = &PlayMenuWidget::backToMenu; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 0;
+                return;
+            }
+        }
+        {
+            using _t = void (PlayMenuWidget::*)();
+            if (_t _q_method = &PlayMenuWidget::startNormalMode; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 1;
+                return;
+            }
+        }
+        {
+            using _t = void (PlayMenuWidget::*)();
+            if (_t _q_method = &PlayMenuWidget::startRotateMode; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 2;
+                return;
+            }
+        }
+        {
+            using _t = void (PlayMenuWidget::*)();
+            if (_t _q_method = &PlayMenuWidget::startPuzzleMode; *reinterpret_cast<_t *>(_a[1]) == _q_method) {
+                *result = 3;
+                return;
+            }
+        }
     }
-    if (_c == QMetaObject::IndexOfMethod) {
-        if (QtMocHelpers::indexOfMethod<void (PlayMenuWidget::*)()>(_a, &PlayMenuWidget::backToMenu, 0))
-            return;
-        if (QtMocHelpers::indexOfMethod<void (PlayMenuWidget::*)()>(_a, &PlayMenuWidget::startNormalMode, 1))
-            return;
-        if (QtMocHelpers::indexOfMethod<void (PlayMenuWidget::*)()>(_a, &PlayMenuWidget::startRotateMode, 2))
-            return;
-        if (QtMocHelpers::indexOfMethod<void (PlayMenuWidget::*)()>(_a, &PlayMenuWidget::startPuzzleMode, 3))
-            return;
-    }
+    (void)_a;
 }
 
 const QMetaObject *PlayMenuWidget::metaObject() const
@@ -109,7 +193,7 @@ const QMetaObject *PlayMenuWidget::metaObject() const
 void *PlayMenuWidget::qt_metacast(const char *_clname)
 {
     if (!_clname) return nullptr;
-    if (!strcmp(_clname, qt_staticMetaObjectStaticContent<qt_meta_tag_ZN14PlayMenuWidgetE_t>.strings))
+    if (!strcmp(_clname, qt_meta_stringdata_CLASSPlayMenuWidgetENDCLASS.stringdata0))
         return static_cast<void*>(this);
     return QWidget::qt_metacast(_clname);
 }
@@ -123,8 +207,7 @@ int PlayMenuWidget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
         if (_id < 5)
             qt_static_metacall(this, _c, _id, _a);
         _id -= 5;
-    }
-    if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
+    } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         if (_id < 5)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
         _id -= 5;
