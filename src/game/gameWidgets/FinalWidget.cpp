@@ -15,12 +15,20 @@ FinalWidget::FinalWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
     setupUI();
     loadBackground();
-    setGradeContent("测试成绩：123456\n用时：02:15\n评价：Excellent!");
+}
+
+void FinalWidget::setTitleStr(std::string str) {
+    if (!titleLabel) return;
+    titleLabel->setText(QString::fromStdString(str));
+}
+
+void FinalWidget::setContentStr(std::string str) {
+    if (!gradeLabel) return;
+    gradeLabel->setText(QString::fromStdString(str));
 }
 
 void FinalWidget::setGradeContent(std::string str) {
-    if (!gradeLabel) return;
-    gradeLabel->setText(QString::fromStdString(str));
+    setContentStr(str);
 }
 
 void FinalWidget::setupUI() {
@@ -54,12 +62,12 @@ void FinalWidget::setupUI() {
 
     titleLabel = new QLabel("本局成绩", panelWidget);
     QFont titleFont = titleLabel->font();
-    titleFont.setPointSize(26);
+    titleFont.setPointSize(36);
     titleFont.setBold(true);
     titleFont.setFamily("Segoe UI");
     titleLabel->setFont(titleFont);
     titleLabel->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
-    titleLabel->setStyleSheet("color: rgba(255, 255, 255, 230); background: transparent;");
+    titleLabel->setStyleSheet("color: #FFD700; background: transparent;");
 
     QWidget* gradeCard = new QWidget(panelWidget);
     gradeCard->setStyleSheet(R"(
@@ -81,13 +89,13 @@ void FinalWidget::setupUI() {
 
     gradeLabel = new QLabel(gradeCard);
     QFont gradeFont = gradeLabel->font();
-    gradeFont.setPointSize(18);
+    gradeFont.setPointSize(14);
     gradeFont.setBold(true);
     gradeFont.setFamily("Segoe UI");
     gradeLabel->setFont(gradeFont);
-    gradeLabel->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+    gradeLabel->setAlignment(Qt::AlignCenter);
     gradeLabel->setWordWrap(true);
-    gradeLabel->setStyleSheet("color: rgba(255, 255, 255, 235); background: transparent; line-height: 1.4;");
+    gradeLabel->setStyleSheet("color: white; background: transparent; line-height: 1.4;");
     gradeLayout->addWidget(gradeLabel);
 
     backButton = new MenuButton(220, 60, 18, QColor(120, 220, 255), "返回主菜单", panelWidget);

@@ -61,10 +61,14 @@ public:
 
     std::string getGemstoneStyle() const { return gemstoneStyle; }
     void setGemstoneStyle(const std::string& style) { gemstoneStyle = style; }
+
+    int getDifficulty() const { return difficulty; }
+    void setDifficulty(int diff) { difficulty = diff; }
 private:
     std::string userID;
     std::string ip = "127.0.0.1";
     std::string port = "10090";
+    int difficulty = 6;
     QWidget* currentWidget = nullptr;
     AchievementsWidget* achievementsWidget = nullptr;
     MenuWidget* menuWidget = nullptr;

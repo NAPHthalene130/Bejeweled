@@ -97,6 +97,10 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     gemStyleCombo = new QComboBox(this);
     gemStyleDescLabel = new QLabel("", this);
 
+    difficultyLabel = new QLabel("难度", this);
+    difficultyCombo = new QComboBox(this);
+    difficultyCombo->addItems({"简单", "中等", "困难"});
+
     // 按钮
     saveBtn = new QPushButton("保存设置", this);
     backBtn = new QPushButton("返回菜单", this);
@@ -109,7 +113,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     // 标签样式
     QList<QLabel*> labels = {bgMusicLabel, eliminateSoundLabel, bgVolLabel, eliminateVolLabel,
                              resolutionLabel, qualityLabel, bgLabel, gameTipLabel, gemStyleLabel, 
-                             eliminateSoundSelectLabel, gemStyleDescLabel};
+                             eliminateSoundSelectLabel, gemStyleDescLabel, difficultyLabel};
     for (QLabel* label : labels) {
         label->setStyleSheet(R"(
             color: #FFF5E6;
@@ -237,6 +241,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     qualityCombo->setStyleSheet(comboStyle);
     gemStyleCombo->setStyleSheet(comboStyle);
     eliminateSoundCombo->setStyleSheet(comboStyle);
+    difficultyCombo->setStyleSheet(comboStyle);
     
     resolutionCombo->addItems({"1280x720", "1600x1000", "1920x1080", "2560x1440"});
     qualityCombo->addItems({"低", "中", "高", "极致"});
@@ -430,6 +435,14 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     
     // 风格描述
     gameLayout->addWidget(gemStyleDescLabel);
+
+    // 难度选择
+    QHBoxLayout* difficultyLayout = new QHBoxLayout();
+    difficultyLayout->addWidget(difficultyLabel);
+    difficultyLayout->addSpacing(20);
+    difficultyLayout->addWidget(difficultyCombo);
+    difficultyLayout->addStretch();
+    gameLayout->addLayout(difficultyLayout);
     
     gameLayout->addSpacing(20);
     gameLayout->addWidget(switchInterfaceBtn);
@@ -479,6 +492,18 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     // 宝石风格变化
     connect(gemStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingWidget::onGemStyleChanged);
+
+    // 难度选择变化
+    connect(difficultyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
+        int diff = 6;
+        if (index == 0) diff = 4;
+        else if (index == 1) diff = 6;
+        else if (index == 2) diff = 8;
+        
+        if (this->gameWindow) {
+            this->gameWindow->setDifficulty(diff);
+        }
+    });
 
     // 保存按钮
     connect(saveBtn, &QPushButton::clicked, this, &SettingWidget::saveSettings);
@@ -571,6 +596,16 @@ void SettingWidget::loadSettings() {
     bgVolLabel->setEnabled(bgEnable);
     eliminateVolLabel->setText(QString("%1%").arg(eliminateVol));
     eliminateVolLabel->setEnabled(eliminateEnable);
+
+    // 加载难度设置
+    if (gameWindow) {
+        int diff = gameWindow->getDifficulty();
+        int index = 1; // 默认中等
+        if (diff == 4) index = 0;
+        else if (diff == 6) index = 1;
+        else if (diff == 8) index = 2;
+        difficultyCombo->setCurrentIndex(index);
+    }
 
     // 图像设置
     QString resolution = settings->value("Image/Resolution", "1600x1000").toString();

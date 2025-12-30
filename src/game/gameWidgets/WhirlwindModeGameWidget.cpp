@@ -923,6 +923,9 @@ void WhirlwindModeGameWidget::setMode(int mode) {
 }
 
 void WhirlwindModeGameWidget::reset(int mode) {
+    if (gameWindow) {
+        difficulty = gameWindow->getDifficulty();
+    }
     this->mode = mode;
     this->canOpe = true;
     this->isFinishing = false;
