@@ -89,6 +89,9 @@ public:
     const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
 
     void accept4(std::string id, const std::vector<std::vector<int>>& table);
+
+    void setStop(bool stop);
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -96,6 +99,7 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
+    bool isStop = false;
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
     void handleManualClick(const QPoint& screenPos);
@@ -145,6 +149,7 @@ private:
     std::map<int, std::string> numToId;  // Player number -> Player ID mapping
     bool allPlayersReady = false;
     QTimer* syncTimer;  // Timer for periodic board synchronization
+
 
     class GameTimeKeeper {
     public:
