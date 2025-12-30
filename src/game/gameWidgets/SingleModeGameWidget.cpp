@@ -272,6 +272,11 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
         updateTimeBoard();
     });
     
+    // 检查并更新难度
+    if (gameWindow) {
+        difficulty = gameWindow->getDifficulty();
+    }
+    
     // 设置主背景颜色
     setStyleSheet("background-color: rgb(40, 40, 45);");
 
@@ -497,21 +502,15 @@ void SingleModeGameWidget::finishToFinalWidget() {
     if (selectionRing2) selectionRing2->setVisible(false);
 
     int total = gameTimeKeeper.totalSeconds();
-    int m = total / 60;
-    int s = total % 60;
-    QString timeText = QString("%1:%2")
-        .arg(m, 2, 10, QChar('0'))
-        .arg(s, 2, 10, QChar('0'));
 
-    QString gradeText = QString("本局得分：%1\n用时：%2\n评价：Excellent!")
-        .arg(gameScore)
-        .arg(timeText);
-
-    QTimer::singleShot(650, this, [this, gradeText]() {
+    QTimer::singleShot(650, this, [this, total]() {
         if (!gameWindow) return;
         auto* finalWidget = gameWindow->getFinalWidget();
         if (!finalWidget) return;
-        finalWidget->setGradeContent(gradeText.toStdString());
+        
+        finalWidget->setTitleStr("游戏结束");
+        finalWidget->setContentStr(QString("花费时间:%1秒").arg(total/60).toStdString());
+        
         gameWindow->switchWidget(finalWidget);
     });
 }
@@ -1107,6 +1106,9 @@ void SingleModeGameWidget::setMode(int mode) {
 }
 
 void SingleModeGameWidget::reset(int mode) {
+    if (gameWindow) {
+        difficulty = gameWindow->getDifficulty();
+    }
     this->mode = mode;
     this->canOpe = true;
     this->isFinishing = false;

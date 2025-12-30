@@ -159,7 +159,7 @@ protected:
 MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow* gameWindow, const std::string& userId)
     : QWidget(parent), gameWindow(gameWindow), canOpe(false), nowTimeHave(0), mode(1),
       firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0),
-      myUserId(userId) {
+      myUserId(userId), isStop(false) {
     
     // 初始化定时器
     timer = new QTimer(this);
@@ -400,6 +400,17 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     connect(syncTimer, &QTimer::timeout, this, &MultiplayerModeGameWidget::sendBoardSyncMessage);
 }
 
+void MultiplayerModeGameWidget::setStop(bool stop) {
+    isStop = stop;
+    if (isStop) {
+        if (timer && timer->isActive()) timer->stop();
+        gameTimeKeeper.pause();
+        if (inactivityTimer) inactivityTimer->stop();
+        if (syncTimer && syncTimer->isActive()) syncTimer->stop();
+        canOpe = false; // Disable operation
+    }
+}
+
 void MultiplayerModeGameWidget::GameTimeKeeper::reset() {
     accumulatedMs = 0;
     if (isRunning) {
@@ -597,6 +608,7 @@ void MultiplayerModeGameWidget::removeMatches(const std::vector<std::pair<int, i
 }
 
 void MultiplayerModeGameWidget::eliminate() {
+    if (isStop) return;
     if (isFinishing) return;
     // 查找所有匹配
     std::vector<std::pair<int, int>> matches = findMatches();
@@ -642,6 +654,7 @@ void MultiplayerModeGameWidget::eliminate() {
 }
 
 void MultiplayerModeGameWidget::drop() {
+    if (isStop) return;
     if (isFinishing) return;
     appendDebug("Starting drop animation");
 
@@ -688,6 +701,7 @@ void MultiplayerModeGameWidget::drop() {
 }
 
 void MultiplayerModeGameWidget::resetGemstoneTable() {
+    if (isStop) return;
     if (isFinishing) return;
     appendDebug("Filling empty positions with new gemstones");
 
@@ -777,6 +791,7 @@ void MultiplayerModeGameWidget::resetGemstoneTable() {
 }
 
 void MultiplayerModeGameWidget::eliminateAnime(Gemstone* gemstone) {
+    if (isStop) return;
     if (!gemstone) return;
     
     QPropertyAnimation* animation = new QPropertyAnimation(gemstone->transform(), "scale");
@@ -793,6 +808,7 @@ void MultiplayerModeGameWidget::eliminateAnime(Gemstone* gemstone) {
 }
 
 void MultiplayerModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* gemstone2) {
+    if (isStop) return;
     if (!gemstone1 || !gemstone2) return;
     
     QVector3D pos1 = gemstone1->transform()->translation();
@@ -821,6 +837,7 @@ void MultiplayerModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemston
 }
 
 void MultiplayerModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
+    if (isStop) return;
     if (!gem) {
         appendDebug("handleGemstoneClicked: gem is null!");
         return;
@@ -888,6 +905,7 @@ void MultiplayerModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
 }
 
 void MultiplayerModeGameWidget::mousePressEvent(QMouseEvent* event) {
+    if (isStop) return;
     if (event->button() == Qt::RightButton) {
         if (mode == 1) {
             // 取消选择
@@ -1142,6 +1160,7 @@ void MultiplayerModeGameWidget::setMode(int mode) {
 }
 
 void MultiplayerModeGameWidget::reset(int mode) {
+    this->isStop = false;
     this->mode = mode;
     this->canOpe = true;
     this->isFinishing = false;
@@ -1258,6 +1277,7 @@ bool MultiplayerModeGameWidget::areAdjacent(int row1, int col1, int row2, int co
 
 // 执行交换
 void MultiplayerModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2) {
+    if (isStop) return;
     if (!gem1 || !gem2) return;
 
     // Send swap message to server (type=1)
@@ -1577,6 +1597,7 @@ int MultiplayerModeGameWidget::getDifficulty() const {
 // ==================== Network Functions ====================
 
 void MultiplayerModeGameWidget::sendNetData(const GameNetData& data) {
+    if (isStop) return;
     if (!gameWindow || !gameWindow->getNetDataIO()) {
         appendDebug("Cannot send data: NetDataIO is not available");
         return;
@@ -1591,6 +1612,7 @@ void MultiplayerModeGameWidget::sendNetData(const GameNetData& data) {
 }
 
 void MultiplayerModeGameWidget::handleReceivedData(const GameNetData& data) {
+    if (isStop) return;
     int type = data.getType();
     appendDebug(QString("Received data type=%1 from ID=%2").arg(type).arg(QString::fromStdString(data.getID())));
 
@@ -1786,6 +1808,7 @@ std::vector<std::vector<int>> MultiplayerModeGameWidget::getCurrentBoardState() 
 }
 
 void MultiplayerModeGameWidget::sendBoardSyncMessage() {
+    if (isStop) return;
     if (!allPlayersReady) {
         return;  // Don't send sync if game not started
     }
@@ -1918,6 +1941,7 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
  * @Function: 开始游戏
  */
 void MultiplayerModeGameWidget::startGame() {
+    isStop = false;
     // 首先刷新自己的棋盘
     reset(1);
 

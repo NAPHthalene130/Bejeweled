@@ -9,6 +9,7 @@
 #include "../../auth/components/AuthNoticeDialog.h"
 #include "../gameWidgets/MultiGameWaitWidget.h"
 #include "../gameWidgets/MultiplayerModeGameWidget.h"
+#include "../gameWidgets/FinalWidget.h"
 
 using boost::asio::ip::tcp;
 
@@ -256,6 +257,33 @@ void NetDataIO::readerLoop() {
                             }, Qt::QueuedConnection);
                         } else if (type == 12) {
                             //TODO
+                            std::string titleStr = "游戏结束";
+                            std::string p1Id = receiveData.getNumToId()[0];
+                            std::string p2Id = receiveData.getNumToId()[1];
+                            std::string p3Id = receiveData.getNumToId()[2];
+                            int p1Score = receiveData.getPlayer1Score();
+                            int p2Score = receiveData.getPlayer2Score();
+                            int p3Score = receiveData.getPlayer3Score();
+                            
+                            QMetaObject::invokeMethod(gameWindow, [gameWindow = this->gameWindow, titleStr, p1Id, p2Id, p3Id, p1Score, p2Score, p3Score]() {
+                                if (gameWindow->getMultiplayerModeGameWidget()) {
+                                    gameWindow->getMultiplayerModeGameWidget()->setStop(true);
+                                }
+                                
+                                std::vector<std::pair<int,std::string>> scores = {{p1Score,p1Id},{p2Score,p2Id},{p3Score,p3Id}};
+                                std::sort(scores.begin(), scores.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
+                                std::string content = titleStr + "\n";
+                                for (const auto& [score, id] : scores) {
+                                    content += id + "：" + std::to_string(score) + "分\n";
+                                }
+                                auto* finalWidget = gameWindow->getFinalWidget();
+                                if (finalWidget) {
+                                    finalWidget->setContentStr(content);
+                                    finalWidget->setTitleStr(titleStr);
+                                    gameWindow->switchWidget(finalWidget);
+                                }
+                            }, Qt::QueuedConnection);
+
                         } else if (type == 13) {
                             //TODO
                         }
