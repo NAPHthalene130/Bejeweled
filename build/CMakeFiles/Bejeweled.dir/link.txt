@@ -1,3 +1,0 @@
-H:\Camke\bin\cmake.exe -E rm -f CMakeFiles\Bejeweled.dir/objects.a
-H:\Qt\Tools\mingw1310_64\bin\ar.exe qc CMakeFiles\Bejeweled.dir/objects.a @CMakeFiles\Bejeweled.dir\objects1.rsp
-h:\Qt\Tools\mingw1310_64\bin\g++.exe -mwindows -Wl,--whole-archive CMakeFiles\Bejeweled.dir/objects.a -Wl,--no-whole-archive -o Bejeweled.exe -Wl,--out-implib,libBejeweled.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\Bejeweled.dir\linkLibs.rsp
