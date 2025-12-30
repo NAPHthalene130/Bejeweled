@@ -1,11 +1,11 @@
 #include "MultiplayerModeGameWidget.h"
+#include "../data/NetDataIO.h"
 #include "FinalWidget.h"
 #include "MenuWidget.h"
 #include "../GameWindow.h"
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../data/GameNetData.h"
-#include "../data/NetDataIO.h"
 #include "../../utils/LogWindow.h"
 #include "../../utils/AudioManager.h"
 #include <QHBoxLayout>

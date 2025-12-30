@@ -1,8 +1,8 @@
 #include "MultiGameWaitWidget.h"
+#include "../data/NetDataIO.h"
 #include "PlayMenuWidget.h"
 #include "MultiplayerModeGameWidget.h"
 #include "../GameWindow.h"
-#include "../data/NetDataIO.h"
 #include "../data/GameNetData.h"
 #include "../components/MenuButton.h"
 #include <QVBoxLayout>

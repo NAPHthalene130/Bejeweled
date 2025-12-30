@@ -71,7 +71,7 @@ public:
     int getDifficulty() const;
 
     void backToLastGemstoneState(std::vector<std::vector<Gemstone*>> PresentGem , std::string LastState);
-    
+    void checkLastGemState();  // 新增
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -160,6 +160,7 @@ private:
     QLabel* scoreBoardLabel = nullptr;
     QLabel* timeBoardLabel = nullptr;
     QPushButton* backToMenuButton = nullptr;
+    QPushButton* resetButton = nullptr;  // 新增
     ScoreProgressBar* scoreProgressBar = nullptr;
 };
 
