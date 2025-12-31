@@ -24,7 +24,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     this->userID = userID;
     
     logWindow = new LogWindow();
-    logWindow->show();
+    // logWindow->show();
 
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
