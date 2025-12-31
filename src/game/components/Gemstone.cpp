@@ -498,6 +498,7 @@ void Gemstone::setupExternalMesh() {
 
 void Gemstone::setupBuiltinMesh() {
     // 使用内置几何体
+    qDebug() << "[Gemstone] Setting up builtin mesh for type" << type;
     switch (type % 8) {
         case 0: // 球体
         {

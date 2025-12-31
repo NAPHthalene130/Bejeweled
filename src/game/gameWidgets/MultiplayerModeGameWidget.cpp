@@ -643,13 +643,6 @@ void MultiplayerModeGameWidget::eliminate() {
         canOpe = true;
         resetInactivityTimer();
         appendDebug("No matches found, game can continue");
-
-        // 当判断无法再进行消除且新的宝石已经下坠完全时，创建一个 GameNetData
-        GameNetData data;
-        data.setType(4);
-        data.setID(myUserId);
-        data.setMyBoard(getCurrentBoardState());
-        sendNetData(data);
     }
 }
 
@@ -779,12 +772,37 @@ void MultiplayerModeGameWidget::resetGemstoneTable() {
         connect(fillAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
             if (isFinishing) return;
             appendDebug("Fill animation finished, checking for new matches");
+
+            // 发送棋盘同步数据 (Type=4)
+            // 当宝石下落完全（哪怕下落完全后可以消除），都要发送数据去让其它棋盘能同步数据
+            GameNetData data;
+            data.setType(4);
+            if (gameWindow) {
+                data.setID(gameWindow->getUserID());
+            } else {
+                data.setID(myUserId);
+            }
+            data.setMyBoard(getCurrentBoardState());
+            sendNetData(data);
+
             // 填充完成后，递归检查是否有新的匹配
             eliminate();
         });
         fillAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
     } else {
         appendDebug("No fills needed, checking for new matches");
+
+        // 发送棋盘同步数据 (Type=4)
+        GameNetData data;
+        data.setType(4);
+        if (gameWindow) {
+            data.setID(gameWindow->getUserID());
+        } else {
+            data.setID(myUserId);
+        }
+        data.setMyBoard(getCurrentBoardState());
+        sendNetData(data);
+
         // 没有填充，直接检查匹配
         eliminate();
     }
@@ -1819,7 +1837,11 @@ void MultiplayerModeGameWidget::sendBoardSyncMessage() {
     // Send type=4 sync message
     GameNetData syncData;
     syncData.setType(4);
-    syncData.setID(myUserId);
+    if (gameWindow) {
+        syncData.setID(gameWindow->getUserID());
+    } else {
+        syncData.setID(myUserId);
+    }
     syncData.setMyBoard(boardState);
     syncData.setMyScore(gameScore);
     syncData.setSeconds(nowTimeHave);
@@ -1876,7 +1898,10 @@ void MultiplayerModeGameWidget::setupSmall3DWindow(Qt3DExtras::Qt3DWindow* windo
  * @Function: 刷新指定玩家的宝石表格
  */
 void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vector<int>>& table) {
-    if (table.size() != 8 || table[0].size() != 8) return;
+    if (table.size() != 8 || table[0].size() != 8) {
+        appendDebug(QString("refreshTabel: Invalid table size (%1x%2)").arg(table.size()).arg(table.empty() ? 0 : table[0].size()));
+        return;
+    }
 
     std::vector<std::vector<Gemstone*>>* targetTable;
     Qt3DCore::QEntity* targetRoot;
@@ -1888,6 +1913,12 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
         targetTable = &player2Table;
         targetRoot = player2RootEntity;
     } else {
+        appendDebug(QString("refreshTabel: Invalid player number %1").arg(num));
+        return;
+    }
+
+    if (!targetRoot) {
+        appendDebug(QString("refreshTabel: targetRoot is null for player %1").arg(num));
         return;
     }
 
@@ -1896,7 +1927,16 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
         targetTable->resize(8, std::vector<Gemstone*>(8, nullptr));
     }
 
+    // Log first few elements of received table to check data validity
+    QString tableSample;
+    if (!table.empty() && !table[0].empty()) {
+        tableSample = QString("[%1, %2, %3...]").arg(table[0][0]).arg(table[0][1]).arg(table[0][2]);
+    }
+    appendDebug(QString("refreshTabel: Processing table for player %1. Sample: %2").arg(num).arg(tableSample));
+
     std::string currentStyle = gameWindow ? gameWindow->getGemstoneStyle() : "style1";
+    int updatedCount = 0;
+    int createdCount = 0;
 
     for (int r = 0; r < 8; ++r) {
         for (int c = 0; c < 8; ++c) {
@@ -1920,6 +1960,7 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
                 float x = (c - 3.5f) * 1.1f;
                 float y = (3.5f - r) * 1.1f;
                 gem->transform()->setTranslation(QVector3D(x, y, 0));
+                updatedCount++;
             } else {
                 // Create new gem
                 gem = new Gemstone(type, currentStyle, targetRoot);
@@ -1931,9 +1972,11 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
                 
                 gem->transform()->setTranslation(QVector3D(x, y, 0));
                 (*targetTable)[r][c] = gem;
+                createdCount++;
             }
         }
     }
+    appendDebug(QString("refreshTabel: Player %1 board updated. Updated: %2, Created: %3").arg(num).arg(updatedCount).arg(createdCount));
 }
 
 /**
@@ -1951,7 +1994,11 @@ void MultiplayerModeGameWidget::startGame() {
     // 发送 GameNetData
     GameNetData data;
     data.setType(4);
-    data.setID(myUserId);
+    if (gameWindow) {
+        data.setID(gameWindow->getUserID());
+    } else {
+        data.setID(myUserId);
+    }
     data.setMyBoard(myBoard);
     
     sendNetData(data);
@@ -1981,9 +2028,15 @@ void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap
     this->idToNum.clear();
     this->numToId.clear();
     int index = 1;
+    
+    std::string currentUserId = myUserId;
+    if (gameWindow) {
+        currentUserId = gameWindow->getUserID();
+    }
+
     for (auto& pair : incomingMap) {
         std::string id = pair.first;
-        if (id == myUserId) continue;
+        if (id == currentUserId) continue;
         this->numToId[index] = id;
         this->idToNum[id] = index;
         index++;
@@ -2000,6 +2053,13 @@ void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap
         player2ScoreLabel->setText(QString("玩家 %1: 0分").arg(QString::fromStdString(numToId[2])));
     } else {
         player2ScoreLabel->setText("等待玩家...");
+    }
+
+    // Set players ready and start sync timer
+    allPlayersReady = true;
+    if (syncTimer && !syncTimer->isActive()) {
+        syncTimer->start();
+        appendDebug("Started periodic board synchronization (every 5 seconds) from accept10");
     }
 
     startGame();
