@@ -44,7 +44,7 @@ PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
 }
 
 void PlayMenuWidget::setupUI() {
-    setMinimumSize(1600, 1000);
+    setMinimumSize(1280, 720);
     
     // 居中对齐的主布局
     mainLayout = new QVBoxLayout(this);

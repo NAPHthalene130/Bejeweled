@@ -32,7 +32,7 @@ void FinalWidget::setGradeContent(std::string str) {
 }
 
 void FinalWidget::setupUI() {
-    setMinimumSize(1600, 1000);
+    setMinimumSize(1280, 720);
 
     mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(80, 60, 80, 60);

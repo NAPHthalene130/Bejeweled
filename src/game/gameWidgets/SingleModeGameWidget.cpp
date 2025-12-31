@@ -294,16 +294,18 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(960, 960);
+    // container3d->setFixedSize(960, 960); // 移除固定大小
+    container3d->setMinimumSize(600, 600); // 设置最小大小
+    container3d->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true); // 启用鼠标追踪
     container3d->setAttribute(Qt::WA_Hover, true); // 启用hover事件
-    
+
     // 布局 - 左侧居中
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(50, 0, 50, 0); // 添加一些边距
-    
-        // 左侧容器：顶部进度条 + 下方3D窗口
+
+    // 左侧容器：顶部进度条 + 下方3D窗口
     QWidget* leftPanel = new QWidget(this);
     leftPanel->setStyleSheet("background: transparent;");
     auto* leftLayout = new QVBoxLayout(leftPanel);
@@ -313,12 +315,13 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     scoreProgressBar = new ScoreProgressBar(leftPanel);
     // 位置对应你截图蓝圈区域（3D区域上方），居中显示
     leftLayout->addWidget(scoreProgressBar, 0, Qt::AlignHCenter | Qt::AlignTop);
-    leftLayout->addWidget(container3d, 0, Qt::AlignHCenter | Qt::AlignVCenter);
+    leftLayout->addWidget(container3d, 1); // 3D区域自适应
 
     // 将左侧容器对齐到左侧，垂直居中
-    mainLayout->addWidget(leftPanel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    // mainLayout->addWidget(leftPanel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addWidget(leftPanel, 1); // 左侧面板自适应
 
-    mainLayout->addStretch(1);
+    mainLayout->addStretch(0);
     
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(420);
@@ -1361,16 +1364,16 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
 void SingleModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    // 容器大小是 960x960
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    // 获取当前容器大小
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
-    // 相机参数：FOV=45度，distance=20，aspect=1.0
+    // 相机参数：FOV=45度，distance=20
     // 计算在z=0平面上的可视范围
     float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
     float cameraDistance = 20.0f;
     float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
-    float halfWidth = halfHeight;  // aspect = 1.0
+    float halfWidth = halfHeight * (screenWidth / screenHeight);  // 根据宽高比调整
 
     // 将屏幕坐标归一化到 [-1, 1]
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);

@@ -243,8 +243,16 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     eliminateSoundCombo->setStyleSheet(comboStyle);
     difficultyCombo->setStyleSheet(comboStyle);
     
-    resolutionCombo->addItems({"1280x720", "1600x1000", "1920x1080", "2560x1440"});
-    qualityCombo->addItems({"低", "中", "高", "极致"});
+    resolutionCombo->addItems({
+        "1280x720", 
+        "1366x768", 
+        "1440x900", 
+        "1600x900", 
+        "1600x1000", 
+        "1920x1080", 
+        "1920x1200", 
+        "2560x1440"
+    });
     eliminateSoundCombo->addItems({"Manbo", "Original"});
     
     // 更新宝石风格下拉框选项
@@ -492,6 +500,22 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     // 宝石风格变化
     connect(gemStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &SettingWidget::onGemStyleChanged);
+
+    // 分辨率变化
+    connect(resolutionCombo, &QComboBox::currentTextChanged, [this](const QString& text) {
+        QStringList parts = text.split("x");
+        if (parts.size() == 2 && this->gameWindow) {
+            int w = parts[0].toInt();
+            int h = parts[1].toInt();
+            if (this->gameWindow->isMaximized()) {
+                this->gameWindow->showNormal();
+            }
+            this->gameWindow->resize(w, h);
+            
+            // 确保窗口在屏幕内（可选，简单resize即可）
+            // 如果窗口变得很大，可能需要调整位置，但通常resize会保持左上角或者系统处理
+        }
+    });
 
     // 难度选择变化
     connect(difficultyCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {

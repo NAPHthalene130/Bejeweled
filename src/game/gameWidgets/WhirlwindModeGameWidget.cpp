@@ -182,7 +182,9 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
 
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(960, 960);
+    // container3d->setFixedSize(960, 960); // 移除固定大小
+    container3d->setMinimumSize(600, 600); // 设置最小大小
+    container3d->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true);
     container3d->setAttribute(Qt::WA_Hover, true);
@@ -191,8 +193,9 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(50, 0, 50, 0);
 
-    mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    mainLayout->addStretch(1);
+    // mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addWidget(container3d, 1); // 这里的1表示拉伸因子
+    mainLayout->addStretch(0);
 
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(420);
@@ -1141,13 +1144,16 @@ void WhirlwindModeGameWidget::performRotation(int topLeftRow, int topLeftCol) {
 }
 
 void WhirlwindModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    // 获取当前容器大小
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
-    float fovRadians = 45.0f * M_PI / 180.0f;
+    // 相机参数：FOV=45度，distance=20
+    // 计算在z=0平面上的可视范围
+    float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
     float cameraDistance = 20.0f;
-    float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);
-    float halfWidth = halfHeight;
+    float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
+    float halfWidth = halfHeight * (screenWidth / screenHeight);  // 根据宽高比调整
 
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
     float normalizedY = -(screenPos.y() - screenHeight / 2.0f) / (screenHeight / 2.0f);

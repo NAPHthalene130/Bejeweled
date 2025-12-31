@@ -107,9 +107,6 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     if (achievementsWidget) achievementsWidget->updateView();
 
     switchWidget(menuWidget);
-    
-    resize(1600, 1000);
-    setWindowTitle("宝石迷阵");
 }
 
 GameWindow::~GameWindow() {
