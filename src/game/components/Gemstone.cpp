@@ -497,12 +497,19 @@ void Gemstone::setupExternalMesh() {
 }
 
 void Gemstone::setupBuiltinMesh() {
+    // 移除旧的网格组件
+    if (m_mesh) {
+        removeComponent(m_mesh);
+        delete m_mesh;
+        m_mesh = nullptr;
+    }
+
     // 使用内置几何体
     qDebug() << "[Gemstone] Setting up builtin mesh for type" << type;
     switch (type % 8) {
         case 0: // 球体
         {
-            Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh();
+            Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh(this);
             mesh->setRadius(0.45f);
             mesh->setRings(20); 
             mesh->setSlices(20);
@@ -511,7 +518,7 @@ void Gemstone::setupBuiltinMesh() {
         }
         case 1: // 立方体
         {
-            Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh();
+            Qt3DExtras::QCuboidMesh* mesh = new Qt3DExtras::QCuboidMesh(this);
             mesh->setXExtent(0.8f); 
             mesh->setYExtent(0.8f); 
             mesh->setZExtent(0.8f);
@@ -520,7 +527,7 @@ void Gemstone::setupBuiltinMesh() {
         }
         case 2: // 圆锥体
         {
-            Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh();
+            Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh(this);
             mesh->setBottomRadius(0.5f);
             mesh->setLength(1.0f);
             mesh->setRings(10); 
@@ -530,7 +537,7 @@ void Gemstone::setupBuiltinMesh() {
         }
         case 3: // 圆柱体
         {
-            Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
+            Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh(this);
             mesh->setRadius(0.45f);
             mesh->setLength(0.9f);
             mesh->setRings(10); 
@@ -540,7 +547,7 @@ void Gemstone::setupBuiltinMesh() {
         }
         case 4: // 圆环体
         {
-            Qt3DExtras::QTorusMesh* mesh = new Qt3DExtras::QTorusMesh();
+            Qt3DExtras::QTorusMesh* mesh = new Qt3DExtras::QTorusMesh(this);
             mesh->setRadius(0.4f);
             mesh->setMinorRadius(0.15f);
             mesh->setRings(20); 
@@ -550,7 +557,7 @@ void Gemstone::setupBuiltinMesh() {
         }
         case 5: // 六棱柱
         {
-            Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
+            Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh(this);
             mesh->setRadius(0.5f);
             mesh->setLength(0.8f);
             mesh->setRings(2); 
@@ -560,7 +567,7 @@ void Gemstone::setupBuiltinMesh() {
         }
         case 6: // 金字塔
         {
-            Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh();
+            Qt3DExtras::QConeMesh* mesh = new Qt3DExtras::QConeMesh(this);
             mesh->setBottomRadius(0.5f);
             mesh->setLength(0.9f);
             mesh->setRings(2); 
@@ -570,7 +577,7 @@ void Gemstone::setupBuiltinMesh() {
         }
         case 7: // 三棱柱
         {
-            Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh();
+            Qt3DExtras::QCylinderMesh* mesh = new Qt3DExtras::QCylinderMesh(this);
             mesh->setRadius(0.5f);
             mesh->setLength(0.8f);
             mesh->setRings(2); 
@@ -580,13 +587,13 @@ void Gemstone::setupBuiltinMesh() {
         }
         default:
         {
-            Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh();
+            Qt3DExtras::QSphereMesh* mesh = new Qt3DExtras::QSphereMesh(this);
             mesh->setRadius(0.4f);
             m_mesh = mesh;
             break;
         }
     }
-
+    
     if (m_mesh) {
         addComponent(m_mesh);
     }

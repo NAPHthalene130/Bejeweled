@@ -223,7 +223,7 @@ private:
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
     void sendCoordinates(std::vector<std::pair<int, int>> coordinates);
-    
+    void sendNowBoard();
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H

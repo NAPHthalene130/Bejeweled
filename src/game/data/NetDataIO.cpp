@@ -56,6 +56,7 @@ void NetDataIO::sendData(GameNetData gameData) {
     {
         std::lock_guard<std::mutex> lock(queueMutex);
         sendQueue.push(data);
+
     }
     queueCv.notify_one();
 }
