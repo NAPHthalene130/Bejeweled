@@ -15,6 +15,7 @@
 class QTextEdit;
 class QLabel;
 class QPushButton;
+class QProgressBar;
 class QShowEvent;
 class QEvent;
 class QHideEvent;
@@ -77,6 +78,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -85,12 +87,13 @@ private:
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
     void handleManualClick(const QPoint& screenPos);
+    void handleMouseMove(const QPoint& screenPos);
     void appendDebug(const QString& text);
     void refreshDebugStatus();
 
-    void clearHighlights();
-    void highlightMatches();
-    void resetInactivityTimer();
+    void resetNoEliminationTimer();
+    void handleNoElimination();
+    void updateNoEliminationProgress();
 
     void updateScoreBoard();
     void updateTimeBoard();
@@ -145,9 +148,15 @@ private:
 
     RotationSquare* rotationSquare;
 
-    QTimer* inactivityTimer;
-    int inactivityTimeout = 5000;
-    std::vector<RotationSquare*> highlightSquares;
+    // 鼠标悬停显示的旋转框
+    RotationSquare* hoverSquare;
+    int hoverRow = -1;
+    int hoverCol = -1;
+
+    // 十秒未消除则结束的计时器
+    QTimer* noEliminationTimer;
+    int noEliminationTimeout = 10000; // 10秒
+    int noEliminationTimeRemaining = 10000; // 剩余时间(ms)
 
     void setup3DScene();
 
@@ -160,6 +169,9 @@ private:
     QLabel* scoreBoardLabel = nullptr;
     QLabel* timeBoardLabel = nullptr;
     QPushButton* backToMenuButton = nullptr;
+
+    // 时间追逐进度条
+    QProgressBar* noEliminationProgressBar = nullptr;
 
     // 金币统计
     int initialCoins = 0;  // 游戏开始时的金币数
