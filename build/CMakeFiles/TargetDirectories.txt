@@ -1,5 +1,0 @@
-D:/18928/naphthalene/Bejeweled/build/CMakeFiles/Bejeweled.dir
-D:/18928/naphthalene/Bejeweled/build/CMakeFiles/edit_cache.dir
-D:/18928/naphthalene/Bejeweled/build/CMakeFiles/rebuild_cache.dir
-D:/18928/naphthalene/Bejeweled/build/CMakeFiles/Bejeweled_autogen_timestamp_deps.dir
-D:/18928/naphthalene/Bejeweled/build/CMakeFiles/Bejeweled_autogen.dir
