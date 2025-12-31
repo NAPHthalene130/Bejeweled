@@ -88,7 +88,7 @@ public:
     const std::vector<std::vector<Gemstone*>>& getPlayer1Table() const { return player1Table; }
     const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
 
-    void accept4(std::string id, const std::vector<std::vector<int>>& table);
+    void accept4(std::string id, const std::vector<std::vector<int>>& table, int score);
 
     void setStop(bool stop);
 
@@ -223,7 +223,7 @@ private:
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
     void sendCoordinates(std::vector<std::pair<int, int>> coordinates);
-    
+    void sendNowBoard();
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H

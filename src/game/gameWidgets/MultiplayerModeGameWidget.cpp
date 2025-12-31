@@ -14,6 +14,7 @@
 #include <QFrame>
 #include <QDialog>
 #include <QPropertyAnimation>
+#include <QPointer>
 #include <QParallelAnimationGroup>
 #include <Qt3DExtras/Qt3DWindow>
 #include <Qt3DExtras/QForwardRenderer>
@@ -396,8 +397,19 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
 
     // Initialize sync timer for periodic board synchronization (every 5 seconds)
     syncTimer = new QTimer(this);
-    syncTimer->setInterval(5000);  // 5 seconds
-    connect(syncTimer, &QTimer::timeout, this, &MultiplayerModeGameWidget::sendBoardSyncMessage);
+    // syncTimer->setInterval(5000);  // 5 seconds
+    // connect(syncTimer, &QTimer::timeout, this, &MultiplayerModeGameWidget::sendBoardSyncMessage);
+}
+
+void MultiplayerModeGameWidget::setStop(bool stop) {
+    isStop = stop;
+    if (isStop) {
+        if (timer && timer->isActive()) timer->stop();
+        gameTimeKeeper.pause();
+        if (inactivityTimer) inactivityTimer->stop();
+        if (syncTimer && syncTimer->isActive()) syncTimer->stop();
+        canOpe = false; // Disable operation
+    }
 }
 
 void MultiplayerModeGameWidget::setStop(bool stop) {
@@ -642,14 +654,11 @@ void MultiplayerModeGameWidget::eliminate() {
         // 没有匹配了，恢复操作
         canOpe = true;
         resetInactivityTimer();
-        appendDebug("No matches found, game can continue");
 
-        // 当判断无法再进行消除且新的宝石已经下坠完全时，创建一个 GameNetData
-        GameNetData data;
-        data.setType(4);
-        data.setID(myUserId);
-        data.setMyBoard(getCurrentBoardState());
-        sendNetData(data);
+        // 消除步骤结束，发送最终棋盘状态 (Type=4)
+        sendNowBoard();
+        
+        appendDebug("No matches found, game can continue");
     }
 }
 
@@ -705,7 +714,7 @@ void MultiplayerModeGameWidget::resetGemstoneTable() {
     if (isFinishing) return;
     appendDebug("Filling empty positions with new gemstones");
 
-    QParallelAnimationGroup* fillAnimGroup = new QParallelAnimationGroup();
+    QParallelAnimationGroup* fillAnimGroup = new QParallelAnimationGroup(this);
     bool hasFills = false;
     std::vector<std::pair<int, int>> newGemstones;  // Track (column, type) of new gemstones
 
@@ -766,12 +775,13 @@ void MultiplayerModeGameWidget::resetGemstoneTable() {
     }
 
     // Send generate message to server (type=3)
+    //测试 先禁用
     if (!newGemstones.empty()) {
-        GameNetData generateData;
-        generateData.setType(3);
-        generateData.setID(myUserId);
-        generateData.setCoordinates(newGemstones);
-        sendNetData(generateData);
+        // GameNetData generateData;
+        // generateData.setType(3);
+        // generateData.setID(myUserId);
+        // generateData.setCoordinates(newGemstones);
+        // sendNetData(generateData);
     }
 
     if (hasFills) {
@@ -779,12 +789,21 @@ void MultiplayerModeGameWidget::resetGemstoneTable() {
         connect(fillAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
             if (isFinishing) return;
             appendDebug("Fill animation finished, checking for new matches");
+
+            // 发送棋盘同步数据 (Type=4)
+            // 当宝石下落完全（哪怕下落完全后可以消除），都要发送数据去让其它棋盘能同步数据
+            sendNowBoard();
+
             // 填充完成后，递归检查是否有新的匹配
             eliminate();
         });
         fillAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
     } else {
         appendDebug("No fills needed, checking for new matches");
+
+        // 发送棋盘同步数据 (Type=4)
+        // sendBoardSyncMessage();
+
         // 没有填充，直接检查匹配
         eliminate();
     }
@@ -794,14 +813,19 @@ void MultiplayerModeGameWidget::eliminateAnime(Gemstone* gemstone) {
     if (isStop) return;
     if (!gemstone) return;
     
-    QPropertyAnimation* animation = new QPropertyAnimation(gemstone->transform(), "scale");
+    // Parent animation to gemstone so it dies when gemstone dies
+    QPropertyAnimation* animation = new QPropertyAnimation(gemstone->transform(), "scale", gemstone);
     animation->setDuration(500); // 持续缩小直到不见
     animation->setStartValue(gemstone->transform()->scale());
     animation->setEndValue(0.0f);
     
-    connect(animation, &QPropertyAnimation::finished, [gemstone]() {
-        gemstone->setParent((Qt3DCore::QNode*)nullptr);
-        delete gemstone;
+    // Use QPointer to prevent double deletion if gemstone is deleted externally (e.g. by sync)
+    QPointer<Gemstone> gemPtr(gemstone);
+    connect(animation, &QPropertyAnimation::finished, [gemPtr]() {
+        if (gemPtr) {
+            gemPtr->setParent((Qt3DCore::QNode*)nullptr);
+            gemPtr->deleteLater();
+        }
     });
     
     animation->start(QAbstractAnimation::DeleteWhenStopped);
@@ -814,7 +838,7 @@ void MultiplayerModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemston
     QVector3D pos1 = gemstone1->transform()->translation();
     QVector3D pos2 = gemstone2->transform()->translation();
     
-    QParallelAnimationGroup* group = new QParallelAnimationGroup();
+    QParallelAnimationGroup* group = new QParallelAnimationGroup(this);
     
     QPropertyAnimation* anim1 = new QPropertyAnimation(gemstone1->transform(), "translation");
     anim1->setDuration(500); // 0.5s
@@ -828,6 +852,10 @@ void MultiplayerModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemston
     
     group->addAnimation(anim1);
     group->addAnimation(anim2);
+    
+    // Safety: if either gemstone dies (e.g. sync), stop the animation group to prevent crash
+    connect(gemstone1, &QObject::destroyed, group, &QParallelAnimationGroup::stop);
+    connect(gemstone2, &QObject::destroyed, group, &QParallelAnimationGroup::stop);
     
     connect(group, &QParallelAnimationGroup::finished, [this]() {
         syncGemstonePositions();
@@ -1597,18 +1625,14 @@ int MultiplayerModeGameWidget::getDifficulty() const {
 // ==================== Network Functions ====================
 
 void MultiplayerModeGameWidget::sendNetData(const GameNetData& data) {
-    if (isStop) return;
-    if (!gameWindow || !gameWindow->getNetDataIO()) {
-        appendDebug("Cannot send data: NetDataIO is not available");
-        return;
-    }
+    //测试先临时禁用
+    if (data.getType() == 3) return;
+    if (data.getType() == 2) return;
+    //测试先临时禁用
 
-    try {
-        gameWindow->getNetDataIO()->sendData(data);
-        appendDebug(QString("Sent data type=%1").arg(data.getType()));
-    } catch (const std::exception& e) {
-        appendDebug(QString("Failed to send data: %1").arg(e.what()));
-    }
+    
+    if (isStop) return;
+    gameWindow->getNetDataIO()->sendData(data);
 }
 
 void MultiplayerModeGameWidget::handleReceivedData(const GameNetData& data) {
@@ -1694,8 +1718,8 @@ void MultiplayerModeGameWidget::handleConnectivityTest(const GameNetData& data) 
 
         // Start sync timer for periodic board synchronization
         if (syncTimer && !syncTimer->isActive()) {
-            syncTimer->start();
-            appendDebug("Started periodic board synchronization (every 5 seconds)");
+            // syncTimer->start();
+            // appendDebug("Started periodic board synchronization (every 5 seconds)");
         }
 
         appendDebug(QString("All players ready! Game can start with %1 players.").arg(incomingMap.size()));
@@ -1767,11 +1791,11 @@ void MultiplayerModeGameWidget::handleSyncMessage(const GameNetData& data) {
         std::vector<std::vector<int>> board = data.getMyBoard();
         appendDebug(QString("Player %1 synced board").arg(QString::fromStdString(playerId)));
 
+        int score = data.getMyScore();
         // Update other player's board using 3D window
-        accept4(playerId, board);
+        accept4(playerId, board, score);
         
         // Update score
-        int score = data.getMyScore();
         if (score >= 0) {
             updateOtherPlayerScore(playerId, score);
         }
@@ -1809,9 +1833,6 @@ std::vector<std::vector<int>> MultiplayerModeGameWidget::getCurrentBoardState() 
 
 void MultiplayerModeGameWidget::sendBoardSyncMessage() {
     if (isStop) return;
-    if (!allPlayersReady) {
-        return;  // Don't send sync if game not started
-    }
 
     // Get current board state
     std::vector<std::vector<int>> boardState = getCurrentBoardState();
@@ -1819,7 +1840,11 @@ void MultiplayerModeGameWidget::sendBoardSyncMessage() {
     // Send type=4 sync message
     GameNetData syncData;
     syncData.setType(4);
-    syncData.setID(myUserId);
+    if (gameWindow) {
+        syncData.setID(gameWindow->getUserID());
+    } else {
+        syncData.setID(myUserId);
+    }
     syncData.setMyBoard(boardState);
     syncData.setMyScore(gameScore);
     syncData.setSeconds(nowTimeHave);
@@ -1876,7 +1901,16 @@ void MultiplayerModeGameWidget::setupSmall3DWindow(Qt3DExtras::Qt3DWindow* windo
  * @Function: 刷新指定玩家的宝石表格
  */
 void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vector<int>>& table) {
-    if (table.size() != 8 || table[0].size() != 8) return;
+    if (table.size() != 8) {
+        appendDebug(QString("refreshTabel: Invalid table rows (%1)").arg(table.size()));
+        return;
+    }
+    for (size_t i = 0; i < table.size(); ++i) {
+        if (table[i].size() != 8) {
+            appendDebug(QString("refreshTabel: Invalid table columns at row %1: %2").arg(i).arg(table[i].size()));
+            return;
+        }
+    }
 
     std::vector<std::vector<Gemstone*>>* targetTable;
     Qt3DCore::QEntity* targetRoot;
@@ -1888,51 +1922,79 @@ void MultiplayerModeGameWidget::refreshTabel(int num, const std::vector<std::vec
         targetTable = &player2Table;
         targetRoot = player2RootEntity;
     } else {
+        appendDebug(QString("refreshTabel: Invalid player number %1").arg(num));
+        return;
+    }
+
+    if (!targetRoot) {
+        appendDebug(QString("refreshTabel: targetRoot is null for player %1").arg(num));
         return;
     }
 
     // Ensure target table is initialized
-    if (targetTable->empty()) {
-        targetTable->resize(8, std::vector<Gemstone*>(8, nullptr));
+    if (targetTable->size() != 8) {
+        targetTable->resize(8);
+    }
+    for (auto& row : *targetTable) {
+        if (row.size() != 8) {
+            row.resize(8, nullptr);
+        }
     }
 
+    // STEP 1: Clear the entire board first
+    // 清空棋盘，删除所有现有的宝石对象
+    for (int r = 0; r < 8; ++r) {
+        for (int c = 0; c < 8; ++c) {
+            Gemstone* gem = (*targetTable)[r][c];
+            if (gem) {
+                // 从场景中移除
+                gem->setParent((Qt3DCore::QNode*)nullptr);
+                // 安全删除
+                gem->deleteLater();
+                (*targetTable)[r][c] = nullptr;
+            }
+        }
+    }
+
+    // STEP 2: Generate new gemstones based on the new data
+    // 按照新数据生成宝石
     std::string currentStyle = gameWindow ? gameWindow->getGemstoneStyle() : "style1";
+    int createdCount = 0;
 
     for (int r = 0; r < 8; ++r) {
         for (int c = 0; c < 8; ++c) {
             int type = table[r][c];
-            Gemstone* gem = (*targetTable)[r][c];
-            
-            if (gem) {
-                // Update existing gem
-                if (gem->getType() != type) {
-                    gem->setType(type);
-                }
-                if (gem->getStyle() != currentStyle) {
-                    gem->setStyle(currentStyle);
-                }
-                // Ensure it cannot be chosen
-                if (gem->getCanBeChosen()) {
-                    gem->setCanBeChosen(false);
-                }
+            if (type != -1) {
+                // 创建新宝石，父节点为对应的 RootEntity
+                Gemstone* newGem = new Gemstone(type, currentStyle, targetRoot);
+                newGem->setCanBeChosen(false);
                 
-                // Update position (in case of layout changes)
+                // 设置位置
                 float x = (c - 3.5f) * 1.1f;
                 float y = (3.5f - r) * 1.1f;
-                gem->transform()->setTranslation(QVector3D(x, y, 0));
-            } else {
-                // Create new gem
-                gem = new Gemstone(type, currentStyle, targetRoot);
-                gem->setCanBeChosen(false);
+                newGem->transform()->setTranslation(QVector3D(x, y, 0));
                 
-                // Calculate position
-                float x = (c - 3.5f) * 1.1f;
-                float y = (3.5f - r) * 1.1f;
-                
-                gem->transform()->setTranslation(QVector3D(x, y, 0));
-                (*targetTable)[r][c] = gem;
+                (*targetTable)[r][c] = newGem;
+                createdCount++;
             }
         }
+    }
+
+    // Log update
+    QString tableSample;
+    if (!table.empty() && !table[0].empty()) {
+        tableSample = QString("[%1, %2...]").arg(table[0][0]).arg(table[0][1]);
+    }
+    appendDebug(QString("refreshTabel: Player %1 board rebuilt. Created: %2. Sample: %3")
+        .arg(num).arg(createdCount).arg(tableSample));
+
+    // Request render update
+    Qt3DExtras::Qt3DWindow* targetWindow = nullptr;
+    if (num == 1) targetWindow = player1Window;
+    else if (num == 2) targetWindow = player2Window;
+
+    if (targetWindow) {
+        targetWindow->requestUpdate();
     }
 }
 
@@ -1944,18 +2006,47 @@ void MultiplayerModeGameWidget::startGame() {
     isStop = false;
     // 首先刷新自己的棋盘
     reset(1);
+    
+    // 清理其他玩家的棋盘，防止上一局残留
+    if (!player1Table.empty()) {
+        for (auto& row : player1Table) {
+            for (auto* gem : row) {
+                if (gem) {
+                    gem->setParent((Qt3DCore::QNode*)nullptr);
+                    delete gem;
+                }
+            }
+        }
+        player1Table.clear();
+    }
+    if (!player2Table.empty()) {
+        for (auto& row : player2Table) {
+            for (auto* gem : row) {
+                if (gem) {
+                    gem->setParent((Qt3DCore::QNode*)nullptr);
+                    delete gem;
+                }
+            }
+        }
+        player2Table.clear();
+    }
 
     // 获取棋盘数据
     std::vector<std::vector<int>> myBoard = getCurrentBoardState();
 
     // 发送 GameNetData
-    GameNetData data;
-    data.setType(4);
-    data.setID(myUserId);
-    data.setMyBoard(myBoard);
-    
-    sendNetData(data);
+    sendBoardSyncMessage();
     appendDebug("Game started, sent initial board (type=4)");
+
+    /*
+    // 延迟再次发送一次同步数据，以防止网络波动或初始化未完成导致的丢包
+    QTimer::singleShot(1000, this, [this]() {
+        if (!isStop) {
+            sendBoardSyncMessage();
+            appendDebug("Resent initial board (type=4) for redundancy");
+        }
+    });
+    */
 }
 
 
@@ -1963,12 +2054,22 @@ void MultiplayerModeGameWidget::startGame() {
  * @Author: NAPH130
  * @Function: 从服务端接收type == 4后执行方法
  */
-void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::vector<int>>& table) {
+void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::vector<int>>& table, int score) {
+    // QDialog dialog(this);
+    // dialog.setWindowTitle(QString("棋盘同步, ID: %1").arg(QString::fromStdString(id)));
+    // dialog.setModal(true);
+    // dialog.exec();
     if (idToNum.find(id) == idToNum.end()) {
         appendDebug(QString("accept4: ID %1 not found in idToNum map").arg(QString::fromStdString(id)));
         return;
     }
     int num = idToNum[id];
+    // 更新玩家分数
+    if (num == 1) {
+        player1ScoreLabel->setText(QString("玩家 %1: %2分").arg(QString::fromStdString(id)).arg(score));
+    } else if (num == 2) {
+        player2ScoreLabel->setText(QString("玩家 %1: %2分").arg(QString::fromStdString(id)).arg(score));
+    }
     appendDebug(QString("accept4: Syncing board for player %1 (Slot %2)").arg(QString::fromStdString(id)).arg(num));
     refreshTabel(num, table);
 }
@@ -1981,9 +2082,15 @@ void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap
     this->idToNum.clear();
     this->numToId.clear();
     int index = 1;
+    
+    std::string currentUserId = myUserId;
+    if (gameWindow) {
+        currentUserId = gameWindow->getUserID();
+    }
+
     for (auto& pair : incomingMap) {
         std::string id = pair.first;
-        if (id == myUserId) continue;
+        if (id == currentUserId) continue;
         this->numToId[index] = id;
         this->idToNum[id] = index;
         index++;
@@ -2002,6 +2109,13 @@ void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap
         player2ScoreLabel->setText("等待玩家...");
     }
 
+    // Set players ready and start sync timer
+    allPlayersReady = true;
+    if (syncTimer && !syncTimer->isActive()) {
+        // syncTimer->start();
+        // appendDebug("Started periodic board synchronization (every 5 seconds) from accept10");
+    }
+
     startGame();
 }
 /**
@@ -2009,6 +2123,8 @@ void MultiplayerModeGameWidget::accept10( std::map<std::string, int> incomingMap
  * @Function: 发送消除坐标和游戏分数
  */
 void MultiplayerModeGameWidget::sendCoordinates(std::vector<std::pair<int, int>> coordinates) {
+    //测试 先禁用
+    return;
     GameNetData data;
     data.setType(2);
     data.setID(gameWindow->getUserID());
@@ -2055,4 +2171,14 @@ void MultiplayerModeGameWidget::accept2(std::string id, std::vector<std::pair<in
             }
         }
     }
+}
+
+void MultiplayerModeGameWidget::sendNowBoard() {
+    if (isStop) return;
+    GameNetData data;
+    data.setType(4);
+    data.setID(gameWindow->getUserID());
+    data.setMyBoard(getCurrentBoardState());
+    data.setMyScore(gameScore);
+    sendNetData(data);
 }
