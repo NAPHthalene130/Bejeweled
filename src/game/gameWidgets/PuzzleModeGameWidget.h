@@ -123,6 +123,8 @@ private:
     std::string TempGemState[8];
     int lenthT[8];
     std::stack<std::string> lastGemStateStack;
+    bool ConstChange = 0;
+    int midX , midY;
 
     GameWindow* gameWindow;
 

@@ -98,16 +98,10 @@ void PlayMenuWidget::setupUI() {
     });
 
     connect(normalModeButton, &QPushButton::clicked, this, [this]() {
-        if (gameWindow && gameWindow->getSingleModeGameWidget()) {
-            gameWindow->getSingleModeGameWidget()->reset(1);
-        }
         emit startNormalMode();
     });
 
     connect(rotateModeButton, &QPushButton::clicked, this, [this]() {
-        if (gameWindow && gameWindow->getSingleModeGameWidget()) {
-            gameWindow->getSingleModeGameWidget()->reset(2);
-        }
         emit startRotateMode();
     });
 
@@ -121,9 +115,6 @@ void PlayMenuWidget::setupUI() {
     });
 
     connect(puzzleModeButton, &QPushButton::clicked, this, [this]() {
-        if (gameWindow && gameWindow->getPuzzleModeGameWidget()) {
-            gameWindow->getPuzzleModeGameWidget()->reset(1); // Puzzle mode
-        }
         emit startPuzzleMode();
     });
 }

@@ -67,6 +67,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // 连接 PlayMenuWidget 信号到 SingleModeGameWidget
     connect(playMenuWidget, &PlayMenuWidget::startNormalMode, [this]() {
+        singleModeGameWidget->reset(1);
         switchWidget(singleModeGameWidget);
     });
 
