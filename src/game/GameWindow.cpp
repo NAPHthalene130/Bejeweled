@@ -12,6 +12,7 @@
 #include "gameWidgets/MultiGameWaitWidget.h"
 #include "components/MenuButton.h"
 #include "data/CoinSystem.h"
+#include "data/ItemSystem.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QString>
@@ -26,6 +27,10 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     // 初始化金币系统
     CoinSystem::instance().initialize(userID);
     qDebug() << "[GameWindow] CoinSystem initialized for user:" << QString::fromStdString(userID);
+
+    // 初始化道具系统
+    ItemSystem::instance().initialize(userID);
+    qDebug() << "[GameWindow] ItemSystem initialized for user:" << QString::fromStdString(userID);
 
     logWindow = new LogWindow();
     logWindow->show();

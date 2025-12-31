@@ -5,6 +5,7 @@
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../data/CoinSystem.h"
+#include "../data/ItemSystem.h"
 #include "../../utils/AudioManager.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -13,6 +14,7 @@
 #include <QDialog>
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
+#include <QPixmap>
 #include <Qt3DExtras/Qt3DWindow>
 #include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DCore/QEntity>
@@ -369,6 +371,156 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     infoLayout->addWidget(scoreBoardLabel);
     infoLayout->addWidget(timeBoardLabel);
     panelLayout->addWidget(infoCard, 0, Qt::AlignTop);
+
+    // 道具面板
+    itemPanel = new QWidget(rightPanel);
+    itemPanel->setStyleSheet(R"(
+        QWidget {
+            background-color: rgba(30, 40, 60, 180);
+            border: 1px solid rgba(255, 255, 255, 50);
+            border-radius: 16px;
+        }
+    )");
+    auto* itemShadow = new QGraphicsDropShadowEffect(itemPanel);
+    itemShadow->setBlurRadius(18);
+    itemShadow->setOffset(0, 7);
+    itemShadow->setColor(QColor(0, 0, 0, 120));
+    itemPanel->setGraphicsEffect(itemShadow);
+
+    auto* itemLayout = new QVBoxLayout(itemPanel);
+    itemLayout->setContentsMargins(12, 12, 12, 12);
+    itemLayout->setSpacing(8);
+
+    QLabel* itemTitle = new QLabel("道具", itemPanel);
+    QFont itemTitleFont = itemTitle->font();
+    itemTitleFont.setFamily("Microsoft YaHei");
+    itemTitleFont.setPointSize(14);
+    itemTitleFont.setBold(true);
+    itemTitle->setFont(itemTitleFont);
+    itemTitle->setStyleSheet("color: rgba(255,255,255,230); background: transparent; border: none;");
+    itemTitle->setAlignment(Qt::AlignHCenter);
+    itemLayout->addWidget(itemTitle);
+
+    // 创建四个道具按钮
+    std::vector<ItemType> itemTypes = {
+        ItemType::FREEZE_TIME,
+        ItemType::HAMMER,
+        ItemType::RESET_BOARD,
+        ItemType::CLEAR_ALL
+    };
+
+    for (ItemType type : itemTypes) {
+        ItemInfo info = ItemSystem::instance().getItemInfo(type);
+
+        QWidget* itemRow = new QWidget(itemPanel);
+        itemRow->setStyleSheet("background: transparent; border: none;");
+        QHBoxLayout* rowLayout = new QHBoxLayout(itemRow);
+        rowLayout->setContentsMargins(0, 0, 0, 0);
+        rowLayout->setSpacing(8);
+
+        // 创建带图标的按钮
+        QPushButton* btn = new QPushButton(itemRow);
+        btn->setFixedSize(60, 60);
+        btn->setCursor(Qt::PointingHandCursor);
+
+        // 加载图片并设置为按钮图标
+        QPixmap iconPixmap(QString::fromStdString(info.icon));
+        if (!iconPixmap.isNull()) {
+            QIcon icon(iconPixmap);
+            btn->setIcon(icon);
+            btn->setIconSize(QSize(50, 50));
+        }
+
+        btn->setStyleSheet(R"(
+            QPushButton {
+                background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+                    stop:0 rgba(60, 130, 200, 180),
+                    stop:1 rgba(40, 90, 160, 180));
+                border: 2px solid rgba(255,255,255,100);
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+                    stop:0 rgba(80, 150, 220, 200),
+                    stop:1 rgba(60, 110, 180, 200));
+                border: 2px solid rgba(255,255,255,150);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+                    stop:0 rgba(50, 120, 190, 160),
+                    stop:1 rgba(30, 70, 140, 160));
+            }
+            QPushButton:disabled {
+                background: rgba(80, 80, 80, 120);
+                border: 2px solid rgba(120,120,120,80);
+            }
+        )");
+
+        // 道具名称标签
+        QLabel* nameLabel = new QLabel(QString::fromStdString(info.name), itemRow);
+        QFont nameFont = nameLabel->font();
+        nameFont.setFamily("Microsoft YaHei");
+        nameFont.setPointSize(11);
+        nameFont.setBold(true);
+        nameLabel->setFont(nameFont);
+        nameLabel->setStyleSheet("color: rgba(255,255,255,230); background: transparent; border: none;");
+        nameLabel->setFixedWidth(80);
+
+        QLabel* countLabel = new QLabel("×0", itemRow);
+        QFont countFont = countLabel->font();
+        countFont.setFamily("Microsoft YaHei");
+        countFont.setPointSize(12);
+        countFont.setBold(true);
+        countLabel->setFont(countFont);
+        countLabel->setStyleSheet("color: rgba(150, 255, 150, 230); background: transparent; border: none;");
+        countLabel->setFixedWidth(50);
+
+        rowLayout->addWidget(btn);
+        rowLayout->addWidget(nameLabel);
+        rowLayout->addWidget(countLabel);
+        rowLayout->addStretch();
+
+        itemButtons[type] = btn;
+        itemCountLabels[type] = countLabel;
+
+        // 连接按钮点击事件
+        connect(btn, &QPushButton::clicked, this, [this, type]() {
+            switch (type) {
+                case ItemType::FREEZE_TIME:
+                    useItemFreezeTime();
+                    break;
+                case ItemType::HAMMER:
+                    useItemHammer();
+                    break;
+                case ItemType::RESET_BOARD:
+                    useItemResetBoard();
+                    break;
+                case ItemType::CLEAR_ALL:
+                    useItemClearAll();
+                    break;
+            }
+        });
+
+        itemLayout->addWidget(itemRow);
+
+        // 更新道具数量
+        int count = ItemSystem::instance().getItemCount(type);
+        countLabel->setText(QString("×%1").arg(count));
+        btn->setEnabled(count > 0);
+    }
+
+    // 连接道具系统信号以更新UI
+    connect(&ItemSystem::instance(), &ItemSystem::itemCountChanged,
+            this, [this](ItemType type, int newCount) {
+        auto countIt = itemCountLabels.find(type);
+        auto btnIt = itemButtons.find(type);
+        if (countIt != itemCountLabels.end() && btnIt != itemButtons.end()) {
+            countIt->second->setText(QString("×%1").arg(newCount));
+            btnIt->second->setEnabled(newCount > 0);
+        }
+    });
+
+    panelLayout->addWidget(itemPanel, 0, Qt::AlignTop);
 
     panelLayout->addStretch(1);
 
@@ -834,8 +986,33 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
     if (!canOpe) return;
     emit userActionOccurred(); // 发送用户操作信号
 
-    appendDebug(QString("Gemstone clicked! Type=%1 Mode=%2 CanOpe=%3 SelectedNum=%4")
-        .arg(gem->getType()).arg(mode).arg(canOpe).arg(selectedNum));
+    appendDebug(QString("Gemstone clicked! Type=%1 Mode=%2 CanOpe=%3 SelectedNum=%4 HammerMode=%5")
+        .arg(gem->getType()).arg(mode).arg(canOpe).arg(selectedNum).arg(hammerMode));
+
+    // 锤子模式：直接消除点击的宝石
+    if (hammerMode) {
+        // 找到宝石在容器中的位置
+        int row = -1, col = -1;
+        if (findGemstonePosition(gem, row, col)) {
+            appendDebug(QString("Hammer used on gem at (%1, %2)").arg(row).arg(col));
+
+            // 消除这个宝石
+            std::vector<std::pair<int, int>> toRemove;
+            toRemove.push_back({row, col});
+            removeMatches(toRemove);
+
+            // 增加一些分数
+            gameScore += 20;
+            updateScoreBoard();
+
+            // 触发掉落
+            drop();
+        }
+
+        // 退出锤子模式
+        disableHammerMode();
+        return;
+    }
 
     if (mode != 1 || !canOpe) {
         appendDebug(QString("Click ignored: mode=%1 canOpe=%2").arg(mode).arg(canOpe));
@@ -1619,4 +1796,132 @@ void SingleModeGameWidget::collectCoinGem(Gemstone* gem) {
 
 int SingleModeGameWidget::getEarnedCoins() const {
     return earnedCoins;
+}
+
+// ========== 道具系统实现 ==========
+
+void SingleModeGameWidget::useItemFreezeTime() {
+    if (!ItemSystem::instance().useItem(ItemType::FREEZE_TIME)) {
+        qWarning() << "[SingleMode] Failed to use FREEZE_TIME item";
+        return;
+    }
+
+    // 暂停游戏计时器10秒
+    if (timer && timer->isActive()) {
+        timer->stop();
+    }
+
+    freezeTimeRemaining = 10;  // 10秒冻结时间
+
+    // 创建冻结计时器
+    if (!freezeTimer) {
+        freezeTimer = new QTimer(this);
+        freezeTimer->setInterval(1000);  // 每秒触发
+    }
+
+    // 断开所有之前的连接
+    freezeTimer->disconnect();
+
+    connect(freezeTimer, &QTimer::timeout, this, [this]() {
+        freezeTimeRemaining--;
+
+        if (timeBoardLabel) {
+            timeBoardLabel->setText(QString("时间: %1 (冻结: %2s)")
+                .arg(gameTimeKeeper.displayText())
+                .arg(freezeTimeRemaining));
+        }
+
+        if (freezeTimeRemaining <= 0) {
+            freezeTimer->stop();
+            // 恢复游戏计时器
+            if (timer) {
+                timer->start();
+            }
+            updateTimeBoard();
+        }
+    });
+
+    freezeTimer->start();
+    appendDebug("Used FREEZE_TIME item - Time frozen for 10 seconds");
+    qDebug() << "[SingleMode] FREEZE_TIME item activated";
+}
+
+void SingleModeGameWidget::useItemHammer() {
+    if (!ItemSystem::instance().useItem(ItemType::HAMMER)) {
+        qWarning() << "[SingleMode] Failed to use HAMMER item";
+        return;
+    }
+
+    // 进入锤子模式
+    enableHammerMode();
+    appendDebug("Used HAMMER item - Click any gem to destroy it");
+    qDebug() << "[SingleMode] HAMMER mode activated";
+}
+
+void SingleModeGameWidget::useItemResetBoard() {
+    if (!ItemSystem::instance().useItem(ItemType::RESET_BOARD)) {
+        qWarning() << "[SingleMode] Failed to use RESET_BOARD item";
+        return;
+    }
+
+    // 重新生成棋盘
+    resetGemstoneTable();
+    appendDebug("Used RESET_BOARD item - Board regenerated");
+    qDebug() << "[SingleMode] Board reset with RESET_BOARD item";
+}
+
+void SingleModeGameWidget::useItemClearAll() {
+    if (!ItemSystem::instance().useItem(ItemType::CLEAR_ALL)) {
+        qWarning() << "[SingleMode] Failed to use CLEAR_ALL item";
+        return;
+    }
+
+    // 消除所有宝石
+    std::vector<std::pair<int, int>> allGems;
+    for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
+        for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
+            if (gemstoneContainer[i][j]) {
+                allGems.push_back({i, j});
+            }
+        }
+    }
+
+    if (!allGems.empty()) {
+        removeMatches(allGems);
+
+        // 增加大量分数作为奖励
+        int bonus = allGems.size() * 50;
+        gameScore += bonus;
+        updateScoreBoard();
+
+        appendDebug(QString("Used CLEAR_ALL item - Cleared %1 gems, bonus: %2")
+                    .arg(allGems.size()).arg(bonus));
+        qDebug() << "[SingleMode] CLEAR_ALL item used, cleared" << allGems.size() << "gems";
+
+        // 触发掉落
+        drop();
+    }
+}
+
+void SingleModeGameWidget::enableHammerMode() {
+    hammerMode = true;
+
+    // 更新提示信息
+    if (timeBoardLabel) {
+        QString originalText = timeBoardLabel->text();
+        timeBoardLabel->setText("🔨 锤子模式 - 点击任意宝石");
+    }
+
+    // 改变光标
+    setCursor(Qt::CrossCursor);
+}
+
+void SingleModeGameWidget::disableHammerMode() {
+    hammerMode = false;
+
+    // 恢复提示信息
+    updateTimeBoard();
+
+    // 恢复光标
+    setCursor(Qt::ArrowCursor);
 }

@@ -3,16 +3,20 @@
 #include "MenuWidget.h"
 #include "../components/MenuButton.h"
 #include "../data/CoinSystem.h"
+#include "../data/ItemSystem.h"
 #include "../../utils/BackgroundManager.h"
 #include "../../utils/ResourceUtils.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
 #include <QPainter>
+#include <QPixmap>
 #include <QGraphicsDropShadowEffect>
 #include <QFont>
 #include <QShowEvent>
+#include <QMessageBox>
 
 StoreWidget::StoreWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -21,6 +25,10 @@ StoreWidget::StoreWidget(QWidget* parent, GameWindow* gameWindow)
     // 连接金币系统的信号
     connect(&CoinSystem::instance(), &CoinSystem::coinsChanged,
             this, &StoreWidget::updateCoinDisplay);
+
+    // 连接道具系统的信号
+    connect(&ItemSystem::instance(), &ItemSystem::itemCountChanged,
+            this, &StoreWidget::updateItemDisplay);
 }
 
 void StoreWidget::setupUI() {
@@ -86,8 +94,8 @@ void StoreWidget::setupUI() {
     mainPanel->setGraphicsEffect(panelShadow);
 
     QVBoxLayout* panelLayout = new QVBoxLayout(mainPanel);
-    panelLayout->setContentsMargins(56, 44, 56, 44);
-    panelLayout->setSpacing(28);
+    panelLayout->setContentsMargins(40, 30, 40, 30);
+    panelLayout->setSpacing(20);
 
     // 商店标题
     QLabel* titleLabel = new QLabel("商店", mainPanel);
@@ -99,14 +107,38 @@ void StoreWidget::setupUI() {
     titleLabel->setAlignment(Qt::AlignHCenter);
     titleLabel->setStyleSheet("color: rgba(255, 255, 255, 230); background: transparent;");
 
-    // 商品区域（占位）
-    QLabel* comingSoonLabel = new QLabel("商品即将上线...", mainPanel);
-    QFont comingSoonFont = comingSoonLabel->font();
-    comingSoonFont.setPointSize(18);
-    comingSoonFont.setFamily("Microsoft YaHei");
-    comingSoonLabel->setFont(comingSoonFont);
-    comingSoonLabel->setAlignment(Qt::AlignHCenter);
-    comingSoonLabel->setStyleSheet("color: rgba(255, 255, 255, 180); background: transparent;");
+    // 道具网格
+    QWidget* itemsContainer = new QWidget(mainPanel);
+    itemsContainer->setStyleSheet("background: transparent;");
+    QGridLayout* itemsGrid = new QGridLayout(itemsContainer);
+    itemsGrid->setSpacing(20);
+    itemsGrid->setContentsMargins(0, 0, 0, 0);
+
+    // 获取所有道具
+    auto allItems = ItemSystem::instance().getAllItems();
+
+    // 按照指定顺序添加道具
+    std::vector<ItemType> itemOrder = {
+        ItemType::FREEZE_TIME,
+        ItemType::HAMMER,
+        ItemType::RESET_BOARD,
+        ItemType::CLEAR_ALL
+    };
+
+    int row = 0, col = 0;
+    for (ItemType type : itemOrder) {
+        auto it = allItems.find(type);
+        if (it != allItems.end()) {
+            QWidget* card = createItemCard(it->second);
+            itemsGrid->addWidget(card, row, col);
+
+            col++;
+            if (col >= 2) {  // 每行2个道具
+                col = 0;
+                row++;
+            }
+        }
+    }
 
     // 返回按钮
     MenuButton* backButton = new MenuButton(220, 60, 18, QColor(120, 220, 255), "返回主菜单", mainPanel);
@@ -120,9 +152,7 @@ void StoreWidget::setupUI() {
     });
 
     panelLayout->addWidget(titleLabel, 0, Qt::AlignHCenter);
-    panelLayout->addStretch(1);
-    panelLayout->addWidget(comingSoonLabel, 0, Qt::AlignHCenter);
-    panelLayout->addStretch(2);
+    panelLayout->addWidget(itemsContainer, 1);
     panelLayout->addWidget(backButton, 0, Qt::AlignHCenter);
 
     mainLayout->addWidget(coinWidget);
@@ -135,6 +165,132 @@ void StoreWidget::setupUI() {
 void StoreWidget::updateCoinDisplay(int newCoins) {
     if (coinLabel) {
         coinLabel->setText(QString("金币: %1").arg(newCoins));
+    }
+}
+
+void StoreWidget::updateItemDisplay(ItemType type, int newCount) {
+    auto it = itemCountLabels.find(type);
+    if (it != itemCountLabels.end() && it->second) {
+        it->second->setText(QString("拥有: %1").arg(newCount));
+    }
+}
+
+QWidget* StoreWidget::createItemCard(const ItemInfo& info) {
+    QWidget* card = new QWidget(mainPanel);
+    card->setFixedSize(320, 280);
+    card->setStyleSheet(R"(
+        QWidget {
+            background-color: rgba(40, 50, 80, 180);
+            border: 2px solid rgba(100, 150, 255, 100);
+            border-radius: 18px;
+        }
+    )");
+
+    auto* cardShadow = new QGraphicsDropShadowEffect(card);
+    cardShadow->setBlurRadius(20);
+    cardShadow->setOffset(0, 8);
+    cardShadow->setColor(QColor(0, 0, 0, 100));
+    card->setGraphicsEffect(cardShadow);
+
+    QVBoxLayout* cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(16, 16, 16, 16);
+    cardLayout->setSpacing(10);
+
+    // 道具图标
+    QLabel* iconLabel = new QLabel(card);
+    QPixmap iconPixmap(QString::fromStdString(info.icon));
+    if (!iconPixmap.isNull()) {
+        iconLabel->setPixmap(iconPixmap.scaled(120, 120, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    }
+    iconLabel->setAlignment(Qt::AlignHCenter);
+    iconLabel->setStyleSheet("background: transparent; border: none;");
+
+    // 道具名称
+    QLabel* nameLabel = new QLabel(QString::fromStdString(info.name), card);
+    QFont nameFont = nameLabel->font();
+    nameFont.setFamily("Microsoft YaHei");
+    nameFont.setPointSize(18);
+    nameFont.setBold(true);
+    nameLabel->setFont(nameFont);
+    nameLabel->setAlignment(Qt::AlignHCenter);
+    nameLabel->setStyleSheet("color: rgba(255, 255, 255, 230); background: transparent; border: none;");
+
+    // 道具描述
+    QLabel* descLabel = new QLabel(QString::fromStdString(info.description), card);
+    QFont descFont = descLabel->font();
+    descFont.setFamily("Microsoft YaHei");
+    descFont.setPointSize(12);
+    descLabel->setFont(descFont);
+    descLabel->setAlignment(Qt::AlignHCenter);
+    descLabel->setStyleSheet("color: rgba(200, 200, 200, 200); background: transparent; border: none;");
+    descLabel->setWordWrap(true);
+
+    // 拥有数量
+    QLabel* countLabel = new QLabel(QString("拥有: %1").arg(ItemSystem::instance().getItemCount(info.type)), card);
+    QFont countFont = countLabel->font();
+    countFont.setFamily("Microsoft YaHei");
+    countFont.setPointSize(13);
+    countLabel->setFont(countFont);
+    countLabel->setAlignment(Qt::AlignHCenter);
+    countLabel->setStyleSheet("color: rgba(150, 255, 150, 230); background: transparent; border: none;");
+    itemCountLabels[info.type] = countLabel;
+
+    // 购买按钮
+    QPushButton* buyButton = new QPushButton(QString("💰 %1 金币").arg(info.price), card);
+    QFont btnFont = buyButton->font();
+    btnFont.setFamily("Microsoft YaHei");
+    btnFont.setPointSize(14);
+    btnFont.setBold(true);
+    buyButton->setFont(btnFont);
+    buyButton->setFixedHeight(40);
+    buyButton->setStyleSheet(R"(
+        QPushButton {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 rgba(80, 180, 255, 220),
+                stop:1 rgba(50, 120, 200, 220));
+            color: white;
+            border: none;
+            border-radius: 8px;
+        }
+        QPushButton:hover {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 rgba(100, 200, 255, 240),
+                stop:1 rgba(70, 140, 220, 240));
+        }
+        QPushButton:pressed {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 rgba(60, 160, 235, 200),
+                stop:1 rgba(40, 100, 180, 200));
+        }
+    )");
+
+    connect(buyButton, &QPushButton::clicked, this, [this, info]() {
+        onPurchaseClicked(info.type);
+    });
+
+    cardLayout->addWidget(iconLabel);
+    cardLayout->addWidget(nameLabel);
+    cardLayout->addWidget(descLabel);
+    cardLayout->addWidget(countLabel);
+    cardLayout->addWidget(buyButton);
+
+    return card;
+}
+
+void StoreWidget::onPurchaseClicked(ItemType type) {
+    // 购买道具
+    if (ItemSystem::instance().purchaseItem(type)) {
+        // 购买成功
+        ItemInfo info = ItemSystem::instance().getItemInfo(type);
+        QMessageBox::information(this, "购买成功",
+            QString("成功购买 %1！").arg(QString::fromStdString(info.name)));
+    } else {
+        // 购买失败（金币不足）
+        ItemInfo info = ItemSystem::instance().getItemInfo(type);
+        QMessageBox::warning(this, "购买失败",
+            QString("金币不足！购买 %1 需要 %2 金币。")
+                .arg(QString::fromStdString(info.name))
+                .arg(info.price));
     }
 }
 
