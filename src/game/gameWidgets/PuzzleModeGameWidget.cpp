@@ -950,31 +950,57 @@ void PuzzleModeGameWidget::changeIndex(int a,int b,int c,int d,int e,int f) {
     TempGemState[a][b] = TempGemState[c][d] = TempGemState[e][f] = type + '0';
 }
 
+void PuzzleModeGameWidget::threeColumnOrVeticalBuild() {
+
+    return ;
+}
+
+void PuzzleModeGameWidget::checkLenthT() {
+    for(int i=0;i<8;i++) {
+        lenthT[i] = 0;
+        for(int j=0;j<8;j++) {
+            if(TempGemState[i][j] == '-') break;
+            lenthT[i] ++;
+        }
+    }
+}
+
 void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
+    appendDebug(QString("generateSimpleMatch called, GemNumber=%1").arg(GemNumber));
     bool CrossOrVertical = QRandomGenerator::global()->bounded(2);
     int StartPos = QRandomGenerator::global()->bounded(6);
+    appendDebug(QString("CrossOrVertical=%1, StartPos=%2").arg(CrossOrVertical).arg(StartPos));
+    
+    // 打印当前状态
+    QString currentState;
+    for (int i = 0; i < 8; ++i) {
+        currentState += QString("Col %1: %2 (len=%3)\n").arg(i).arg(TempGemState[i]).arg(lenthT[i]);
+    }
+    appendDebug(currentState);
+    appendDebug(QString("%1  %2").arg(midX).arg(ConstChange));
     if(ConstChange) {
-        if(lenthT[midX] <= 5) {
+        if(lenthT[midX - 1] < 8&&lenthT[midX] < 8&&lenthT[midX + 1] < 8) {
+            for(int i=-1;i<=1;i++) {
+                for(int j = 7;j > midY;j--) 
+                    TempGemState[midX + i][j] = TempGemState[midX + i][j-1];
+            }
+            TempGemState[midX][midY+1] = TempGemState[midX][midY];
+            changeIndex( midX-1,midY , midX,midY+1 ,midX+1,midY);
+            GemNumber += 3;
+        } else if(lenthT[midX] <= 5) {
             for(int i=1;i<=3;i++) {
                 for(int j = 7;j > midY + i;j --) 
                     TempGemState[midX][j] = TempGemState[midX][j-1];
             }
             TempGemState[midX][midY + 1] = TempGemState[midX][midY];
             changeIndex(midX,midY,midX,midY+2,midX,midY+3);
-            lenthT[midX] += 3;
-        } else if(lenthT[midX - 1] < 8&&lenthT[midX] < 8&&lenthT[midX + 1] < 8) {
-            for(int i=-1;i<=1;i++) {
-                for(int j = 7;j > midY + 1;j--) 
-                    TempGemState[midX + i][j] = TempGemState[midX + i][j-1];
-            }
-            TempGemState[midX][midY+1] = TempGemState[midX][midY];
-            changeIndex(midX,midY , midX-1,midY+1 , midX+1,midY+1);
-            lenthT[midX - 1] ++; lenthT[midX] ++; lenthT[midX + 1] ++;
+            GemNumber += 3;
         } else {
             ConstChange = 0;
-            midX = midY = 0;
             generateSimpleMatch();
         }
+        ConstChange = 0;
+        midX = midY = 0;
     } else if(CrossOrVertical || GemNumber == 0 || !CrossOrVertical) { // Cross
         int VertBound = 10;
         for(int i=0;i<3;i++) {
@@ -989,7 +1015,7 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
         } else { 
             VertBound = 10;
             StartPos = QRandomGenerator::global()->bounded(5);
-            while(VertBound >= 8) {
+            for(int i=1;i<=7;i++) {
                 StartPos = (StartPos + 1) % 5 , VertBound = 10;
                 for(int i=0;i<=3;i++) {
                     VertBound = std::min(VertBound , lenthT[StartPos + i]);
@@ -998,20 +1024,22 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
                         break;
                     }
                 }
+                if(VertBound < 8) break;
             }
+            if(VertBound >= 8) ;
+            VertBound = 0;
             int type = QRandomGenerator::global()->bounded(difficulty);
             
             //中间两列的上移
             for(int i = 7;i>VertBound;i--) 
                 TempGemState[StartPos+2][i] = TempGemState[StartPos+2][i-1] ,
                 TempGemState[StartPos+1][i] = TempGemState[StartPos+1][i-1];
-            lenthT[StartPos + 1] ++; lenthT[StartPos + 2] ++;
+
             if(StartPos >= 3) {//XXOX形式
 
                 //第一列上移
                 for(int i = 7;i>VertBound;i--) 
                     TempGemState[StartPos][i] = TempGemState[StartPos][i-1];
-                lenthT[StartPos] ++;
                 
                 //第三列变成第四列的，交换当前这个后恢复原样
                 if(TempGemState[StartPos+2][VertBound] != '-' && TempGemState[StartPos+3][VertBound] == '-') {//这时交换会出现悬空，不正确
@@ -1019,7 +1047,7 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
                         TempGemState[StartPos+2][VertBound] = TempGemState[StartPos+2][VertBound-1];
                         changeIndex(StartPos,VertBound,StartPos+1,VertBound,StartPos+2,VertBound-1);
                     } else {
-                        TempGemState[StartPos+2][VertBound] = TempGemState[StartPos+2][VertBound+1];
+                        // TempGemState[StartPos+2][VertBound] = TempGemState[StartPos+2][VertBound+1];
                         changeIndex(StartPos,VertBound,StartPos+1,VertBound,StartPos+2,VertBound+1);
                     }
                     midX = StartPos + 1; midY = VertBound;
@@ -1034,7 +1062,6 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
             } else {//XOXX形式
                 for(int i = 7;i>VertBound;i--) 
                      TempGemState[StartPos+3][i] = TempGemState[StartPos+3][i-1];
-                lenthT[StartPos + 3] ++;
 
                 //第二列变成第一列的，交换当前这个后恢复原样
                 if(TempGemState[StartPos+1][VertBound] != '-' && TempGemState[StartPos][VertBound] == '-') {//这时交换会出现悬空，不正确
@@ -1042,7 +1069,7 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
                         TempGemState[StartPos+1][VertBound] = TempGemState[StartPos+1][VertBound-1];
                         changeIndex(StartPos+1,VertBound-1,StartPos+2,VertBound,StartPos+3,VertBound);
                     } else {
-                        TempGemState[StartPos+1][VertBound] = TempGemState[StartPos+1][VertBound+1];
+                        // TempGemState[StartPos+1][VertBound] = TempGemState[StartPos+1][VertBound+1];
                         changeIndex(StartPos+1,VertBound+1,StartPos+2,VertBound,StartPos+3,VertBound);
                     }
                     midX = StartPos + 1; midY = VertBound;
@@ -1056,10 +1083,11 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
             }
 
         }
+        GemNumber += 3;
     } else { // Vertical
         
     }
-    GemNumber += 3;
+    checkLenthT();
 }
 
 void PuzzleModeGameWidget::reset(int mode) {
@@ -1094,6 +1122,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     GemNumber = 0;
     midX = midY = 0;
 
+    debugText->setText(QString("Start\n")); // 刷新显示
     int MemberNum = std::max(5 , std::min(10,3*Level));
     bool SpecialComplete = false;
     while(MemberNum) {
@@ -1113,7 +1142,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     for (int i = 0; i < 8; ++i) {
         tempGemStateStr += QString("Row %1: %2\n").arg(i).arg(TempGemState[i]);
     }
-    debugText->setText(tempGemStateStr); // 刷新显示
+    appendDebug(tempGemStateStr);
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             if(TempGemState[j][i] < '0' || TempGemState[j][i] > '9') continue;
@@ -1135,7 +1164,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     selectedNum = 0;
     firstSelectedGemstone = nullptr;
     secondSelectedGemstone = nullptr;
-    drop();
+    // drop();
     while(!lastGemStateStack.empty()) lastGemStateStack.pop();
     pushInLastStateQueue();
     // 重置定时器

@@ -99,6 +99,8 @@ private:
     void generateSimpleMatch();
     bool checkConflict(int x,int y,int type);
     void changeIndex(int a,int b,int c,int d,int e,int f);
+    void threeColumnOrVeticalBuild();
+    void checkLenthT();
 
     // 辅助函数：找到宝石在容器中的位置
     bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;
