@@ -1,11 +1,11 @@
 #include "MultiplayerModeGameWidget.h"
+#include "../data/NetDataIO.h"
 #include "FinalWidget.h"
 #include "MenuWidget.h"
 #include "../GameWindow.h"
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../data/GameNetData.h"
-#include "../data/NetDataIO.h"
 #include "../../utils/LogWindow.h"
 #include "../../utils/AudioManager.h"
 #include <QHBoxLayout>
@@ -399,6 +399,17 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     syncTimer = new QTimer(this);
     // syncTimer->setInterval(5000);  // 5 seconds
     // connect(syncTimer, &QTimer::timeout, this, &MultiplayerModeGameWidget::sendBoardSyncMessage);
+}
+
+void MultiplayerModeGameWidget::setStop(bool stop) {
+    isStop = stop;
+    if (isStop) {
+        if (timer && timer->isActive()) timer->stop();
+        gameTimeKeeper.pause();
+        if (inactivityTimer) inactivityTimer->stop();
+        if (syncTimer && syncTimer->isActive()) syncTimer->stop();
+        canOpe = false; // Disable operation
+    }
 }
 
 void MultiplayerModeGameWidget::setStop(bool stop) {

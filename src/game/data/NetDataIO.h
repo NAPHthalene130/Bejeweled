@@ -1,13 +1,13 @@
 #ifndef NET_DATA_IO_H
 #define NET_DATA_IO_H
 
+#include <boost/asio.hpp>
 #include <string>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
 #include <atomic>
-#include <boost/asio.hpp>
 #include "GameNetData.h"
 
 class GameWindow;

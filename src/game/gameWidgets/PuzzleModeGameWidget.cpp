@@ -39,7 +39,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-
 class GameBackDialog : public QDialog {
 public:
     explicit GameBackDialog(QWidget* parent = nullptr) : QDialog(parent) {
@@ -263,6 +262,46 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     panelLayout->addWidget(infoCard, 0, Qt::AlignTop);
 
     panelLayout->addStretch(1);
+// ———————————————————————————————————————————————————————————— debug
+    debugText = new QTextEdit(this);
+    debugText->setReadOnly(true);
+    debugText->setFixedHeight(200); // 固定高度
+    // 添加到现有布局中（例如右侧面板）
+    panelLayout->addWidget(debugText);
+
+    // 新增重置按钮
+    resetButton = new QPushButton("重置状态", rightPanel);
+    resetButton->setFixedSize(180, 54);
+    resetButton->setCursor(Qt::PointingHandCursor);
+    resetButton->setStyleSheet(R"(
+        QPushButton {
+            color: white;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,55);
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(120,200,255,220), stop:1 rgba(80,150,255,220));
+            font-family: 'Microsoft YaHei';
+            font-size: 14px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(140,220,255,235), stop:1 rgba(100,170,255,235));
+        }
+        QPushButton:pressed {
+            background: qlineargradient(x1:0,y1:0,x2:1,y2:1, stop:0 rgba(100,170,220,235), stop:1 rgba(60,130,220,235));
+        }
+    )");
+
+    auto* resetShadow = new QGraphicsDropShadowEffect(resetButton);
+    resetShadow->setBlurRadius(18);
+    resetShadow->setOffset(0, 8);
+    resetShadow->setColor(QColor(0, 0, 0, 120));
+    resetButton->setGraphicsEffect(resetShadow);
+
+    connect(resetButton, &QPushButton::clicked, this, &PuzzleModeGameWidget::checkLastGemState);
+
+    panelLayout->addWidget(resetButton, 0, Qt::AlignRight | Qt::AlignBottom);
+
+
 
     backToMenuButton = new QPushButton("返回菜单", rightPanel);
     backToMenuButton->setFixedSize(180, 54);
@@ -306,9 +345,6 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
 
     focusInfoLabel = new QLabel(rightPanel);
     focusInfoLabel->setVisible(false);
-    debugText = new QTextEdit(rightPanel);
-    debugText->setVisible(false);
-    debugText->setReadOnly(true);
     debugTimer = new QTimer(this);
 
     setLayout(mainLayout);
@@ -370,38 +406,14 @@ void PuzzleModeGameWidget::updateTimeBoard() {
 
 void PuzzleModeGameWidget::triggerFinishIfNeeded() {
     if (GemNumber == 0) 
-        finishToFinalWidget();
+        finishToNextLevel();
 }
 
-void PuzzleModeGameWidget::finishToFinalWidget() {
-    if (isFinishing) return;
-    isFinishing = true;
-    canOpe = false;
+void PuzzleModeGameWidget::finishToNextLevel() {
+    //此处应有 目标完成 前往下一关的弹幕生成
 
-    if (timer && timer->isActive()) timer->stop();
-    if (inactivityTimer) inactivityTimer->stop();
-    clearHighlights();
-    if (selectionRing1) selectionRing1->setVisible(false);
-    if (selectionRing2) selectionRing2->setVisible(false);
-
-    int total = gameTimeKeeper.totalSeconds();
-    int m = total / 60;
-    int s = total % 60;
-    QString timeText = QString("%1:%2")
-        .arg(m, 2, 10, QChar('0'))
-        .arg(s, 2, 10, QChar('0'));
-
-    QString gradeText = QString("本局得分：%1\n用时：%2\n评价：Excellent!")
-        .arg(gameScore)
-        .arg(timeText);
-
-    QTimer::singleShot(650, this, [this, gradeText]() {
-        if (!gameWindow) return;
-        auto* finalWidget = gameWindow->getFinalWidget();
-        if (!finalWidget) return;
-        finalWidget->setGradeContent(gradeText.toStdString());
-        gameWindow->switchWidget(finalWidget);
-    });
+    /* ( ) */
+    PuzzleModeGameWidget::reset(1);
 }
 
 // 查找所有需要消除的宝石（三连或更多）
@@ -500,10 +512,13 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     }
 
     if (removedCount > 0) {
+        GemNumber -= removedCount;
+        appendDebug(QString("Still %1 Gems there.").arg(GemNumber));
         gameScore += removedCount * 10;
         updateScoreBoard();
         triggerFinishIfNeeded();
     }
+
 }
 
 void PuzzleModeGameWidget::eliminate() {
@@ -530,6 +545,7 @@ void PuzzleModeGameWidget::eliminate() {
             drop();
         });
     } else {
+        pushInLastStateQueue();
         comboCount = 0;
         // 没有匹配了，恢复操作
         canOpe = true;
@@ -573,26 +589,13 @@ void PuzzleModeGameWidget::drop() {
         connect(dropAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
             if (isFinishing) return;
             appendDebug("Drop animation finished, filling new gemstones");
-            resetGemstoneTable();
-            resetInactivityTimer();
+            eliminate();
         });
         dropAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
     } else {
         appendDebug("No drops needed, filling new gemstones");
-        resetGemstoneTable();
-        resetInactivityTimer();
+        eliminate();
     }
-}
-
-void PuzzleModeGameWidget::resetGemstoneTable() {
-    if (isFinishing) return;
-    appendDebug("Filling empty positions with new gemstones");
-
-    QParallelAnimationGroup* fillAnimGroup = new QParallelAnimationGroup();
-    
-    appendDebug("No fills needed, checking for new matches");
-    // 直接判断有无新的消除
-    eliminate();
 }
 
 void PuzzleModeGameWidget::eliminateAnime(Gemstone* gemstone) {
@@ -927,15 +930,144 @@ void PuzzleModeGameWidget::setMode(int mode) {
     this->mode = mode;
 }
 
+bool PuzzleModeGameWidget::checkConflict(int x,int y,int type) {
+    int dx[4] = {0,0,1,-1};
+    int dy[4] = {1,-1,0,0};
+    for(int i=0;i<4;i++) {
+        if(x+dx[i] >= 0&& x+dx[i] < 8&& y+dy[i] >= 0&& y+dy[i] < 8) {
+            if(TempGemState[x+dx[i]][y+dy[i]] == type + '0') return true;
+        }
+    }
+    return false;
+}
+
+void PuzzleModeGameWidget::changeIndex(int a,int b,int c,int d,int e,int f) {
+    int type = QRandomGenerator::global()->bounded(difficulty);
+    TempGemState[a][b] = TempGemState[c][d] = TempGemState[e][f] = '-';
+    //清空要放当前这一匹配的位置
+    while(checkConflict(a,b,type) ||
+        checkConflict(c,d,type) || checkConflict(e,f,type)) type = (type + 1)% 8;
+    TempGemState[a][b] = TempGemState[c][d] = TempGemState[e][f] = type + '0';
+}
+
+void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
+    bool CrossOrVertical = QRandomGenerator::global()->bounded(2);
+    int StartPos = QRandomGenerator::global()->bounded(6);
+    if(ConstChange) {
+        if(lenthT[midX] <= 5) {
+            for(int i=1;i<=3;i++) {
+                for(int j = 7;j > midY + i;j --) 
+                    TempGemState[midX][j] = TempGemState[midX][j-1];
+            }
+            TempGemState[midX][midY + 1] = TempGemState[midX][midY];
+            changeIndex(midX,midY,midX,midY+2,midX,midY+3);
+            lenthT[midX] += 3;
+        } else if(lenthT[midX - 1] < 8&&lenthT[midX] < 8&&lenthT[midX + 1] < 8) {
+            for(int i=-1;i<=1;i++) {
+                for(int j = 7;j > midY + 1;j--) 
+                    TempGemState[midX + i][j] = TempGemState[midX + i][j-1];
+            }
+            TempGemState[midX][midY+1] = TempGemState[midX][midY];
+            changeIndex(midX,midY , midX-1,midY+1 , midX+1,midY+1);
+            lenthT[midX - 1] ++; lenthT[midX] ++; lenthT[midX + 1] ++;
+        } else {
+            ConstChange = 0;
+            midX = midY = 0;
+            generateSimpleMatch();
+        }
+    } else if(CrossOrVertical || GemNumber == 0 || !CrossOrVertical) { // Cross
+        int VertBound = 10;
+        for(int i=0;i<3;i++) {
+            VertBound = std::min(VertBound , lenthT[StartPos + i]);
+        }
+
+        int Choice_01 = QRandomGenerator::global()->bounded(4);
+        if(Choice_01 == 30 && VertBound >= 1) {//横着的上下交换，前提是当前三列都有宝石
+            Choice_01 = QRandomGenerator::global()->bounded(3);
+            int type = QRandomGenerator::global()->bounded(difficulty);
+            
+        } else { 
+            VertBound = 10;
+            StartPos = QRandomGenerator::global()->bounded(5);
+            while(VertBound >= 8) {
+                StartPos = (StartPos + 1) % 5 , VertBound = 10;
+                for(int i=0;i<=3;i++) {
+                    VertBound = std::min(VertBound , lenthT[StartPos + i]);
+                    if(lenthT[StartPos + i] == 8) {
+                        VertBound = 10;
+                        break;
+                    }
+                }
+            }
+            int type = QRandomGenerator::global()->bounded(difficulty);
+            
+            //中间两列的上移
+            for(int i = 7;i>VertBound;i--) 
+                TempGemState[StartPos+2][i] = TempGemState[StartPos+2][i-1] ,
+                TempGemState[StartPos+1][i] = TempGemState[StartPos+1][i-1];
+            lenthT[StartPos + 1] ++; lenthT[StartPos + 2] ++;
+            if(StartPos >= 3) {//XXOX形式
+
+                //第一列上移
+                for(int i = 7;i>VertBound;i--) 
+                    TempGemState[StartPos][i] = TempGemState[StartPos][i-1];
+                lenthT[StartPos] ++;
+                
+                //第三列变成第四列的，交换当前这个后恢复原样
+                if(TempGemState[StartPos+2][VertBound] != '-' && TempGemState[StartPos+3][VertBound] == '-') {//这时交换会出现悬空，不正确
+                    if(VertBound > 0) {//与下面交换 减少开局出错概率
+                        TempGemState[StartPos+2][VertBound] = TempGemState[StartPos+2][VertBound-1];
+                        changeIndex(StartPos,VertBound,StartPos+1,VertBound,StartPos+2,VertBound-1);
+                    } else {
+                        TempGemState[StartPos+2][VertBound] = TempGemState[StartPos+2][VertBound+1];
+                        changeIndex(StartPos,VertBound,StartPos+1,VertBound,StartPos+2,VertBound+1);
+                    }
+                    midX = StartPos + 1; midY = VertBound;
+                    ConstChange = 1;
+                } else {
+                    TempGemState[StartPos+2][VertBound] = TempGemState[StartPos+3][VertBound];
+
+                    changeIndex(StartPos,VertBound,StartPos+1,VertBound,StartPos+3,VertBound);
+                    //替换0 1 3
+                }
+
+            } else {//XOXX形式
+                for(int i = 7;i>VertBound;i--) 
+                     TempGemState[StartPos+3][i] = TempGemState[StartPos+3][i-1];
+                lenthT[StartPos + 3] ++;
+
+                //第二列变成第一列的，交换当前这个后恢复原样
+                if(TempGemState[StartPos+1][VertBound] != '-' && TempGemState[StartPos][VertBound] == '-') {//这时交换会出现悬空，不正确
+                    if(VertBound > 0) {
+                        TempGemState[StartPos+1][VertBound] = TempGemState[StartPos+1][VertBound-1];
+                        changeIndex(StartPos+1,VertBound-1,StartPos+2,VertBound,StartPos+3,VertBound);
+                    } else {
+                        TempGemState[StartPos+1][VertBound] = TempGemState[StartPos+1][VertBound+1];
+                        changeIndex(StartPos+1,VertBound+1,StartPos+2,VertBound,StartPos+3,VertBound);
+                    }
+                    midX = StartPos + 1; midY = VertBound;
+                    ConstChange = 1;
+                } else {
+                    TempGemState[StartPos+1][VertBound] = TempGemState[StartPos][VertBound];
+
+                    changeIndex(StartPos,VertBound,StartPos+2,VertBound,StartPos+3,VertBound);
+                    //替换0 2 3
+                }
+            }
+
+        }
+    } else { // Vertical
+        
+    }
+    GemNumber += 3;
+}
+
 void PuzzleModeGameWidget::reset(int mode) {
     this->mode = mode;
     this->canOpe = true;
     this->isFinishing = false;
-    this->gameScore = 0;
-    this->targetScore = 300;
     this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
-    updateScoreBoard();
     updateTimeBoard();
     appendDebug(QString("reset mode=%1").arg(mode));
     
@@ -950,54 +1082,62 @@ void PuzzleModeGameWidget::reset(int mode) {
     }
     gemstoneContainer.clear();
     
+    Level ++;
+    ConstChange = 0;
     // 重建8x8网格
     gemstoneContainer.resize(8);
-    GemNumber = 64;
-
-    for (int i = 0; i < 8; ++i) {
+    for(int i=0; i<8; i++) {
         gemstoneContainer[i].resize(8);
+        TempGemState[i] = "--------";
+        lenthT[i] = 0;
+    }
+    GemNumber = 0;
+    midX = midY = 0;
+
+    int MemberNum = std::max(5 , std::min(10,3*Level));
+    bool SpecialComplete = false;
+    while(MemberNum) {
+        if(Level >= 2 && !SpecialComplete) {//可能 生成一个残缺匹配，需要特殊宝石来消除
+            if(QRandomGenerator::global()->bounded(2) == 20) {//暂时不写
+                GemNumber += 5;
+            } else {
+                generateSimpleMatch();
+            }
+            SpecialComplete = true;
+        } 
+        generateSimpleMatch();
+        MemberNum --;
+    }
+
+    QString tempGemStateStr;
+    for (int i = 0; i < 8; ++i) {
+        tempGemStateStr += QString("Row %1: %2\n").arg(i).arg(TempGemState[i]);
+    }
+    debugText->setText(tempGemStateStr); // 刷新显示
+    for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
-            int type = QRandomGenerator::global()->bounded(difficulty);
-
-            // 避免在初始化时创建三连
-            // 检查左边两个
-            if (j >= 2 && gemstoneContainer[i][j-1] && gemstoneContainer[i][j-2]) {
-                int type1 = gemstoneContainer[i][j-1]->getType();
-                int type2 = gemstoneContainer[i][j-2]->getType();
-                if (type1 == type2 && type == type1) {
-                    // 会形成三连，换一个类型
-                    type = (type + 1) % difficulty;
-                }
-            }
-
-            // 检查上边两个
-            if (i >= 2 && gemstoneContainer[i-1][j] && gemstoneContainer[i-2][j]) {
-                int type1 = gemstoneContainer[i-1][j]->getType();
-                int type2 = gemstoneContainer[i-2][j]->getType();
-                if (type1 == type2 && type == type1) {
-                    // 会形成三连，换一个类型
-                    type = (type + 1) % difficulty;
-                }
-            }
-
+            if(TempGemState[j][i] < '0' || TempGemState[j][i] > '9') continue;
+            int type = TempGemState[j][i] - '0';
             Gemstone* gem = new Gemstone(type, "default", rootEntity);
 
-            gem->transform()->setTranslation(getPosition(i, j));
+            gem->transform()->setTranslation(getPosition(7-i, j));
 
             // 连接点击信号
             connect(gem, &Gemstone::clicked, this, &PuzzleModeGameWidget::handleGemstoneClicked);
             connect(gem, &Gemstone::pickEvent, this, [this](const QString& info) { appendDebug(QString("Gemstone %1").arg(info)); });
 
-            gemstoneContainer[i][j] = gem;
+            gemstoneContainer[7-i][j] = gem;
         }
     }
-    appendDebug("created 8x8 gemstones with no initial matches");
+    appendDebug("created puzzle gemstones with no initial matches");
     
     // 重置选择状态
     selectedNum = 0;
     firstSelectedGemstone = nullptr;
     secondSelectedGemstone = nullptr;
-
+    drop();
+    while(!lastGemStateStack.empty()) lastGemStateStack.pop();
+    pushInLastStateQueue();
     // 重置定时器
     if (timer->isActive()) {
         timer->stop();
@@ -1044,7 +1184,8 @@ bool PuzzleModeGameWidget::areAdjacent(int row1, int col1, int row2, int col2) c
 
 // 执行交换
 void PuzzleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2) {
-    if (!gem1 || !gem2) return;
+    // gem1 不能为空，但 gem2 可以为空（nullptr表示空位）
+    if (!gem1) return;
 
     // 先在逻辑容器中交换
     gemstoneContainer[row1][col1] = gem2;
@@ -1052,69 +1193,149 @@ void PuzzleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
 
     // 播放交换动画
     QVector3D pos1 = gem1->transform()->translation();
-    QVector3D pos2 = gem2->transform()->translation();
+    QVector3D pos2 = getPosition(row2, col2);  // 目标位置
 
-    QParallelAnimationGroup* group = new QParallelAnimationGroup();
+    if (gem2) {
+        // 两个宝石交换
+        QParallelAnimationGroup* group = new QParallelAnimationGroup();
 
-    QPropertyAnimation* anim1 = new QPropertyAnimation(gem1->transform(), "translation");
-    anim1->setDuration(500);
-    anim1->setStartValue(pos1);
-    anim1->setEndValue(pos2);
+        QPropertyAnimation* anim1 = new QPropertyAnimation(gem1->transform(), "translation");
+        anim1->setDuration(500);
+        anim1->setStartValue(pos1);
+        anim1->setEndValue(pos2);
 
-    QPropertyAnimation* anim2 = new QPropertyAnimation(gem2->transform(), "translation");
-    anim2->setDuration(500);
-    anim2->setStartValue(pos2);
-    anim2->setEndValue(pos1);
+        QPropertyAnimation* anim2 = new QPropertyAnimation(gem2->transform(), "translation");
+        anim2->setDuration(500);
+        anim2->setStartValue(gem2->transform()->translation());
+        anim2->setEndValue(pos1);
 
-    group->addAnimation(anim1);
-    group->addAnimation(anim2);
+        group->addAnimation(anim1);
+        group->addAnimation(anim2);
 
-    connect(group, &QParallelAnimationGroup::finished, this, [this, gem1, gem2, row1, col1, row2, col2]() {
-        appendDebug("Swap animation finished, checking for matches");
+        connect(group, &QParallelAnimationGroup::finished, this, [this, gem1, gem2, row1, col1, row2, col2]() {
+            appendDebug("Swap animation finished, checking for matches");
 
-        // 检查是否有匹配
-        std::vector<std::pair<int, int>> matches = findMatches();
+            // 检查是否有匹配（解谜模式）
+            std::vector<std::pair<int, int>> matches = findMatches();
 
-        if (!matches.empty()) {
-            // 有匹配，触发消除
-            appendDebug(QString("Found matches after swap, starting elimination"));
-            eliminate();
-        } else {
-            // 没有匹配，交换回来
-            appendDebug("No matches found, swapping back");
+            if (!matches.empty()) {
+                // 有匹配，触发消除和下落（解谜模式：下落但不填充新宝石）
+                appendDebug(QString("Found matches after swap, starting elimination (puzzle mode)"));
+                canOpe = false;
+                
+                // 播放消除音效
+                comboCount++;
+                AudioManager::instance().playEliminateSound(comboCount);
+                
+                // 移除匹配的宝石
+                removeMatches(matches);
+                
+                // 等待消除动画完成后执行下落
+                QTimer::singleShot(600, this, [this]() {
+                    if (isFinishing) return;
+                    appendDebug("Starting drop after elimination");
+                    drop();  // 关键：调用下落函数
+                });
+            } else {
+                // 没有匹配，交换回来
+                appendDebug("No matches found, swapping back");
+                comboCount = 0;
 
-            // 在逻辑容器中交换回来
-            gemstoneContainer[row1][col1] = gem1;
-            gemstoneContainer[row2][col2] = gem2;
+                // 在逻辑容器中交换回来
+                gemstoneContainer[row1][col1] = gem1;
+                gemstoneContainer[row2][col2] = gem2;
 
-            // 播放交换回来的动画
-            QVector3D pos1 = gem1->transform()->translation();
-            QVector3D pos2 = gem2->transform()->translation();
+                // 播放交换回来的动画
+                QVector3D pos1 = gem1->transform()->translation();
+                QVector3D pos2 = gem2->transform()->translation();
 
-            QParallelAnimationGroup* swapBackGroup = new QParallelAnimationGroup();
+                QParallelAnimationGroup* swapBackGroup = new QParallelAnimationGroup();
 
-            QPropertyAnimation* backAnim1 = new QPropertyAnimation(gem1->transform(), "translation");
-            backAnim1->setDuration(500);
-            backAnim1->setStartValue(pos1);
-            backAnim1->setEndValue(pos2);
+                QPropertyAnimation* backAnim1 = new QPropertyAnimation(gem1->transform(), "translation");
+                backAnim1->setDuration(500);
+                backAnim1->setStartValue(pos1);
+                backAnim1->setEndValue(pos2);
 
-            QPropertyAnimation* backAnim2 = new QPropertyAnimation(gem2->transform(), "translation");
-            backAnim2->setDuration(500);
-            backAnim2->setStartValue(pos2);
-            backAnim2->setEndValue(pos1);
+                QPropertyAnimation* backAnim2 = new QPropertyAnimation(gem2->transform(), "translation");
+                backAnim2->setDuration(500);
+                backAnim2->setStartValue(pos2);
+                backAnim2->setEndValue(pos1);
 
-            swapBackGroup->addAnimation(backAnim1);
-            swapBackGroup->addAnimation(backAnim2);
+                swapBackGroup->addAnimation(backAnim1);
+                swapBackGroup->addAnimation(backAnim2);
 
-            connect(swapBackGroup, &QParallelAnimationGroup::finished, this, [this]() {
-                canOpe = true; // 恢复操作
-            });
+                connect(swapBackGroup, &QParallelAnimationGroup::finished, this, [this]() {
+                    canOpe = true;
+                    resetInactivityTimer();
+                    appendDebug("Swap back complete");
+                });
 
-            swapBackGroup->start(QAbstractAnimation::DeleteWhenStopped);
-        }
-    });
+                swapBackGroup->start(QAbstractAnimation::DeleteWhenStopped);
+            }
+        });
 
-    group->start(QAbstractAnimation::DeleteWhenStopped);
+        group->start(QAbstractAnimation::DeleteWhenStopped);
+    } else {
+        // 宝石移动到空位（也需要检查匹配！）
+        QPropertyAnimation* anim = new QPropertyAnimation(gem1->transform(), "translation");
+        anim->setDuration(500);
+        anim->setStartValue(pos1);
+        anim->setEndValue(pos2);
+
+        connect(anim, &QPropertyAnimation::finished, this, [this, gem1, row1, col1, row2, col2]() {
+            appendDebug("Move to empty space complete, checking for matches");
+
+            // 检查是否有匹配（关键修改：空位交换后也检查匹配）
+            std::vector<std::pair<int, int>> matches = findMatches();
+
+            if (!matches.empty()) {
+                // 有匹配，触发消除和下落
+                appendDebug(QString("Found matches after moving to empty space, starting elimination"));
+                canOpe = false;
+                
+                // 播放消除音效
+                comboCount++;
+                AudioManager::instance().playEliminateSound(comboCount);
+                
+                // 移除匹配的宝石
+                removeMatches(matches);
+                
+                // 等待消除动画完成后执行下落
+                QTimer::singleShot(600, this, [this]() {
+                    if (isFinishing) return;
+                    appendDebug("Starting drop after elimination (from empty space move)");
+                    drop();
+                });
+            } else {
+                // 没有匹配，移回原位
+                appendDebug("No matches found after moving to empty space, moving back");
+                comboCount = 0;
+
+                // 在逻辑容器中移回原位
+                gemstoneContainer[row1][col1] = gem1;
+                gemstoneContainer[row2][col2] = nullptr;
+
+                // 播放移回动画
+                QVector3D currentPos = gem1->transform()->translation();
+                QVector3D originalPos = getPosition(row1, col1);
+
+                QPropertyAnimation* moveBackAnim = new QPropertyAnimation(gem1->transform(), "translation");
+                moveBackAnim->setDuration(500);
+                moveBackAnim->setStartValue(currentPos);
+                moveBackAnim->setEndValue(originalPos);
+
+                connect(moveBackAnim, &QPropertyAnimation::finished, this, [this]() {
+                    canOpe = true;
+                    resetInactivityTimer();
+                    appendDebug("Move back to original position complete");
+                });
+
+                moveBackAnim->start(QAbstractAnimation::DeleteWhenStopped);
+            }
+        });
+
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+    }
 
     // 清除选择状态
     firstSelectedGemstone = nullptr;
@@ -1123,8 +1344,11 @@ void PuzzleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
     selectionRing1->setVisible(false);
     selectionRing2->setVisible(false);
 
-    appendDebug(QString("Swapped gems at (%1,%2) and (%3,%4)").arg(row1).arg(col1).arg(row2).arg(col2));
+    appendDebug(QString("Swapped: (%1,%2) with (%3,%4)")
+        .arg(row1).arg(col1).arg(row2).arg(col2));
 }
+
+
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
 void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos) {
@@ -1152,40 +1376,59 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos) {
         .arg(normalizedX, 0, 'f', 2).arg(normalizedY, 0, 'f', 2)
         .arg(worldX, 0, 'f', 2).arg(worldY, 0, 'f', 2));
 
-    // 找到最接近这个位置的宝石
+    // 找到最接近这个位置的格子（不管是否有宝石）
     Gemstone* closestGem = nullptr;
     float minDistance = std::numeric_limits<float>::max();
     int closestRow = -1, closestCol = -1;
 
     for (int i = 0; i < gemstoneContainer.size(); ++i) {
         for (int j = 0; j < gemstoneContainer[i].size(); ++j) {
-            Gemstone* gem = gemstoneContainer[i][j];
-            if (gem) {
-                QVector3D gemPos = gem->transform()->translation();
-                float dx = gemPos.x() - worldX;
-                float dy = gemPos.y() - worldY;
-                float distance = std::sqrt(dx * dx + dy * dy);
+            // 计算格子中心位置
+            QVector3D gridPos = getPosition(i, j);
+            float dx = gridPos.x() - worldX;
+            float dy = gridPos.y() - worldY;
+            float distance = std::sqrt(dx * dx + dy * dy);
 
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestGem = gem;
-                    closestRow = i;
-                    closestCol = j;
-                }
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestGem = gemstoneContainer[i][j];  // 可能是 nullptr（空位）
+                closestRow = i;
+                closestCol = j;
             }
         }
     }
 
-    // 如果找到了足够近的宝石（距离 < 0.8，稍微放宽一点）
-    if (closestGem && minDistance < 0.8f) {
-        appendDebug(QString("Found gemstone at (%1,%2), distance=%3")
-            .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
-        handleGemstoneClicked(closestGem);
+    // 如果找到了足够近的格子（距离 < 0.8）
+    if (minDistance < 0.8f) {
+        if (closestGem) {
+            // 点击的是宝石
+            appendDebug(QString("Found gemstone at (%1,%2), distance=%3")
+                .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
+            handleGemstoneClicked(closestGem);
+        } else {
+            // 点击的是空位（nullptr）
+            appendDebug(QString("Clicked empty space at (%1,%2), distance=%3")
+                .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
+            
+            // 如果已经选择了一个宝石，尝试与空位交换
+            if (selectedNum == 1 && firstSelectedGemstone) {
+                int row1 = -1, col1 = -1;
+                if (findGemstonePosition(firstSelectedGemstone, row1, col1)) {
+                    if (areAdjacent(row1, col1, closestRow, closestCol)) {
+                        appendDebug("Selected gem is adjacent to empty space, performing swap!");
+                        performSwap(firstSelectedGemstone, nullptr, row1, col1, closestRow, closestCol);
+                    } else {
+                        appendDebug("Selected gem is NOT adjacent to empty space");
+                    }
+                }
+            }
+        }
     } else {
-        appendDebug(QString("No gemstone found near click (min distance=%1)")
+        appendDebug(QString("No grid found near click (min distance=%1)")
             .arg(minDistance, 0, 'f', 2));
     }
 }
+
 // 重置无操作计时器————————————————————————————————————————————————————————————————————————————————————————————————————————————
 void PuzzleModeGameWidget::resetInactivityTimer() {
     clearHighlights();
@@ -1352,15 +1595,13 @@ int PuzzleModeGameWidget::getDifficulty() const {
     return difficulty;
 }
 
-void PuzzleModeGameWidget::backToLastGemstoneState(std::vector<std::vector<Gemstone*>> presentGem, std::string LastState) {
-    if (isFinishing) return;
-    if (presentGem.empty()) return;
+void PuzzleModeGameWidget::backToLastGemstoneState(std::string LastState) {
+    if (isFinishing) return ;
 
     appendDebug("Reverting to last gemstone state");
 
-    std::vector<std::vector<Gemstone*>> lastGemstoneState;
     // 清除当前宝石
-    for (auto& row : presentGem) {
+    for (auto& row : gemstoneContainer) {
         for (auto* gem : row) {
             if (gem) {
                 gem->setParent((Qt3DCore::QNode*)nullptr); // 从场景中分离
@@ -1368,12 +1609,17 @@ void PuzzleModeGameWidget::backToLastGemstoneState(std::vector<std::vector<Gemst
             }
         }
     }
-    presentGem.clear();
+    gemstoneContainer.clear();
 
-    lastGemstoneState.resize(8);
+    GemNumber = 0;
+    gemstoneContainer.resize(8);
     for (int i = 0; i < 8; ++i) {
-        lastGemstoneState[i].resize(8);
+        gemstoneContainer[i].resize(8);
         for (int j = 0; j < 8; ++j) {
+            if(LastState[i * 8 + j] == '-') {
+                continue;
+            }
+            GemNumber ++;
             int type = LastState[i * 8 + j] - '0'; // 假设LastState是一个长度为64的字符串，每个字符表示一个宝石类型
 
             Gemstone* gem = new Gemstone(type, "default", rootEntity);
@@ -1384,17 +1630,43 @@ void PuzzleModeGameWidget::backToLastGemstoneState(std::vector<std::vector<Gemst
             connect(gem, &Gemstone::clicked, this, &PuzzleModeGameWidget::handleGemstoneClicked);
             connect(gem, &Gemstone::pickEvent, this, [this](const QString& info) { appendDebug(QString("Gemstone %1").arg(info)); });
 
-            lastGemstoneState[i][j] = gem;
+            gemstoneContainer[i][j] = gem;
         }
     }
-    // 恢复上一个状态
-    presentGem = lastGemstoneState;
 
     // 重新设置宝石的位置
-    syncGemstonePositions();
-
-    // 清除保存的状态
-    lastGemstoneState.clear();
+    // syncGemstonePositions();
 
     appendDebug("Reverted to last gemstone state");
+
+    return ;
+}
+
+void PuzzleModeGameWidget::checkLastGemState() {
+    if (isFinishing) return;
+    appendDebug("Checking for last gemstone state to revert to");
+    if (lastGemStateStack.size() == 1) {
+        appendDebug("No last gemstone state found");
+        return;
+    }
+    lastGemStateStack.pop();
+    backToLastGemstoneState(lastGemStateStack.top());
+    return ;
+}
+
+void PuzzleModeGameWidget::pushInLastStateQueue() {
+    std::string GemState = "";
+
+    for(int i=0; i<8; i++){
+        for(int j=0; j<8; j++){
+            if(gemstoneContainer[i][j] != nullptr) {
+                GemState += std::to_string(gemstoneContainer[i][j]->getType());
+            }
+            else {
+                GemState += "-";
+            }
+        }
+    }
+    lastGemStateStack.push(GemState);
+    return ;
 }
