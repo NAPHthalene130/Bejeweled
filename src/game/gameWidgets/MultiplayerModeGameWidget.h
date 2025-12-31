@@ -88,7 +88,7 @@ public:
     const std::vector<std::vector<Gemstone*>>& getPlayer1Table() const { return player1Table; }
     const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
 
-    void accept4(std::string id, const std::vector<std::vector<int>>& table);
+    void accept4(std::string id, const std::vector<std::vector<int>>& table, int score);
 
     void setStop(bool stop);
 

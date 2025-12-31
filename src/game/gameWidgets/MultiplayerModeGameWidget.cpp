@@ -1780,11 +1780,11 @@ void MultiplayerModeGameWidget::handleSyncMessage(const GameNetData& data) {
         std::vector<std::vector<int>> board = data.getMyBoard();
         appendDebug(QString("Player %1 synced board").arg(QString::fromStdString(playerId)));
 
+        int score = data.getMyScore();
         // Update other player's board using 3D window
-        accept4(playerId, board);
+        accept4(playerId, board, score);
         
         // Update score
-        int score = data.getMyScore();
         if (score >= 0) {
             updateOtherPlayerScore(playerId, score);
         }
@@ -2043,7 +2043,7 @@ void MultiplayerModeGameWidget::startGame() {
  * @Author: NAPH130
  * @Function: 从服务端接收type == 4后执行方法
  */
-void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::vector<int>>& table) {
+void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::vector<int>>& table, int score) {
     // QDialog dialog(this);
     // dialog.setWindowTitle(QString("棋盘同步, ID: %1").arg(QString::fromStdString(id)));
     // dialog.setModal(true);
@@ -2053,6 +2053,12 @@ void MultiplayerModeGameWidget::accept4(std::string id, const std::vector<std::v
         return;
     }
     int num = idToNum[id];
+    // 更新玩家分数
+    if (num == 1) {
+        player1ScoreLabel->setText(QString("玩家 %1: %2分").arg(QString::fromStdString(id)).arg(score));
+    } else if (num == 2) {
+        player2ScoreLabel->setText(QString("玩家 %1: %2分").arg(QString::fromStdString(id)).arg(score));
+    }
     appendDebug(QString("accept4: Syncing board for player %1 (Slot %2)").arg(QString::fromStdString(id)).arg(num));
     refreshTabel(num, table);
 }

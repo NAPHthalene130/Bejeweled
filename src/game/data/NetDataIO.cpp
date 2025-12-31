@@ -223,10 +223,10 @@ void NetDataIO::readerLoop() {
                             // Sync
                             std::string id = receiveData.getID();
                             std::vector<std::vector<int>> board = receiveData.getMyBoard();
-                            
-                            QMetaObject::invokeMethod(gameWindow, [gameWindow = this->gameWindow, id, board]() {
+                            int score = receiveData.getMyScore();
+                            QMetaObject::invokeMethod(gameWindow, [gameWindow = this->gameWindow, id, board, score]() {
                                 if (gameWindow->getMultiplayerModeGameWidget()) {
-                                    gameWindow->getMultiplayerModeGameWidget()->accept4(id, board);
+                                    gameWindow->getMultiplayerModeGameWidget()->accept4(id, board, score);
                                 }
                             }, Qt::QueuedConnection);
                         } else if (type == 14) {
