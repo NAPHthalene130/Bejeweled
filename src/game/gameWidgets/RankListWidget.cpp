@@ -212,9 +212,9 @@ void RankListWidget::setupUI() {
     rotateModeTable = new QTableWidget(this);
     multiplayerTable = new QTableWidget(this);
     
-    setupTab(normalModeTable);
-    setupTab(rotateModeTable);
-    setupTab(multiplayerTable);
+    setupTab(normalModeTable, {"排名", "时间(秒)"});
+    setupTab(rotateModeTable, {"排名", "时间(秒)"});
+    setupTab(multiplayerTable, {"排名", "分数"});
     
     tabWidget->addTab(normalModeTable, "🎮 普通模式");
     tabWidget->addTab(rotateModeTable, "🌀 旋风模式");
@@ -232,9 +232,9 @@ void RankListWidget::setupUI() {
     mainLayout->addWidget(infoLabel);
 }
 
-void RankListWidget::setupTab(QTableWidget* table) {
-    table->setColumnCount(2);
-    table->setHorizontalHeaderLabels({"排名", "分数"});
+void RankListWidget::setupTab(QTableWidget* table, const QStringList& headers) {
+    table->setColumnCount(headers.size());
+    table->setHorizontalHeaderLabels(headers);
     
     table->setRowCount(10);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);

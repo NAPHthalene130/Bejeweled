@@ -53,7 +53,7 @@ private slots:
 
 private:
     void setupUI();
-    void setupTab(QTableWidget* table);
+    void setupTab(QTableWidget* table, const QStringList& headers);
     void updateTable(QTableWidget* table, const std::vector<RankRecord>& records);
     void sortAndKeepTop10(std::vector<RankRecord>& records);
     void applyGoldenGlowEffect(QTableWidgetItem* item, int rank);

@@ -15,6 +15,9 @@ class QResizeEvent;
 class FinalWidget : public QWidget {
 public:
     explicit FinalWidget(QWidget* parent = nullptr, GameWindow* gameWindow = nullptr);
+    void setTitleStr(std::string str);
+    void setContentStr(std::string str);
+    // Deprecated, use setContentStr instead
     void setGradeContent(std::string str);
 
 protected:

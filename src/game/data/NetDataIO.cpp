@@ -9,11 +9,12 @@
 #include "../../auth/components/AuthNoticeDialog.h"
 #include "../gameWidgets/MultiGameWaitWidget.h"
 #include "../gameWidgets/MultiplayerModeGameWidget.h"
+#include "../gameWidgets/FinalWidget.h"
 
 using boost::asio::ip::tcp;
 
 NetDataIO::NetDataIO(std::string ip, std::string port, GameWindow* gameWindow) 
-    : ip(ip), port(port), gameWindow(gameWindow), isRunning(true), socket(io_context) {
+    : ip(ip), port(port), gameWindow(gameWindow), isRunning(true), expectDisconnect(false), socket(io_context) {
     
     log("INFO", "NetDataIO", "Connecting to " + ip + ":" + port);
     try {
@@ -55,6 +56,7 @@ void NetDataIO::sendData(GameNetData gameData) {
     {
         std::lock_guard<std::mutex> lock(queueMutex);
         sendQueue.push(data);
+
     }
     queueCv.notify_one();
 }
@@ -221,10 +223,10 @@ void NetDataIO::readerLoop() {
                             // Sync
                             std::string id = receiveData.getID();
                             std::vector<std::vector<int>> board = receiveData.getMyBoard();
-                            
-                            QMetaObject::invokeMethod(gameWindow, [gameWindow = this->gameWindow, id, board]() {
+                            int score = receiveData.getMyScore();
+                            QMetaObject::invokeMethod(gameWindow, [gameWindow = this->gameWindow, id, board, score]() {
                                 if (gameWindow->getMultiplayerModeGameWidget()) {
-                                    gameWindow->getMultiplayerModeGameWidget()->accept4(id, board);
+                                    gameWindow->getMultiplayerModeGameWidget()->accept4(id, board, score);
                                 }
                             }, Qt::QueuedConnection);
                         } else if (type == 14) {
@@ -256,6 +258,34 @@ void NetDataIO::readerLoop() {
                             }, Qt::QueuedConnection);
                         } else if (type == 12) {
                             //TODO
+                            expectDisconnect = true;
+                            std::string titleStr = "游戏结束";
+                            std::string p1Id = receiveData.getNumToId()[0];
+                            std::string p2Id = receiveData.getNumToId()[1];
+                            std::string p3Id = receiveData.getNumToId()[2];
+                            int p1Score = receiveData.getPlayer1Score();
+                            int p2Score = receiveData.getPlayer2Score();
+                            int p3Score = receiveData.getPlayer3Score();
+                            
+                            QMetaObject::invokeMethod(gameWindow, [gameWindow = this->gameWindow, titleStr, p1Id, p2Id, p3Id, p1Score, p2Score, p3Score]() {
+                                if (gameWindow->getMultiplayerModeGameWidget()) {
+                                    gameWindow->getMultiplayerModeGameWidget()->setStop(true);
+                                }
+                                
+                                std::vector<std::pair<int,std::string>> scores = {{p1Score,p1Id},{p2Score,p2Id},{p3Score,p3Id}};
+                                std::sort(scores.begin(), scores.end(), [](const auto& a, const auto& b) { return a.first > b.first; });
+                                std::string content = titleStr + "\n";
+                                for (const auto& [score, id] : scores) {
+                                    content += id + "：" + std::to_string(score) + "分\n";
+                                }
+                                auto* finalWidget = gameWindow->getFinalWidget();
+                                if (finalWidget) {
+                                    finalWidget->setContentStr(content);
+                                    finalWidget->setTitleStr(titleStr);
+                                    gameWindow->switchWidget(finalWidget);
+                                }
+                            }, Qt::QueuedConnection);
+
                         } else if (type == 13) {
                             //TODO
                         }
@@ -283,7 +313,7 @@ void NetDataIO::readerLoop() {
     }
     
     // Connection lost or closed
-    if (isRunning && gameWindow) {
+    if (isRunning && gameWindow && !expectDisconnect) {
         // Switch to MenuWidget on the main thread
         QMetaObject::invokeMethod(gameWindow, [this]() {
             if (gameWindow->getMenuWidget()) {

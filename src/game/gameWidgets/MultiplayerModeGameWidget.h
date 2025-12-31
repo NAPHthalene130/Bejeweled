@@ -89,7 +89,10 @@ public:
     const std::vector<std::vector<Gemstone*>>& getPlayer1Table() const { return player1Table; }
     const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
 
-    void accept4(std::string id, const std::vector<std::vector<int>>& table);
+    void accept4(std::string id, const std::vector<std::vector<int>>& table, int score);
+
+    void setStop(bool stop);
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -97,6 +100,7 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
+    bool isStop = false;
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
     void handleManualClick(const QPoint& screenPos);
@@ -155,6 +159,7 @@ private:
     std::map<int, std::string> numToId;  // Player number -> Player ID mapping
     bool allPlayersReady = false;
     QTimer* syncTimer;  // Timer for periodic board synchronization
+
 
     class GameTimeKeeper {
     public:
@@ -228,7 +233,7 @@ private:
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
     void sendCoordinates(std::vector<std::pair<int, int>> coordinates);
-    
+    void sendNowBoard();
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H

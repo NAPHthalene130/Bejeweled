@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <vector>
+#include <stack>
 #include <string>
 #include <QTimer>
 #include <QString>
@@ -70,7 +71,7 @@ public:
     void setDifficulty(int diff);
     int getDifficulty() const;
 
-    void backToLastGemstoneState(std::vector<std::vector<Gemstone*>> PresentGem , std::string LastState);
+    void backToLastGemstoneState(std::string LastState);
     void checkLastGemState();  // 新增
 protected:
     void mousePressEvent(QMouseEvent* event) override;
@@ -92,7 +93,12 @@ private:
     void updateScoreBoard();
     void updateTimeBoard();
     void triggerFinishIfNeeded();
-    void finishToFinalWidget();
+    void finishToNextLevel();
+
+    void pushInLastStateQueue();
+    void generateSimpleMatch();
+    bool checkConflict(int x,int y,int type);
+    void changeIndex(int a,int b,int c,int d,int e,int f);
 
     // 辅助函数：找到宝石在容器中的位置
     bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;
@@ -121,8 +127,14 @@ private:
     int mode; // 1: Normal, 2: Rotate
     int comboCount = 0;
     
-    int difficulty = 4;
+    int difficulty = 8;
     int GemNumber = 0;
+    int Level = 0;
+    std::string TempGemState[8];
+    int lenthT[8];
+    std::stack<std::string> lastGemStateStack;
+    bool ConstChange = 0;
+    int midX , midY;
 
     GameWindow* gameWindow;
 
