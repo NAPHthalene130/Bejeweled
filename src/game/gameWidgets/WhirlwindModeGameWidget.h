@@ -99,6 +99,16 @@ private:
     // 执行2x2顺时针旋转
     void performRotation(int topLeftRow, int topLeftCol);
 
+    // 将匹配的宝石分组（识别连续的4连或更多）
+    std::vector<std::vector<std::pair<int, int>>> groupMatches(
+        const std::vector<std::pair<int, int>>& matches);
+    
+    // 消除以特殊宝石为中心的3×3区域
+    void remove3x3Area(int centerRow, int centerCol);
+    
+    // 检查匹配组中是否包含特殊宝石
+    bool hasSpecialGem(const std::vector<std::pair<int, int>>& group) const;
+
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;
     std::vector<std::vector<Gemstone*>> gemstoneContainer;

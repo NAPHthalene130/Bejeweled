@@ -34,6 +34,9 @@
 #include <iostream>
 #include <algorithm>
 #include <QWidget>
+#include <queue>
+#include <set>
+
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -496,18 +499,67 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
+    // 将匹配分组
+    auto groups = groupMatches(matches);
+    
     int removedCount = 0;
-    for (const auto& pos : matches) {
-        int row = pos.first;
-        int col = pos.second;
-        Gemstone* gem = gemstoneContainer[row][col];
-
-        if (gem) {
-            removedCount += 1;
-            // 播放消除动画
-            eliminateAnime(gem);
-            // 从容器中移除
-            gemstoneContainer[row][col] = nullptr;
+    
+    for (const auto& group : groups) {
+        // 检查是否包含特殊宝石
+        bool hasSpecial = hasSpecialGem(group);
+        
+        if (hasSpecial) {
+            // 找到特殊宝石的位置
+            for (const auto& pos : group) {
+                Gemstone* gem = gemstoneContainer[pos.first][pos.second];
+                if (gem && gem->isSpecial()) {
+                    // 消除3×3区域
+                    remove3x3Area(pos.first, pos.second);
+                    break;  // 只处理第一个特殊宝石
+                }
+            }
+        } else if (group.size() == 4) {
+            // 4连或更多：保留第2颗宝石作为特殊宝石
+            appendDebug(QString("Found %1-match, creating special gem").arg(group.size()));
+            
+            // 对组内位置排序（按行优先，然后列）
+            std::vector<std::pair<int, int>> sortedGroup = group;
+            std::sort(sortedGroup.begin(), sortedGroup.end());
+            
+            // 保留第2颗（索引1）作为特殊宝石
+            std::pair<int, int> specialPos = sortedGroup[1];
+            
+            for (const auto& pos : sortedGroup) {
+                int row = pos.first;
+                int col = pos.second;
+                Gemstone* gem = gemstoneContainer[row][col];
+                
+                if (gem) {
+                    if (pos == specialPos) {
+                        // 保留并设为特殊宝石
+                        gem->setSpecial(true);
+                        appendDebug(QString("Special gem created at (%1,%2)").arg(row).arg(col));
+                    } else {
+                        // 移除其他宝石
+                        removedCount++;
+                        eliminateAnime(gem);
+                        gemstoneContainer[row][col] = nullptr;
+                    }
+                }
+            }
+        } else {
+            // 普通3连：正常消除
+            for (const auto& pos : group) {
+                int row = pos.first;
+                int col = pos.second;
+                Gemstone* gem = gemstoneContainer[row][col];
+                
+                if (gem) {
+                    removedCount++;
+                    eliminateAnime(gem);
+                    gemstoneContainer[row][col] = nullptr;
+                }
+            }
         }
     }
 
@@ -515,11 +567,13 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
         GemNumber -= removedCount;
         appendDebug(QString("Still %1 Gems there.").arg(GemNumber));
         gameScore += removedCount * 10;
+        GemNumber -= removedCount;
         updateScoreBoard();
         triggerFinishIfNeeded();
     }
 
 }
+
 
 void PuzzleModeGameWidget::eliminate() {
     if (isFinishing) return;
@@ -1683,6 +1737,85 @@ void PuzzleModeGameWidget::checkLastGemState() {
     return ;
 }
 
+// 将匹配的宝石分组（识别连续的匹配）
+std::vector<std::vector<std::pair<int, int>>> PuzzleModeGameWidget::groupMatches(
+    const std::vector<std::pair<int, int>>& matches) {
+    
+    std::vector<std::vector<std::pair<int, int>>> groups;
+    std::set<std::pair<int, int>> processed;
+    
+    for (const auto& pos : matches) {
+        if (processed.count(pos)) continue;
+        
+        std::vector<std::pair<int, int>> group;
+        std::queue<std::pair<int, int>> queue;
+        queue.push(pos);
+        processed.insert(pos);
+        
+        while (!queue.empty()) {
+            auto current = queue.front();
+            queue.pop();
+            group.push_back(current);
+            
+            // 检查4个方向的相邻宝石
+            int dx[] = {-1, 1, 0, 0};
+            int dy[] = {0, 0, -1, 1};
+            
+            for (int i = 0; i < 4; i++) {
+                int nr = current.first + dx[i];
+                int nc = current.second + dy[i];
+                std::pair<int, int> neighbor = {nr, nc};
+                
+                if (std::find(matches.begin(), matches.end(), neighbor) != matches.end() &&
+                    !processed.count(neighbor)) {
+                    processed.insert(neighbor);
+                    queue.push(neighbor);
+                }
+            }
+        }
+        
+        groups.push_back(group);
+    }
+    
+    return groups;
+}
+
+// 消除以特殊宝石为中心的3×3区域
+void PuzzleModeGameWidget::remove3x3Area(int centerRow, int centerCol) {
+    appendDebug(QString("Special gem exploding at (%1,%2) - removing 3x3 area")
+        .arg(centerRow).arg(centerCol));
+    
+    int removed = 0;
+    for (int i = centerRow - 1; i <= centerRow + 1; i++) {
+        for (int j = centerCol - 1; j <= centerCol + 1; j++) {
+            if (i >= 0 && i < 8 && j >= 0 && j < 8) {
+                Gemstone* gem = gemstoneContainer[i][j];
+                if (gem) {
+                    removed++;
+                    eliminateAnime(gem);
+                    gemstoneContainer[i][j] = nullptr;
+                }
+            }
+        }
+    }
+    
+    if (removed > 0) {
+        gameScore += removed * 15;  // 特殊宝石消除给更多分数
+        updateScoreBoard();
+        appendDebug(QString("Special gem removed %1 gems in 3x3 area").arg(removed));
+    }
+}
+
+// 检查匹配组中是否包含特殊宝石
+bool PuzzleModeGameWidget::hasSpecialGem(const std::vector<std::pair<int, int>>& group) const {
+    for (const auto& pos : group) {
+        Gemstone* gem = gemstoneContainer[pos.first][pos.second];
+        if (gem && gem->isSpecial()) {
+            return true;
+        }
+    }
+    return false;
+}
 void PuzzleModeGameWidget::pushInLastStateQueue() {
     std::string GemState = "";
 
