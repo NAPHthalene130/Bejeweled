@@ -298,7 +298,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     centerLayout->addStretch(1);
     centerLayout->addWidget(backToMenuButton, 0, Qt::AlignBottom | Qt::AlignHCenter);
 
-    mainLayout->addStretch(1);
+    // mainLayout->addStretch(1); // 移除多余的stretch，让左侧3D窗口占满剩余空间
     
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(450); 
@@ -381,7 +381,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     debugTimer = new QTimer(this);
 
     setLayout(mainLayout);
-    mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
+    // mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter); // 移除重复添加
     container3d->installEventFilter(this);
     game3dWindow->installEventFilter(this); // 关键：在3D窗口上安装事件过滤器
 
