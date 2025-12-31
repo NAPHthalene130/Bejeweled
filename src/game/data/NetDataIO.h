@@ -32,6 +32,7 @@ private:
     std::condition_variable queueCv;
     
     std::atomic<bool> isRunning;
+    std::atomic<bool> expectDisconnect;
     
     boost::asio::io_context io_context;
     boost::asio::ip::tcp::socket socket;

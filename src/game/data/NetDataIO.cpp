@@ -14,7 +14,7 @@
 using boost::asio::ip::tcp;
 
 NetDataIO::NetDataIO(std::string ip, std::string port, GameWindow* gameWindow) 
-    : ip(ip), port(port), gameWindow(gameWindow), isRunning(true), socket(io_context) {
+    : ip(ip), port(port), gameWindow(gameWindow), isRunning(true), expectDisconnect(false), socket(io_context) {
     
     log("INFO", "NetDataIO", "Connecting to " + ip + ":" + port);
     try {
@@ -258,6 +258,7 @@ void NetDataIO::readerLoop() {
                             }, Qt::QueuedConnection);
                         } else if (type == 12) {
                             //TODO
+                            expectDisconnect = true;
                             std::string titleStr = "游戏结束";
                             std::string p1Id = receiveData.getNumToId()[0];
                             std::string p2Id = receiveData.getNumToId()[1];
@@ -312,7 +313,7 @@ void NetDataIO::readerLoop() {
     }
     
     // Connection lost or closed
-    if (isRunning && gameWindow) {
+    if (isRunning && gameWindow && !expectDisconnect) {
         // Switch to MenuWidget on the main thread
         QMetaObject::invokeMethod(gameWindow, [this]() {
             if (gameWindow->getMenuWidget()) {
