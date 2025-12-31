@@ -412,16 +412,6 @@ void MultiplayerModeGameWidget::setStop(bool stop) {
     }
 }
 
-void MultiplayerModeGameWidget::setStop(bool stop) {
-    isStop = stop;
-    if (isStop) {
-        if (timer && timer->isActive()) timer->stop();
-        gameTimeKeeper.pause();
-        if (inactivityTimer) inactivityTimer->stop();
-        if (syncTimer && syncTimer->isActive()) syncTimer->stop();
-        canOpe = false; // Disable operation
-    }
-}
 
 void MultiplayerModeGameWidget::GameTimeKeeper::reset() {
     accumulatedMs = 0;
