@@ -15,6 +15,7 @@
 #include <Qt3DInput/QInputAspect>
 #include <map>
 
+
 class QTextEdit;
 class QLabel;
 class QPushButton;
@@ -118,6 +119,15 @@ private:
     bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;
     bool areAdjacent(int row1, int col1, int row2, int col2) const;
     void performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2);
+    // 将匹配的宝石分组（识别连续的4连或更多）
+    std::vector<std::vector<std::pair<int, int>>> groupMatches(
+        const std::vector<std::pair<int, int>>& matches);
+    
+    // 消除以特殊宝石为中心的3×3区域
+    void remove3x3Area(int centerRow, int centerCol);
+    
+    // 检查匹配组中是否包含特殊宝石
+    bool hasSpecialGem(const std::vector<std::pair<int, int>>& group) const;
 
     // Network private methods
     void handleSwapMessage(const GameNetData& data);

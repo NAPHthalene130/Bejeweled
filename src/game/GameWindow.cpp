@@ -174,7 +174,7 @@ void GameWindow::switchWidget(QWidget* widget)
     } else if (widget == rankListWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.ogg"));
     } else if (widget == singleModeGameWidget || widget == whirlwindModeGameWidget || widget == multiplayerModeGameWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.mp3"));
     }
     
     if (!bgmPath.isEmpty()) {
