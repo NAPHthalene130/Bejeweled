@@ -191,15 +191,11 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
     container3d->setMouseTracking(true);
     container3d->setAttribute(Qt::WA_Hover, true);
 
-    // 创建左侧区域（包含进度条和3D窗口）
-    QWidget* leftArea = new QWidget(this);
-    QVBoxLayout* leftLayout = new QVBoxLayout(leftArea);
-    leftLayout->setContentsMargins(0, 0, 0, 0);
-    leftLayout->setSpacing(15);
-
     // 创建时间追逐进度条
-    noEliminationProgressBar = new QProgressBar(leftArea);
-    noEliminationProgressBar->setFixedSize(960, 30);
+    noEliminationProgressBar = new QProgressBar(this);
+    noEliminationProgressBar->setFixedHeight(30);
+    noEliminationProgressBar->setMinimumWidth(600);
+    noEliminationProgressBar->setMaximumWidth(960);
     noEliminationProgressBar->setMinimum(0);
     noEliminationProgressBar->setMaximum(noEliminationTimeout);
     noEliminationProgressBar->setValue(noEliminationTimeout);
@@ -225,15 +221,22 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
         }
     )");
 
+    // 创建左侧区域（包含进度条和3D窗口）
+    QWidget* leftArea = new QWidget(this);
+    QVBoxLayout* leftLayout = new QVBoxLayout(leftArea);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(15);
     leftLayout->addWidget(noEliminationProgressBar, 0, Qt::AlignTop | Qt::AlignHCenter);
-    leftLayout->addWidget(container3d, 0, Qt::AlignCenter);
+    leftLayout->addWidget(container3d, 1, Qt::AlignCenter);
+
+    // 限制container3d为正方形
+    container3d->setFixedSize(960, 960);
 
     // 布局 - 左侧居中
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(50, 30, 50, 30);
 
-    // mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    mainLayout->addWidget(container3d, 1); // 这里的1表示拉伸因子
+    mainLayout->addWidget(leftArea, 1); // 添加左侧区域到主布局
     mainLayout->addStretch(0);
 
     rightPanel = new QWidget(this);
@@ -1187,6 +1190,9 @@ void WhirlwindModeGameWidget::performRotation(int topLeftRow, int topLeftCol) {
         return;
     }
 
+    // 禁止操作，防止旋转过程中再次点击
+    canOpe = false;
+
     // 获取四个宝石
     Gemstone* topLeft = gemstoneContainer[topLeftRow][topLeftCol];
     Gemstone* topRight = gemstoneContainer[topLeftRow][topLeftCol+1];
@@ -1293,13 +1299,14 @@ void WhirlwindModeGameWidget::handleMouseMove(const QPoint& screenPos) {
         return;
     }
 
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    // 使用实际的container3d尺寸
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
     float fovRadians = 45.0f * M_PI / 180.0f;
     float cameraDistance = 20.0f;
     float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);
-    float halfWidth = halfHeight;
+    float halfWidth = halfHeight * (screenWidth / screenHeight);
 
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
     float normalizedY = -(screenPos.y() - screenHeight / 2.0f) / (screenHeight / 2.0f);
