@@ -133,7 +133,9 @@ public:
 
     Qt3DCore::QTransform* transform() const;
     bool isSpecial() const;
+    bool isHint() const;
     void setSpecial(bool special);
+    void setHint(bool hint);
     
     // 检查是否使用外部模型
     bool isUsingExternalModel() const;
@@ -163,6 +165,7 @@ private:
     int type;
     std::string style;
     bool special = false;
+    bool hint = false;
     bool m_usingExternalModel = false;
     bool canBeChosen = true;
 
@@ -184,6 +187,11 @@ private:
     std::vector<Qt3DCore::QEntity*> m_particleEntities;
     std::vector<QPropertyAnimation*> m_particleAnimations;
 
+    // Hint effects componets
+    Qt3DCore::QEntity* m_particlesRoot_hint = nullptr;
+    std::vector<Qt3DCore::QEntity*> m_particleEntities_hint;
+    std::vector<QPropertyAnimation*> m_particleAnimations_hint;
+
     // 金币图标
     Qt3DCore::QEntity* m_coinIndicator = nullptr;
     QPropertyAnimation* m_coinRotationAnimation = nullptr;
@@ -195,6 +203,8 @@ private:
     void setupMaterial();
     void updateSpecialEffects();
     void clearSpecialEffects();
+    void updateHintEffects();
+    void clearHintEffects();
 
     // 金币图标相关
     void setupCoinIndicator();
