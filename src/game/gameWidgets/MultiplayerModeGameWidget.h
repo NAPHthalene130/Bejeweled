@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QString>
 #include <QVBoxLayout>
 #include <Qt3DExtras/Qt3DWindow>
@@ -13,6 +14,7 @@
 #include <Qt3DRender/QPointLight>
 #include <Qt3DInput/QInputAspect>
 #include <map>
+
 
 class QTextEdit;
 class QLabel;
@@ -82,12 +84,15 @@ public:
     void refreshTabel(int num, const std::vector<std::vector<int>>& table);
 
     void accept10(std::map<std::string, int> idToNum);
-    
+    void accept2(std::string id, std::vector<std::pair<int, int>> coordinates, std::string score);
     // Public access to player tables for testing/debug if needed, though usually internal
     const std::vector<std::vector<Gemstone*>>& getPlayer1Table() const { return player1Table; }
     const std::vector<std::vector<Gemstone*>>& getPlayer2Table() const { return player2Table; }
 
-    void accept4(std::string id, const std::vector<std::vector<int>>& table);
+    void accept4(std::string id, const std::vector<std::vector<int>>& table, int score);
+
+    void setStop(bool stop);
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -95,6 +100,7 @@ protected:
     bool eventFilter(QObject* obj, QEvent* event) override;
 
 private:
+    bool isStop = false;
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
     void handleManualClick(const QPoint& screenPos);
@@ -113,6 +119,15 @@ private:
     bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;
     bool areAdjacent(int row1, int col1, int row2, int col2) const;
     void performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2);
+    // 将匹配的宝石分组（识别连续的4连或更多）
+    std::vector<std::vector<std::pair<int, int>>> groupMatches(
+        const std::vector<std::pair<int, int>>& matches);
+    
+    // 消除以特殊宝石为中心的3×3区域
+    void remove3x3Area(int centerRow, int centerCol);
+    
+    // 检查匹配组中是否包含特殊宝石
+    bool hasSpecialGem(const std::vector<std::pair<int, int>>& group) const;
 
     // Network private methods
     void handleSwapMessage(const GameNetData& data);
@@ -145,14 +160,18 @@ private:
     bool allPlayersReady = false;
     QTimer* syncTimer;  // Timer for periodic board synchronization
 
+
     class GameTimeKeeper {
     public:
         void reset();
-        void tick();
+        void start();
+        void pause();
         int totalSeconds() const;
         QString displayText() const;
     private:
-        int seconds = 0;
+        QElapsedTimer timer;
+        qint64 accumulatedMs = 0;
+        bool isRunning = false;
     };
 
     GameTimeKeeper gameTimeKeeper;
@@ -214,7 +233,7 @@ private:
 
     void setupSmall3DWindow(Qt3DExtras::Qt3DWindow* window, Qt3DCore::QEntity** root, Qt3DRender::QCamera** camera);
     void sendCoordinates(std::vector<std::pair<int, int>> coordinates);
-    void accept2(std::string id, std::vector<std::pair<int, int>> coordinates, std::string score);
+    void sendNowBoard();
 };
 
 #endif // MULTIPLAYER_MODE_GAME_WIDGET_H

@@ -36,6 +36,9 @@
 #include <cmath>
 #include <limits>
 #include <iostream>
+#include <queue>
+#include <set>
+
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -181,7 +184,9 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
 
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(960, 960);
+    // container3d->setFixedSize(960, 960); // 移除固定大小
+    container3d->setMinimumSize(600, 600); // 设置最小大小
+    container3d->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true);
     container3d->setAttribute(Qt::WA_Hover, true);
@@ -227,8 +232,9 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(50, 30, 50, 30);
 
-    mainLayout->addWidget(leftArea, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    mainLayout->addStretch(1);
+    // mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addWidget(container3d, 1); // 这里的1表示拉伸因子
+    mainLayout->addStretch(0);
 
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(420);
@@ -500,6 +506,9 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
+    // 将匹配分组
+    auto groups = groupMatches(matches);
+    
     int removedCount = 0;
     for (const auto& pos : matches) {
         int row = pos.first;
@@ -516,6 +525,63 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
 
             eliminateAnime(gem);
             gemstoneContainer[row][col] = nullptr;
+    
+    for (const auto& group : groups) {
+        // 检查是否包含特殊宝石
+        bool hasSpecial = hasSpecialGem(group);
+        
+        if (hasSpecial) {
+            // 找到特殊宝石的位置
+            for (const auto& pos : group) {
+                Gemstone* gem = gemstoneContainer[pos.first][pos.second];
+                if (gem && gem->isSpecial()) {
+                    // 消除3×3区域
+                    remove3x3Area(pos.first, pos.second);
+                    break;  // 只处理第一个特殊宝石
+                }
+            }
+        } else if (group.size() == 4) {
+            // 4连或更多：保留第2颗宝石作为特殊宝石
+            appendDebug(QString("Found %1-match, creating special gem").arg(group.size()));
+            
+            // 对组内位置排序（按行优先，然后列）
+            std::vector<std::pair<int, int>> sortedGroup = group;
+            std::sort(sortedGroup.begin(), sortedGroup.end());
+            
+            // 保留第2颗（索引1）作为特殊宝石
+            std::pair<int, int> specialPos = sortedGroup[1];
+            
+            for (const auto& pos : sortedGroup) {
+                int row = pos.first;
+                int col = pos.second;
+                Gemstone* gem = gemstoneContainer[row][col];
+                
+                if (gem) {
+                    if (pos == specialPos) {
+                        // 保留并设为特殊宝石
+                        gem->setSpecial(true);
+                        appendDebug(QString("Special gem created at (%1,%2)").arg(row).arg(col));
+                    } else {
+                        // 移除其他宝石
+                        removedCount++;
+                        eliminateAnime(gem);
+                        gemstoneContainer[row][col] = nullptr;
+                    }
+                }
+            }
+        } else {
+            // 普通3连：正常消除
+            for (const auto& pos : group) {
+                int row = pos.first;
+                int col = pos.second;
+                Gemstone* gem = gemstoneContainer[row][col];
+                
+                if (gem) {
+                    removedCount++;
+                    eliminateAnime(gem);
+                    gemstoneContainer[row][col] = nullptr;
+                }
+            }
         }
     }
 
@@ -988,6 +1054,9 @@ void WhirlwindModeGameWidget::setMode(int mode) {
 }
 
 void WhirlwindModeGameWidget::reset(int mode) {
+    if (gameWindow) {
+        difficulty = gameWindow->getDifficulty();
+    }
     this->mode = mode;
     this->canOpe = true;
     this->isFinishing = false;
@@ -1158,13 +1227,16 @@ void WhirlwindModeGameWidget::performRotation(int topLeftRow, int topLeftCol) {
 }
 
 void WhirlwindModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    // 获取当前容器大小
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
-    float fovRadians = 45.0f * M_PI / 180.0f;
+    // 相机参数：FOV=45度，distance=20
+    // 计算在z=0平面上的可视范围
+    float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
     float cameraDistance = 20.0f;
-    float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);
-    float halfWidth = halfHeight;
+    float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
+    float halfWidth = halfHeight * (screenWidth / screenHeight);  // 根据宽高比调整
 
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
     float normalizedY = -(screenPos.y() - screenHeight / 2.0f) / (screenHeight / 2.0f);
@@ -1473,3 +1545,84 @@ void WhirlwindModeGameWidget::collectCoinGem(Gemstone* gem) {
 int WhirlwindModeGameWidget::getEarnedCoins() const {
     return earnedCoins;
 }
+
+// 将匹配的宝石分组（识别连续的匹配）
+std::vector<std::vector<std::pair<int, int>>> WhirlwindModeGameWidget::groupMatches(
+    const std::vector<std::pair<int, int>>& matches) {
+    
+    std::vector<std::vector<std::pair<int, int>>> groups;
+    std::set<std::pair<int, int>> processed;
+    
+    for (const auto& pos : matches) {
+        if (processed.count(pos)) continue;
+        
+        std::vector<std::pair<int, int>> group;
+        std::queue<std::pair<int, int>> queue;
+        queue.push(pos);
+        processed.insert(pos);
+        
+        while (!queue.empty()) {
+            auto current = queue.front();
+            queue.pop();
+            group.push_back(current);
+            
+            // 检查4个方向的相邻宝石
+            int dx[] = {-1, 1, 0, 0};
+            int dy[] = {0, 0, -1, 1};
+            
+            for (int i = 0; i < 4; i++) {
+                int nr = current.first + dx[i];
+                int nc = current.second + dy[i];
+                std::pair<int, int> neighbor = {nr, nc};
+                
+                if (std::find(matches.begin(), matches.end(), neighbor) != matches.end() &&
+                    !processed.count(neighbor)) {
+                    processed.insert(neighbor);
+                    queue.push(neighbor);
+                }
+            }
+        }
+        
+        groups.push_back(group);
+    }
+    
+    return groups;
+}
+
+// 消除以特殊宝石为中心的3×3区域
+void WhirlwindModeGameWidget::remove3x3Area(int centerRow, int centerCol) {
+    appendDebug(QString("Special gem exploding at (%1,%2) - removing 3x3 area")
+        .arg(centerRow).arg(centerCol));
+    
+    int removed = 0;
+    for (int i = centerRow - 1; i <= centerRow + 1; i++) {
+        for (int j = centerCol - 1; j <= centerCol + 1; j++) {
+            if (i >= 0 && i < 8 && j >= 0 && j < 8) {
+                Gemstone* gem = gemstoneContainer[i][j];
+                if (gem) {
+                    removed++;
+                    eliminateAnime(gem);
+                    gemstoneContainer[i][j] = nullptr;
+                }
+            }
+        }
+    }
+    
+    if (removed > 0) {
+        gameScore += removed * 15;  // 特殊宝石消除给更多分数
+        updateScoreBoard();
+        appendDebug(QString("Special gem removed %1 gems in 3x3 area").arg(removed));
+    }
+}
+
+// 检查匹配组中是否包含特殊宝石
+bool WhirlwindModeGameWidget::hasSpecialGem(const std::vector<std::pair<int, int>>& group) const {
+    for (const auto& pos : group) {
+        Gemstone* gem = gemstoneContainer[pos.first][pos.second];
+        if (gem && gem->isSpecial()) {
+            return true;
+        }
+    }
+    return false;
+}
+

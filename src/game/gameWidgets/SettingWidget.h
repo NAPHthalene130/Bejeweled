@@ -85,6 +85,8 @@ private:
     QPushButton *switchInterfaceBtn;
     QComboBox *gemStyleCombo;
     QLabel *gemStyleDescLabel;  // 新增：风格描述标签
+    QComboBox *difficultyCombo; // 新增：难度选择下拉框
+    QLabel *difficultyLabel;    // 新增：难度标签
     
     // 按钮
     QPushButton *saveBtn;

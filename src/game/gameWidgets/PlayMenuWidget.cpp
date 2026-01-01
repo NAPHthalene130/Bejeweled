@@ -3,6 +3,7 @@
 #include "SingleModeGameWidget.h"
 #include "MultiplayerModeGameWidget.h"
 #include "MultiGameWaitWidget.h"
+#include "PuzzleModeGameWidget.h"
 #include "../components/MenuButton.h"
 #include "../data/GameNetData.h"
 #include "../../auth/components/AuthNoticeDialog.h"
@@ -43,7 +44,7 @@ PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
 }
 
 void PlayMenuWidget::setupUI() {
-    setMinimumSize(1600, 1000);
+    setMinimumSize(1280, 720);
     
     // 居中对齐的主布局
     mainLayout = new QVBoxLayout(this);
@@ -97,16 +98,10 @@ void PlayMenuWidget::setupUI() {
     });
 
     connect(normalModeButton, &QPushButton::clicked, this, [this]() {
-        if (gameWindow && gameWindow->getSingleModeGameWidget()) {
-            gameWindow->getSingleModeGameWidget()->reset(1);
-        }
         emit startNormalMode();
     });
 
     connect(rotateModeButton, &QPushButton::clicked, this, [this]() {
-        if (gameWindow && gameWindow->getSingleModeGameWidget()) {
-            gameWindow->getSingleModeGameWidget()->reset(2);
-        }
         emit startRotateMode();
     });
 
@@ -118,8 +113,11 @@ void PlayMenuWidget::setupUI() {
             gameWindow->switchWidget(gameWindow->getMultiplayerModeGameWidget());
         }
     });
+
+    connect(puzzleModeButton, &QPushButton::clicked, this, [this]() {
+        emit startPuzzleMode();
+    });
 }
-    
 
 void PlayMenuWidget::setup3DView() {
     view3D = new Qt3DExtras::Qt3DWindow();

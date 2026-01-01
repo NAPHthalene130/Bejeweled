@@ -8,6 +8,7 @@
 #include "gameWidgets/SingleModeGameWidget.h"
 #include "gameWidgets/WhirlwindModeGameWidget.h"
 #include "gameWidgets/MultiplayerModeGameWidget.h"
+#include "gameWidgets/PuzzleModeGameWidget.h"
 #include "gameWidgets/FinalWidget.h"
 #include "gameWidgets/MultiGameWaitWidget.h"
 #include "components/MenuButton.h"
@@ -21,6 +22,7 @@
 #include "../utils/BGMManager.h"
 #include "../utils/ResourceUtils.h"
 #include "../utils/LogWindow.h"
+#include "data/OtherNetDataIO.h"
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
 
@@ -32,8 +34,9 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     ItemSystem::instance().initialize(userID);
     qDebug() << "[GameWindow] ItemSystem initialized for user:" << QString::fromStdString(userID);
 
+    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
     logWindow = new LogWindow();
-    logWindow->show();
+    // logWindow->show();
 
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
@@ -46,6 +49,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     singleModeGameWidget = new SingleModeGameWidget(this, this);
     whirlwindModeGameWidget = new WhirlwindModeGameWidget(this, this);
     multiplayerModeGameWidget = new MultiplayerModeGameWidget(this, this, userID);
+    puzzleModeGameWidget = new PuzzleModeGameWidget(this, this);
     finalWidget = new FinalWidget(this, this);
     multiGameWaitWidget = new MultiGameWaitWidget(this, this);
 
@@ -61,6 +65,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     singleModeGameWidget->hide();
     whirlwindModeGameWidget->hide();
     multiplayerModeGameWidget->hide();
+    puzzleModeGameWidget->hide();
     finalWidget->hide();
     multiGameWaitWidget->hide();
 
@@ -74,6 +79,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // 连接 PlayMenuWidget 信号到 SingleModeGameWidget
     connect(playMenuWidget, &PlayMenuWidget::startNormalMode, [this]() {
+        singleModeGameWidget->reset(1);
         switchWidget(singleModeGameWidget);
     });
 
@@ -98,6 +104,11 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         switchWidget(whirlwindModeGameWidget);
     });
 
+    connect(playMenuWidget, &PlayMenuWidget::startPuzzleMode, [this]() {
+        puzzleModeGameWidget->reset(1);
+        switchWidget(puzzleModeGameWidget);
+    });
+
     // Add test achievements
     for (int i = 1; i <= 15; ++i) {
         AchievementData ad;
@@ -112,15 +123,15 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     if (achievementsWidget) achievementsWidget->updateView();
 
     switchWidget(menuWidget);
-    
-    resize(1600, 1000);
-    setWindowTitle("宝石迷阵");
 }
 
 GameWindow::~GameWindow() {
     if (logWindow) {
         delete logWindow;
         logWindow = nullptr;
+    }
+    if (otherNetDataIO) {
+        otherNetDataIO.reset();
     }
 }
 
@@ -179,7 +190,7 @@ void GameWindow::switchWidget(QWidget* widget)
     } else if (widget == rankListWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.ogg"));
     } else if (widget == singleModeGameWidget || widget == whirlwindModeGameWidget || widget == multiplayerModeGameWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.mp3"));
     }
     
     if (!bgmPath.isEmpty()) {

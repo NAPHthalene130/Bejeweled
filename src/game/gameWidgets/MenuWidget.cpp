@@ -52,7 +52,7 @@ MenuWidget::~MenuWidget() {
 }
 
 void MenuWidget::setupUI() {
-    setMinimumSize(1600, 1000);
+    setMinimumSize(1280, 720);
     mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(80, 40, 40, 40); // Increased left margin
     mainLayout->setSpacing(20);
