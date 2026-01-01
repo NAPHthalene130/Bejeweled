@@ -17,6 +17,7 @@ class MultiplayerModeGameWidget;
 class PuzzleModeGameWidget;
 class FinalWidget;
 class MultiGameWaitWidget;
+class AboutWidget;
 class NetDataIO;
 class LogWindow;
 
@@ -41,6 +42,7 @@ public:
     FinalWidget* getFinalWidget() const { return finalWidget; }
     MultiGameWaitWidget* getMultiGameWaitWidget() const { return multiGameWaitWidget; }
     void setMultiGameWaitWidget(MultiGameWaitWidget* widget) { multiGameWaitWidget = widget; }
+    AboutWidget* getAboutWidget() const { return aboutWidget; }
 
     // NetDataIO access
     NetDataIO* getNetDataIO() const { return netDataIO; }
@@ -82,6 +84,7 @@ private:
     PuzzleModeGameWidget* puzzleModeGameWidget = nullptr;
     FinalWidget* finalWidget = nullptr;
     MultiGameWaitWidget* multiGameWaitWidget = nullptr;
+    AboutWidget* aboutWidget = nullptr;
     NetDataIO* netDataIO = nullptr;
     LogWindow* logWindow = nullptr;
     std::string gemstoneStyle;

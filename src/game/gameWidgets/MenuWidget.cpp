@@ -71,6 +71,7 @@ void MenuWidget::setupUI() {
     achievementsButton = new MenuButton(btnW, btnH, fontSize, QColor(255, 255, 0), "成就", this); // Yellow
     ranklistButton = new MenuButton(btnW, btnH, fontSize, QColor(255, 165, 0), "排行榜", this);   // Orange
     settingsButton = new MenuButton(btnW, btnH, fontSize, QColor(255, 192, 203), "设置", this);   // Pink
+    aboutButton = new MenuButton(btnW, btnH, fontSize, QColor(100, 100, 255), "关于", this); // Blue-ish
     exitButton = new MenuButton(btnW, btnH, fontSize, QColor(255, 50, 50), "退出游戏", this);     // Red
 
     // Ensure buttons are on top of native 3D window
@@ -79,6 +80,7 @@ void MenuWidget::setupUI() {
     achievementsButton->setAttribute(Qt::WA_NativeWindow);
     ranklistButton->setAttribute(Qt::WA_NativeWindow);
     settingsButton->setAttribute(Qt::WA_NativeWindow);
+    aboutButton->setAttribute(Qt::WA_NativeWindow);
     exitButton->setAttribute(Qt::WA_NativeWindow);
 
     leftLayout->addWidget(playMenuButton);
@@ -86,6 +88,7 @@ void MenuWidget::setupUI() {
     leftLayout->addWidget(achievementsButton);
     leftLayout->addWidget(ranklistButton);
     leftLayout->addWidget(settingsButton);
+    leftLayout->addWidget(aboutButton);
     leftLayout->addWidget(exitButton);
     
     // Add stretch to push buttons to center if needed, but Alignment handles it.
@@ -96,6 +99,7 @@ void MenuWidget::setupUI() {
     connect(achievementsButton, &QPushButton::clicked, this, &MenuWidget::achievementsButtonClicked);
     connect(ranklistButton, &QPushButton::clicked, this, &MenuWidget::ranklistButtonClicked);
     connect(settingsButton, &QPushButton::clicked, this, &MenuWidget::settingsButtonClicked);
+    connect(aboutButton, &QPushButton::clicked, this, &MenuWidget::aboutButtonClicked);
     connect(exitButton, &QPushButton::clicked, this, &MenuWidget::exitButtonClicked);
 
     mainLayout->addLayout(leftLayout, 0);
@@ -529,6 +533,10 @@ void MenuWidget::ranklistButtonClicked() {
 
 void MenuWidget::settingsButtonClicked() {
     emit openSettings();
+}
+
+void MenuWidget::aboutButtonClicked() {
+    emit openAbout();
 }
 
 void MenuWidget::exitButtonClicked() {
