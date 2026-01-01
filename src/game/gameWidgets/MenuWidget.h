@@ -41,12 +41,14 @@ signals:
     void openAchievements();
     void openLeaderboard();
     void openSettings();
+    void openAbout();
 private slots:
     void playMenuButtonClicked();
     void storeButtonClicked();
     void achievementsButtonClicked();
     void ranklistButtonClicked();
     void settingsButtonClicked();
+    void aboutButtonClicked();
     void exitButtonClicked();
 private:
     GameWindow* gameWindow = nullptr;
@@ -55,6 +57,7 @@ private:
     MenuButton* achievementsButton = nullptr;
     MenuButton* ranklistButton = nullptr;
     MenuButton* settingsButton = nullptr;
+    MenuButton* aboutButton = nullptr;
     MenuButton* exitButton = nullptr;
 
     QHBoxLayout* mainLayout = nullptr;

@@ -11,6 +11,7 @@
 #include "gameWidgets/PuzzleModeGameWidget.h"
 #include "gameWidgets/FinalWidget.h"
 #include "gameWidgets/MultiGameWaitWidget.h"
+#include "gameWidgets/AboutWidget.h"
 #include "components/MenuButton.h"
 #include "data/CoinSystem.h"
 #include "data/ItemSystem.h"
@@ -52,10 +53,12 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     puzzleModeGameWidget = new PuzzleModeGameWidget(this, this);
     finalWidget = new FinalWidget(this, this);
     multiGameWaitWidget = new MultiGameWaitWidget(this, this);
+    aboutWidget = new AboutWidget(this, this);
 
     // 连接排行榜信号
     connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { this->switchWidget(rankListWidget); });
     connect(rankListWidget, &RankListWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
+    connect(aboutWidget, &AboutWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
 
     achievementsWidget->hide();
     playMenuWidget->hide();
@@ -68,6 +71,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     puzzleModeGameWidget->hide();
     finalWidget->hide();
     multiGameWaitWidget->hide();
+    aboutWidget->hide();
 
     connect(menuWidget, &MenuWidget::startGame, [this]() {
         switchWidget(playMenuWidget);
@@ -95,6 +99,9 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     switchWidget(settingWidget); // 点击设置时切换到设置界面
     });
 
+    connect(menuWidget, &MenuWidget::openAbout, this, [this]() {
+        switchWidget(aboutWidget);
+    });
     connect(menuWidget, &MenuWidget::openStore, this, [this]() {
         switchWidget(storeWidget); // 点击商店时切换到商店界面
     });
