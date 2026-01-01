@@ -152,37 +152,37 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     achievement3.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement3);
 
-    // [4] 极速掌控 - Medium
-    AchievementData achievement4("极速掌控", 
-                                "在单人模式下 5 分钟内完成一局，速度与效率并存。", 
+    // [4] 四消突破 - Medium
+    AchievementData achievement4("四消突破", 
+                                "首次达成四连消，解锁更高效的消除技巧。", 
                                 false);
     achievement4.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement4);
 
-    // [5] 随机谜题征服者 - Medium
-    AchievementData achievement5("随机谜题征服者", 
-                                "在随机生成的解谜棋盘上首次通关，实力与运气皆不凡。", 
+    // [5] 极速掌控 - Medium
+    AchievementData achievement5("极速掌控", 
+                                "在单人模式下 5 分钟内完成一局，速度与效率并存。", 
                                 false);
     achievement5.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement5);
 
-    // [6] 旋风试炼 - Hard
-    AchievementData achievement6("旋风试炼", 
-                                "成功通关一次旋风模式，挑战手速与思维的双重巅峰。", 
+    // [6] 随机谜题征服者 - Hard
+    AchievementData achievement6("随机谜题征服者", 
+                                "成功在随机生成的解谜棋盘上首次通关，实力与运气皆不凡。", 
                                 false);
     achievement6.setDifficulty(AchievementData::Difficulty::Hard);
     addAchievement(achievement6);
 
-    // [7] 破除界限 - Hard
-    AchievementData achievement7("破除界限", 
-                                "首次达成六连消，突破常规消除的极限，操作令人叹服。", 
+    // [7] 旋风试炼 - Hard
+    AchievementData achievement7("旋风试炼", 
+                                "成功在旋风模式坚持2分钟，挑战手速与思维的双重巅峰。", 
                                 false);
     achievement7.setDifficulty(AchievementData::Difficulty::Hard);
     addAchievement(achievement7);
 
-    // [8] 全模式巡礼 - Hard
-    AchievementData achievement8("全模式巡礼", 
-                                "成功体验所有游戏模式，成为真正的游戏通才。", 
+    // [8] 破除界限 - Hard
+    AchievementData achievement8("破除界限", 
+                                "首次达成六连消，突破常规消除的极限，操作令人叹服。", 
                                 false);
     achievement8.setDifficulty(AchievementData::Difficulty::Hard);
     addAchievement(achievement8);
