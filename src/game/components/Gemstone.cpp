@@ -639,7 +639,7 @@ QColor Gemstone::getGemstoneColor() const {
     // 宝石风格颜色
     switch (type % 8) {
         case 0: return QColor(255, 102, 153);   // 粉色水晶
-        case 1: return QColor(26, 179, 77);     // 祖母绿
+        case 1: return QColor(69, 26, 150);     // 祖母紫 （（（（））））
         case 2: return QColor(26, 153, 204);    // 青蓝水晶
         case 3: return QColor(255, 140, 26);    // 橙色钻石
         case 4: return QColor(51, 217, 89);     // 明亮绿色
@@ -831,7 +831,7 @@ void Gemstone::updateSpecialEffects() {
 }
 
 void Gemstone::updateHintEffects() {
-    clearSpecialEffects();
+    clearHintEffects();
 
     if (!hint) {
         return;
@@ -848,8 +848,8 @@ void Gemstone::updateHintEffects() {
         pMesh->setRadius(0.08f);
         
         Qt3DExtras::QPhongMaterial* pMat = new Qt3DExtras::QPhongMaterial();
-        pMat->setDiffuse(QColor(145, 255, 145));
-        pMat->setAmbient(QColor(170, 255, 190));
+        pMat->setDiffuse(QColor(40, 60, 255));
+        pMat->setAmbient(QColor(40, 100, 255));
         pMat->setShininess(50.0f);
         
         Qt3DCore::QTransform* pTransform = new Qt3DCore::QTransform();

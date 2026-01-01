@@ -39,6 +39,7 @@
 #include <QWidget>
 #include <queue>
 #include <set>
+#include <tuple>
 
 
 #ifndef M_PI
@@ -578,9 +579,9 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     focusInfoLabel = new QLabel(rightPanel);
     focusInfoLabel->setVisible(false);
     debugText = new QTextEdit(rightPanel);
-    debugText->setVisible(false);
+    debugText->setVisible(true);
     debugText->setReadOnly(true);
-    debugTimer = new QTimer(this);
+    debugTimer = new QTimer(this);debugText->setFixedSize(180, 54);
 
     setLayout(mainLayout);
     mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
@@ -1236,6 +1237,7 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
     }
 
     if (selectedNum == 0) {
+        clearHighlights();
         selectedNum = 1;
         firstSelectedGemstone = gem;
         // 显示第一个选择框
@@ -1904,8 +1906,6 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
         if (row.size() != 8) return matches;
     }
     std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
-    const int dx[4] = {0,0,1,-1};
-    const int dy[4] = {1,-1,0,0};
     // 检查水平方向
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 7; ++j) {  // 最多检查到j=5，这样j+2不会越界
@@ -2004,15 +2004,39 @@ void SingleModeGameWidget::highlightMatches() {
     
     // 为随机一个可消除的宝石添加高亮环
     int choice = QRandomGenerator::global()->bounded(matches.size()) ,num = 0;
+    std::vector <Gemstone*> ChosenGems;
     for (const auto& pos : matches) {
         int row = pos.first;
         int col = pos.second;
         Gemstone* gem = gemstoneContainer[row][col];
         if (gem && num == choice) {
-            SelectedCircle* ring = new SelectedCircle(rootEntity);
-            ring->setVisible(true);
-            ring->setPosition(getPosition(row, col));
-            highlightRings.push_back(ring);
+            appendDebug(QString("Choose   Position of Gems %1  %2").arg(row).arg(col));
+            for(int i=0 ; i<4 ; i++) {
+                if(row + dx[i] < 0||col + dy[i] < 0||row + dx[i] >= 8||col + dy[i] >= 8) continue;
+
+                int gemType1 = gem -> getType() , gemType2 = gemstoneContainer[row+dx[i]][col+dy[i]] -> getType();
+                gem -> setType(-1);
+                gemstoneContainer[row+dx[i]][col+dy[i]] -> setType(gemType1);
+                std::vector<std::pair<int,int>> TempMatches = findMatches();
+                
+                gem -> setType(gemType1);
+                gemstoneContainer[row+dx[i]][col+dy[i]] -> setType(gemType2);
+                
+                if(!TempMatches.empty()) {
+                    for(const auto& TempPos : TempMatches) {
+                        ChosenGems.push_back(gemstoneContainer[TempPos.first][TempPos.second]);
+                        appendDebug(QString("Position of Gems %1  %2").arg(TempPos.first).arg(TempPos.second));
+                    }
+                    break;
+                }
+            }
+            ChosenGems.push_back(gem);
+            for(Gemstone* chosengem : ChosenGems) {
+                if(chosengem -> getType() != gem ->getType()) continue;
+                chosengem -> setHint(true);
+                highlightGems.push_back(chosengem);
+            }
+            ChosenGems.clear();
             break;
         }
         num++;
@@ -2021,11 +2045,10 @@ void SingleModeGameWidget::highlightMatches() {
 
 // 清除所有高亮
 void SingleModeGameWidget::clearHighlights() {
-    for (SelectedCircle* ring : highlightRings) {
-        ring->setVisible(false);
-        delete ring;
+    for (Gemstone* gem : highlightGems) {
+        gem->setHint(false);
     }
-    highlightRings.clear();
+    highlightGems.clear();
 }
 
 void SingleModeGameWidget::setDifficulty(int diff) {
