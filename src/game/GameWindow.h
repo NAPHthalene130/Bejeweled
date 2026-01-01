@@ -44,6 +44,7 @@ public:
     MultiGameWaitWidget* getMultiGameWaitWidget() const { return multiGameWaitWidget; }
     void setMultiGameWaitWidget(MultiGameWaitWidget* widget) { multiGameWaitWidget = widget; }
     AboutWidget* getAboutWidget() const { return aboutWidget; }
+    AchievementsWidget* getAchievementsWidget() { return achievementsWidget; }
 
     // NetDataIO access
     NetDataIO* getNetDataIO() const { return netDataIO; }
