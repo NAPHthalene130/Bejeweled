@@ -1517,9 +1517,8 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind)
         appendDebug("Startale says : release gem could not be the first selected.");
         return ;
     }
-    // 容器大小是 960x960
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
     // 相机参数：FOV=45度，distance=20
     // 计算在z=0平面上的可视范围
