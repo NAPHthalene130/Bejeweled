@@ -525,7 +525,8 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
 
             eliminateAnime(gem);
             gemstoneContainer[row][col] = nullptr;
-    
+        }
+    }
     for (const auto& group : groups) {
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);

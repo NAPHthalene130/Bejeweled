@@ -785,6 +785,8 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
             eliminateAnime(gem);
             // 从容器中移除
             gemstoneContainer[row][col] = nullptr;
+        }
+    }
     
     for (const auto& group : groups) {
         // 检查是否包含特殊宝石
