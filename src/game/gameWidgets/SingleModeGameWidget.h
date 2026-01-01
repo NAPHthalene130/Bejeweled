@@ -86,6 +86,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -93,7 +94,7 @@ protected:
 private:
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
-    void handleManualClick(const QPoint& screenPos); // 手动处理点击
+    void handleManualClick(const QPoint& screenPos , int kind); // 手动处理点击
     void appendDebug(const QString& text);
     void refreshDebugStatus();
 
@@ -199,6 +200,8 @@ private:
     int initialCoins = 0;  // 游戏开始时的金币数
     int earnedCoins = 0;   // 本局获得的金币数
     
+    //有关滑动交换
+    bool isDragging = false;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H
