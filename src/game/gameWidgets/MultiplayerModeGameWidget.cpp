@@ -2289,6 +2289,8 @@ bool MultiplayerModeGameWidget::hasSpecialGem(const std::vector<std::pair<int, i
         }
     }
     return false;
+}
+
 void MultiplayerModeGameWidget::sendNowBoard() {
     if (isStop) return;
     GameNetData data;
