@@ -1,5 +1,6 @@
 #include "AboutWidget.h"
 #include "../GameWindow.h"
+#include "../../utils/ResourceUtils.h"
 #include <QPainter>
 #include <QPainterPath>
 #include <QTimer>
@@ -13,7 +14,12 @@ AboutWidget::AboutWidget(QWidget *parent, GameWindow *gameWindow)
     setupAnimations();
     
     // Load background image
-    backgroundPixmap.load("D:/HuaweiMoveData/Users/祝霖瑞/Desktop/微信图片_20260101142040.png");
+    std::string bgPath = ResourceUtils::getPath("images/about_bg.png");
+    if (!backgroundPixmap.load(QString::fromStdString(bgPath))) {
+        // Fallback or log error if needed, though usually ResourceUtils ensures path correctness
+        // Try absolute path if resource utils fails or just for safety as per user request
+        backgroundPixmap.load("h:/CODE/Trae/Bejeweled/resources/images/about_bg.png");
+    }
 
     // Background animation timer (only for border hue now)
     QTimer *timer = new QTimer(this);
@@ -68,7 +74,7 @@ void AboutWidget::setupUI() {
             <!-- Version Section: Cyan Theme -->
             <h2 style='color: #00FFFF; margin-bottom: 5px; font-size: 36px; text-shadow: 0px 0px 5px #00FFFF;'>版本 1.0.0</h2>
             <br>
-            <p style='font-size: 28px; color: #E0FFFF;'>经典三消益智游戏的现代高性能重制版。</p>
+            <p style='font-size: 28px; color: #E0FFFF;'>宝石迷阵</p>
             <br>
             <hr style='border: 1px solid rgba(255,255,255,0.1); margin: 20px 0;'>
             <br>
@@ -82,8 +88,8 @@ void AboutWidget::setupUI() {
             <h3 style='color: #FFFF00; letter-spacing: 2px; font-size: 32px; text-shadow: 0px 0px 5px #FFFF00;'>技术栈</h3>
             <div style='font-size: 24px; color: #FFFACD;'>
                 <p><b>核心:</b> C++17</p>
-                <p><b>框架:</b> Qt 6.10</p>
-                <p><b>渲染:</b> Qt 3D & OpenGL</p>
+                <p><b>框架:</b> Qt 6</p>
+                <p><b>渲染:</b> Qt 3D</p>
                 <p><b>音频:</b> Qt Multimedia</p>
             </div>
             <br>
@@ -92,15 +98,15 @@ void AboutWidget::setupUI() {
             
             <!-- Special Thanks: Green Theme -->
             <h3 style='color: #00FF00; letter-spacing: 2px; font-size: 32px; text-shadow: 0px 0px 5px #00FF00;'>特别鸣谢</h3>
-            <p style='font-size: 24px; color: #98FB98;'>致所有开源贡献者和游戏社区。</p>
+            <p style='font-size: 24px; color: #98FB98;'>内容内容内容内容内容</p>
             <br>
             
             <!-- Quote: Standard Font (Excluded from artistic effect) -->
-            <p style='font-family: "Microsoft YaHei", sans-serif; font-style: italic; color: #888888; font-size: 18px;'>"简约是极致的复杂。"</p>
+            <p style='font-family: "Microsoft YaHei", sans-serif; font-style: italic; color: #888888; font-size: 18px;'>"内容内容内容内容内容"</p>
             <br><br>
             
             <!-- Copyright: Standard Font (Excluded from artistic effect) -->
-            <p style='font-family: "Microsoft YaHei", sans-serif; font-size: 14px; color: #666666;'>© 2026 宝石迷阵项目组。保留所有权利。</p>
+            <p style='font-family: "Microsoft YaHei", sans-serif; font-size: 14px; color: #666666;'>内容内容内容内容内容</p>
             <br><br>
         </div>
     )";
@@ -233,7 +239,7 @@ void AboutWidget::paintEvent(QPaintEvent *event) {
         p.drawPath(path);
 
         // 3. Draw Title with Flowing Light (鎏光) Effect
-        QString titleText = "关于宝石迷阵";
+        QString titleText = "关于&致谢";
         // Try artistic fonts: STXingkai (Calligraphy) or fallback
         QFont titleFont("STXingkai", 64, QFont::Bold);
         titleFont.setStyleStrategy(QFont::PreferAntialias);
