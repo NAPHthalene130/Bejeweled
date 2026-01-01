@@ -1944,10 +1944,72 @@ void SingleModeGameWidget::useItemResetBoard() {
         return;
     }
 
-    // 重新生成棋盘
-    resetGemstoneTable();
-    appendDebug("Used RESET_BOARD item - Board regenerated");
-    qDebug() << "[SingleMode] Board reset with RESET_BOARD item";
+    // 清除所有现有宝石
+    for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
+        for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
+            Gemstone* gem = gemstoneContainer[i][j];
+            if (gem) {
+                eliminateAnime(gem);
+                gemstoneContainer[i][j] = nullptr;
+            }
+        }
+    }
+
+    // 禁止操作
+    canOpe = false;
+
+    // 等待消除动画完成后重新生成棋盘
+    QTimer::singleShot(600, this, [this]() {
+        if (isFinishing) return;
+
+        // 重新生成整个棋盘（类似reset方法中的逻辑）
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                int type = QRandomGenerator::global()->bounded(difficulty);
+
+                // 避免在初始化时创建三连
+                // 检查左边两个
+                if (j >= 2 && gemstoneContainer[i][j-1] && gemstoneContainer[i][j-2]) {
+                    int type1 = gemstoneContainer[i][j-1]->getType();
+                    int type2 = gemstoneContainer[i][j-2]->getType();
+                    if (type1 == type2 && type == type1) {
+                        type = (type + 1) % difficulty;
+                    }
+                }
+
+                // 检查上边两个
+                if (i >= 2 && gemstoneContainer[i-1][j] && gemstoneContainer[i-2][j]) {
+                    int type1 = gemstoneContainer[i-1][j]->getType();
+                    int type2 = gemstoneContainer[i-2][j]->getType();
+                    if (type1 == type2 && type == type1) {
+                        type = (type + 1) % difficulty;
+                    }
+                }
+
+                Gemstone* gem = new Gemstone(type, "default", rootEntity);
+                gem->transform()->setTranslation(getPosition(i, j));
+
+                // 连接点击信号
+                connect(gem, &Gemstone::clicked, this, &SingleModeGameWidget::handleGemstoneClicked);
+                connect(gem, &Gemstone::pickEvent, this, [this](const QString& info) {
+                    appendDebug(QString("Gemstone %1").arg(info));
+                });
+
+                gemstoneContainer[i][j] = gem;
+            }
+        }
+
+        // 生成金币宝石
+        int coinCount = QRandomGenerator::global()->bounded(1, 4);
+        generateCoinGems(coinCount);
+
+        // 恢复操作
+        canOpe = true;
+        resetInactivityTimer();
+
+        appendDebug("Used RESET_BOARD item - Board completely regenerated");
+        qDebug() << "[SingleMode] Board reset with RESET_BOARD item";
+    });
 }
 
 void SingleModeGameWidget::useItemClearAll() {
