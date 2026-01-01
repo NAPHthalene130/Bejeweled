@@ -75,6 +75,8 @@ public:
     void checkLastGemState();  // 新增
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -82,7 +84,7 @@ protected:
 private:
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
-    void handleManualClick(const QPoint& screenPos); // 手动处理点击
+    void handleManualClick(const QPoint& screenPos , int kind); // 手动处理点击
     void appendDebug(const QString& text);
     void refreshDebugStatus();
 
@@ -172,6 +174,14 @@ private:
     std::vector<SelectedCircle*> highlightRings;  // 用于标记可消除宝石的高亮环
     
     int selectedNum;
+
+    // Swipe/drag state
+    bool isDragging;
+    QPoint dragStartPos;
+    Gemstone* dragStartGemstone;
+    int dragStartRow;
+    int dragStartCol;
+    const int SWIPE_THRESHOLD = 30; // 滑动阈值（像素）
 
     void setup3DScene();
 

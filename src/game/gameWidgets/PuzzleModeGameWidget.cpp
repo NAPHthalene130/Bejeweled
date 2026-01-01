@@ -158,7 +158,8 @@ protected:
 
 PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWindow) 
     : QWidget(parent), gameWindow(gameWindow), canOpe(true), nowTimeHave(0), mode(1),
-      firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0) {
+      firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0),
+      isDragging(false), dragStartGemstone(nullptr), dragStartRow(-1), dragStartCol(-1) {
     
     // 初始化定时器
     timer = new QTimer(this);
@@ -354,6 +355,7 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
     container3d->installEventFilter(this);
     game3dWindow->installEventFilter(this); // 关键：在3D窗口上安装事件过滤器
+    rightPanel->installEventFilter(this); // 为右侧面板安装事件过滤器
 
     // 初始化无操作计时器
     inactivityTimer = new QTimer(this);
@@ -565,9 +567,7 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
 
     if (removedCount > 0) {
         GemNumber -= removedCount;
-        appendDebug(QString("Still %1 Gems there.").arg(GemNumber));
         gameScore += removedCount * 10;
-        GemNumber -= removedCount;
         updateScoreBoard();
         triggerFinishIfNeeded();
     }
@@ -696,6 +696,7 @@ void PuzzleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     group->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
+//————————————————————————————————————————————————————————————————————最后一步
 void PuzzleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
     if (!gem) {
         appendDebug("handleGemstoneClicked: gem is null!");
@@ -748,6 +749,8 @@ void PuzzleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
             if (areAdjacent(row1, col1, row2, col2)) {
                 appendDebug("Gems are adjacent, performing swap!");
                 performSwap(firstSelectedGemstone, secondSelectedGemstone, row1, col1, row2, col2);
+
+                isDragging = false;//取消release时的影响
             } else {
                 appendDebug("Gems are NOT adjacent, clearing selection");
                 // 不相邻，清除选择
@@ -764,22 +767,43 @@ void PuzzleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
 }
 
 void PuzzleModeGameWidget::mousePressEvent(QMouseEvent* event) {
-    if (event->button() == Qt::RightButton) {
-        if (mode == 1) {
-            // 取消选择
-            if (firstSelectedGemstone) {
-                firstSelectedGemstone = nullptr;
-                selectionRing1->setVisible(false);
-            }
-            if (secondSelectedGemstone) {
-                secondSelectedGemstone = nullptr;
-                selectionRing2->setVisible(false);
-            }
-            selectedNum = 0;
-            this->setWindowTitle("Selection Cleared");
+    appendDebug("Mouse Pressed");
+    if (event->button() == Qt::LeftButton) {
+        // 左键按下开始拖动
+        if (mode == 1 && canOpe) {
+            // 重置拖动状态
+            isDragging = true;  // 先设置为false，等找到宝石再设为true
+            dragStartGemstone = nullptr;
+            dragStartRow = -1;
+            dragStartCol = -1;
+            
+            handleManualClick(event -> pos(),1);
         }
+    } else if (event->button() == Qt::RightButton) {
+        
     }
     QWidget::mousePressEvent(event);
+}
+
+void PuzzleModeGameWidget::mouseMoveEvent(QMouseEvent* event) {
+    
+    QWidget::mouseMoveEvent(event);
+}
+
+void PuzzleModeGameWidget::mouseReleaseEvent(QMouseEvent* event) {
+    appendDebug(QString("Mouse Released, button=%1, isDragging=%2").arg(event->button()).arg(isDragging));
+        
+    // 如果鼠标释放时还在拖动状态但没有触发交换，则取消拖动
+    appendDebug("Mouse released without triggering swap, cancelling drag");
+    if(isDragging) {
+        isDragging = false;
+        handleManualClick(event -> pos() , 2);
+        dragStartGemstone = nullptr;
+        dragStartRow = -1;
+        dragStartCol = -1;
+    }
+    
+    QWidget::mouseReleaseEvent(event);
 }
 
 void PuzzleModeGameWidget::showEvent(QShowEvent* event) {
@@ -808,7 +832,7 @@ void PuzzleModeGameWidget::hideEvent(QHideEvent* event) {
     }
     clearHighlights();
 }
-
+//————————————————————————————————————————————二、处理点击操作和点击拖动操作
 bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
     if (obj == container3d) {
         if (event->type() == QEvent::FocusIn) {
@@ -824,16 +848,74 @@ bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             appendDebug(QString("game3dWindow MouseButtonPress at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
 
-            // 手动处理点击 - 转换屏幕坐标到世界坐标
-            handleManualClick(mouseEvent->pos());
-            refreshDebugStatus();
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonPress,
+                container3d->mapFromGlobal(game3dWindow->mapToGlobal(mouseEvent->pos())),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            
             return false; // 不消费事件，让Qt3D也能处理
         } else if (event->type() == QEvent::MouseMove) {
-            // 追踪鼠标移动以确认事件被接收
+            // 处理鼠标移动事件
             static int moveCount = 0;
             if (++moveCount % 50 == 0) { // 每50次移动输出一次
                 appendDebug("Mouse moving over 3D window");
             }
+            return false; // 不消费事件，让Qt3D也能处理
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            // 处理鼠标释放事件
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            appendDebug(QString("game3dWindow MouseButtonRelease at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonRelease,
+                container3d->mapFromGlobal(game3dWindow->mapToGlobal(mouseEvent->pos())),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return false; // 不消费事件，让Qt3D也能处理
+        } else if (event->type() == QEvent::MouseMove) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseMoveEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseMove,
+                mouseEvent->pos() + rightPanel->pos(),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return true; // 消费事件
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            appendDebug(QString("rightPanel MouseButtonRelease at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonRelease,
+                mouseEvent->pos() + rightPanel->pos(),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return true; // 消费事件
         }
     }
     return QWidget::eventFilter(obj, event);
@@ -1431,10 +1513,14 @@ void PuzzleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
         .arg(row1).arg(col1).arg(row2).arg(col2));
 }
 
-
+//三      handle
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
-void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos) {
+void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind) {
+    if(kind == 2 && selectedNum == 0) {
+        appendDebug("Startale says : release gem could not be the first selected.");
+        return ;
+    }
     // 容器大小是 960x960
     float screenWidth = 960.0f;
     float screenHeight = 960.0f;
@@ -1481,12 +1567,17 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos) {
         }
     }
 
+    if(closestGem == firstSelectedGemstone || (closestGem == nullptr && selectedNum == 0)) {
+        appendDebug("Startale Says : this is wrong Answer!!!!!");
+        return ;
+    }
     // 如果找到了足够近的格子（距离 < 0.8）
     if (minDistance < 0.8f) {
         if (closestGem) {
             // 点击的是宝石
             appendDebug(QString("Found gemstone at (%1,%2), distance=%3")
                 .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
+
             handleGemstoneClicked(closestGem);
         } else {
             // 点击的是空位（nullptr）
@@ -1511,6 +1602,74 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos) {
             .arg(minDistance, 0, 'f', 2));
     }
 }
+
+// 专门用于拖动的点击处理 - 找到起始宝石
+// void PuzzleModeGameWidget::handleManualClickForDrag(const QPoint& screenPos) {
+//     // 容器大小是 960x960
+//     float screenWidth = 960.0f;
+//     float screenHeight = 960.0f;
+
+//     // 相机参数：FOV=45度，distance=20，aspect=1.0
+//     // 计算在z=0平面上的可视范围
+//     float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
+//     float cameraDistance = 20.0f;
+//     float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
+//     float halfWidth = halfHeight;  // aspect = 1.0
+
+//     // 将屏幕坐标归一化到 [-1, 1]
+//     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
+//     float normalizedY = -(screenPos.y() - screenHeight / 2.0f) / (screenHeight / 2.0f);  // Y轴反向
+
+//     // 转换到世界坐标（z=0平面）
+//     float worldX = normalizedX * halfWidth;
+//     float worldY = normalizedY * halfHeight;
+
+//     // 找到最接近这个位置的格子（不管是否有宝石）
+//     Gemstone* closestGem = nullptr;
+//     float minDistance = std::numeric_limits<float>::max();
+//     int closestRow = -1, closestCol = -1;
+
+//     for (int i = 0; i < gemstoneContainer.size(); ++i) {
+//         for (int j = 0; j < gemstoneContainer[i].size(); ++j) {
+//             // 计算格子中心位置
+//             QVector3D gridPos = getPosition(i, j);
+//             float dx = gridPos.x() - worldX;
+//             float dy = gridPos.y() - worldY;
+//             float distance = std::sqrt(dx * dx + dy * dy);
+
+//             if (distance < minDistance) {
+//                 minDistance = distance;
+//                 closestGem = gemstoneContainer[i][j];  // 可能是 nullptr（空位）
+//                 closestRow = i;
+//                 closestCol = j;
+//             }
+//         }
+//     }
+
+//     // 如果找到了足够近的格子（距离 < 0.8）并且有宝石
+//     if (minDistance < 0.8f && closestGem) {
+//         dragStartGemstone = closestGem;
+//         dragStartRow = closestRow;
+//         dragStartCol = closestCol;
+//         isDragging = true;
+        
+        
+//         appendDebug(QString("Drag started on gemstone at (%1,%2), distance=%3")
+//             .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
+//     } else {
+//         dragStartGemstone = nullptr;
+//         dragStartRow = -1;
+//         dragStartCol = -1;
+//         isDragging = false;
+        
+//         if (minDistance >= 0.8f) {
+//             appendDebug(QString("No grid found near drag start (min distance=%1)")
+//                 .arg(minDistance, 0, 'f', 2));
+//         } else {
+//             appendDebug("Drag started on empty space, ignoring");
+//         }
+//     }
+// }
 
 // 重置无操作计时器————————————————————————————————————————————————————————————————————————————————————————————————————————————
 void PuzzleModeGameWidget::resetInactivityTimer() {
