@@ -4,12 +4,14 @@
 #include "../GameWindow.h"
 #include "../components/Gemstone.h"
 #include "../components/RotationSquare.h"
+#include "../data/CoinSystem.h"
 #include "../../utils/AudioManager.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QFrame>
 #include <QDialog>
+#include <QProgressBar>
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
 #include <Qt3DExtras/Qt3DWindow>
@@ -182,17 +184,60 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
 
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(960, 960);
+    // container3d->setFixedSize(960, 960); // 移除固定大小
+    container3d->setMinimumSize(600, 600); // 设置最小大小
+    container3d->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true);
     container3d->setAttribute(Qt::WA_Hover, true);
 
+    // 创建时间追逐进度条
+    noEliminationProgressBar = new QProgressBar(this);
+    noEliminationProgressBar->setFixedHeight(30);
+    noEliminationProgressBar->setMinimumWidth(600);
+    noEliminationProgressBar->setMaximumWidth(960);
+    noEliminationProgressBar->setMinimum(0);
+    noEliminationProgressBar->setMaximum(noEliminationTimeout);
+    noEliminationProgressBar->setValue(noEliminationTimeout);
+    noEliminationProgressBar->setTextVisible(true);
+    noEliminationProgressBar->setFormat("时间追逐: %v ms");
+    noEliminationProgressBar->setStyleSheet(R"(
+        QProgressBar {
+            border: 2px solid rgba(255, 255, 255, 80);
+            border-radius: 8px;
+            background-color: rgba(30, 30, 40, 180);
+            text-align: center;
+            color: white;
+            font-family: 'Microsoft YaHei';
+            font-size: 13px;
+            font-weight: bold;
+        }
+        QProgressBar::chunk {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                stop:0 rgba(100, 220, 100, 220),
+                stop:0.5 rgba(255, 200, 60, 220),
+                stop:1 rgba(255, 80, 80, 220));
+            border-radius: 6px;
+        }
+    )");
+
+    // 创建左侧区域（包含进度条和3D窗口）
+    QWidget* leftArea = new QWidget(this);
+    QVBoxLayout* leftLayout = new QVBoxLayout(leftArea);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(15);
+    leftLayout->addWidget(noEliminationProgressBar, 0, Qt::AlignTop | Qt::AlignHCenter);
+    leftLayout->addWidget(container3d, 1, Qt::AlignCenter);
+
+    // 限制container3d为正方形
+    container3d->setFixedSize(960, 960);
+
     // 布局 - 左侧居中
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
-    mainLayout->setContentsMargins(50, 0, 50, 0);
+    mainLayout->setContentsMargins(50, 30, 50, 30);
 
-    mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
-    mainLayout->addStretch(1);
+    mainLayout->addWidget(leftArea, 1); // 添加左侧区域到主布局
+    mainLayout->addStretch(0);
 
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(420);
@@ -284,7 +329,7 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
         GameBackDialog dlg(this);
         if (dlg.exec() == QDialog::Accepted) {
             if (timer && timer->isActive()) timer->stop();
-            if (inactivityTimer) inactivityTimer->stop();
+            if (noEliminationTimer) noEliminationTimer->stop();
             if (this->gameWindow && this->gameWindow->getMenuWidget()) {
                 this->gameWindow->switchWidget(this->gameWindow->getMenuWidget());
             }
@@ -305,18 +350,18 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
     container3d->installEventFilter(this);
     game3dWindow->installEventFilter(this);
 
-    // 初始化无操作计时器
-    inactivityTimer = new QTimer(this);
-    inactivityTimer->setInterval(inactivityTimeout);
-    inactivityTimer->setSingleShot(true);
-
-    connect(inactivityTimer, &QTimer::timeout, this, &WhirlwindModeGameWidget::highlightMatches);
-
-    connect(this, &WhirlwindModeGameWidget::userActionOccurred, [this]() {
-        resetInactivityTimer();
+    // 初始化未消除计时器
+    noEliminationTimer = new QTimer(this);
+    noEliminationTimer->setInterval(100); // 每100ms更新一次
+    connect(noEliminationTimer, &QTimer::timeout, this, [this]() {
+        noEliminationTimeRemaining -= 100;
+        if (noEliminationTimeRemaining <= 0) {
+            handleNoElimination();
+        } else {
+            updateNoEliminationProgress();
+        }
     });
-
-    inactivityTimer->stop();
+    noEliminationTimer->stop();
 
     updateScoreBoard();
     updateTimeBoard();
@@ -365,8 +410,7 @@ void WhirlwindModeGameWidget::finishToFinalWidget() {
     canOpe = false;
 
     if (timer && timer->isActive()) timer->stop();
-    if (inactivityTimer) inactivityTimer->stop();
-    clearHighlights();
+    if (noEliminationTimer) noEliminationTimer->stop();
     if (rotationSquare) rotationSquare->setVisible(false);
 
     int total = gameTimeKeeper.totalSeconds();
@@ -376,9 +420,10 @@ void WhirlwindModeGameWidget::finishToFinalWidget() {
         .arg(m, 2, 10, QChar('0'))
         .arg(s, 2, 10, QChar('0'));
 
-    QString gradeText = QString("本局得分：%1\n用时：%2\n评价：Excellent!")
+    QString gradeText = QString("本局得分：%1\n用时：%2\n获得金币：%3\n评价：Excellent!")
         .arg(gameScore)
-        .arg(timeText);
+        .arg(timeText)
+        .arg(earnedCoins);
 
     QTimer::singleShot(650, this, [this, gradeText]() {
         if (!gameWindow) return;
@@ -468,7 +513,23 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
     auto groups = groupMatches(matches);
     
     int removedCount = 0;
-    
+    for (const auto& pos : matches) {
+        int row = pos.first;
+        int col = pos.second;
+        Gemstone* gem = gemstoneContainer[row][col];
+
+        if (gem) {
+            removedCount += 1;
+
+            // 如果是金币宝石，先收集金币
+            if (gem->isCoinGem()) {
+                collectCoinGem(gem);
+            }
+
+            eliminateAnime(gem);
+            gemstoneContainer[row][col] = nullptr;
+        }
+    }
     for (const auto& group : groups) {
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
@@ -543,6 +604,9 @@ void WhirlwindModeGameWidget::eliminate() {
         appendDebug(QString("Found %1 matches to eliminate").arg(matches.size()));
         AudioManager::instance().playEliminateSound(comboCount);
 
+        // 重置未消除计时器
+        resetNoEliminationTimer();
+
         canOpe = false;
         removeMatches(matches);
 
@@ -554,7 +618,6 @@ void WhirlwindModeGameWidget::eliminate() {
     } else {
         comboCount = 0;
         canOpe = true;
-        resetInactivityTimer();
         appendDebug("No matches found, game can continue");
     }
 }
@@ -595,13 +658,11 @@ void WhirlwindModeGameWidget::drop() {
             if (isFinishing) return;
             appendDebug("Drop animation finished, filling new gemstones");
             resetGemstoneTable();
-            resetInactivityTimer();
         });
         dropAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
     } else {
         appendDebug("No drops needed, filling new gemstones");
         resetGemstoneTable();
-        resetInactivityTimer();
     }
 }
 
@@ -797,6 +858,11 @@ void WhirlwindModeGameWidget::mousePressEvent(QMouseEvent* event) {
     QWidget::mousePressEvent(event);
 }
 
+void WhirlwindModeGameWidget::mouseMoveEvent(QMouseEvent* event) {
+    // 只在widget上移动时处理,不在3D窗口上处理(在eventFilter中处理)
+    QWidget::mouseMoveEvent(event);
+}
+
 void WhirlwindModeGameWidget::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
     if (container3d) {
@@ -810,7 +876,7 @@ void WhirlwindModeGameWidget::showEvent(QShowEvent* event) {
     if (!isFinishing && timer && !timer->isActive()) {
         timer->start();
     }
-    resetInactivityTimer();
+    resetNoEliminationTimer();
 }
 
 void WhirlwindModeGameWidget::hideEvent(QHideEvent* event) {
@@ -818,10 +884,14 @@ void WhirlwindModeGameWidget::hideEvent(QHideEvent* event) {
     if (timer && timer->isActive()) {
         timer->stop();
     }
-    if (inactivityTimer) {
-        inactivityTimer->stop();
+    if (noEliminationTimer) {
+        noEliminationTimer->stop();
     }
-    clearHighlights();
+    if (hoverSquare) {
+        hoverSquare->setVisible(false);
+        hoverRow = -1;
+        hoverCol = -1;
+    }
 }
 
 bool WhirlwindModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
@@ -843,18 +913,24 @@ bool WhirlwindModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             refreshDebugStatus();
             return false;
         } else if (event->type() == QEvent::MouseMove) {
-            static int moveCount = 0;
-            if (++moveCount % 50 == 0) {
-                appendDebug("Mouse moving over 3D window");
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            handleMouseMove(mouseEvent->pos());
+            return false;
+        } else if (event->type() == QEvent::Leave) {
+            // 鼠标离开3D窗口时隐藏悬停框
+            if (hoverSquare) {
+                hoverSquare->setVisible(false);
+                hoverRow = -1;
+                hoverCol = -1;
             }
+            return false;
         }
     }
     return QWidget::eventFilter(obj, event);
 }
 
 WhirlwindModeGameWidget::~WhirlwindModeGameWidget() {
-    clearHighlights();
-    delete inactivityTimer;
+    delete noEliminationTimer;
 
     if (rootEntity) {
         delete rootEntity;
@@ -898,6 +974,11 @@ void WhirlwindModeGameWidget::setup3DScene() {
 
     // 初始化旋转框
     rotationSquare = new RotationSquare(rootEntity);
+
+    // 初始化鼠标悬停旋转框
+    hoverSquare = new RotationSquare(rootEntity);
+    hoverSquare->setColor(QColor(100, 200, 255, 150));  // 半透明蓝色
+    hoverSquare->setVisible(false);
 
     qDebug() << "[WhirlwindModeGameWidget] 3D Scene setup complete - Rotation mode";
 }
@@ -990,6 +1071,11 @@ void WhirlwindModeGameWidget::reset(int mode) {
     this->hasSelection = false;
     this->selectedTopLeftRow = -1;
     this->selectedTopLeftCol = -1;
+
+    // 记录游戏开始时的金币数
+    this->initialCoins = CoinSystem::instance().getCoins();
+    this->earnedCoins = 0;
+
     updateScoreBoard();
     updateTimeBoard();
     appendDebug(QString("reset mode=%1").arg(mode));
@@ -1042,6 +1128,10 @@ void WhirlwindModeGameWidget::reset(int mode) {
         }
     }
     appendDebug("created 8x8 gemstones with no initial matches");
+
+    // 生成金币宝石 (随机1-3个)
+    int coinCount = QRandomGenerator::global()->bounded(1, 4);
+    generateCoinGems(coinCount);
 
     if (timer->isActive()) {
         timer->stop();
@@ -1100,6 +1190,9 @@ void WhirlwindModeGameWidget::performRotation(int topLeftRow, int topLeftCol) {
         return;
     }
 
+    // 禁止操作，防止旋转过程中再次点击
+    canOpe = false;
+
     // 获取四个宝石
     Gemstone* topLeft = gemstoneContainer[topLeftRow][topLeftCol];
     Gemstone* topRight = gemstoneContainer[topLeftRow][topLeftCol+1];
@@ -1141,13 +1234,16 @@ void WhirlwindModeGameWidget::performRotation(int topLeftRow, int topLeftCol) {
 }
 
 void WhirlwindModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    // 获取当前容器大小
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
-    float fovRadians = 45.0f * M_PI / 180.0f;
+    // 相机参数：FOV=45度，distance=20
+    // 计算在z=0平面上的可视范围
+    float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
     float cameraDistance = 20.0f;
-    float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);
-    float halfWidth = halfHeight;
+    float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
+    float halfWidth = halfHeight * (screenWidth / screenHeight);  // 根据宽高比调整
 
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
     float normalizedY = -(screenPos.y() - screenHeight / 2.0f) / (screenHeight / 2.0f);
@@ -1192,30 +1288,172 @@ void WhirlwindModeGameWidget::handleManualClick(const QPoint& screenPos) {
     }
 }
 
-void WhirlwindModeGameWidget::resetInactivityTimer() {
-    clearHighlights();
-    if (!inactivityTimer) return;
-    if (!isVisible()) {
-        inactivityTimer->stop();
-        return;
-    }
-    if (gemstoneContainer.size() != 8) {
-        inactivityTimer->stop();
-        return;
-    }
-    for (const auto& row : gemstoneContainer) {
-        if (row.size() != 8) {
-            inactivityTimer->stop();
-            return;
+void WhirlwindModeGameWidget::handleMouseMove(const QPoint& screenPos) {
+    if (!canOpe) {
+        // 游戏不可操作时不显示悬停框
+        if (hoverSquare && hoverRow >= 0 && hoverCol >= 0) {
+            hoverSquare->setVisible(false);
+            hoverRow = -1;
+            hoverCol = -1;
         }
-        for (auto* gem : row) {
-            if (!gem) {
-                inactivityTimer->stop();
-                return;
+        return;
+    }
+
+    // 使用实际的container3d尺寸
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
+
+    float fovRadians = 45.0f * M_PI / 180.0f;
+    float cameraDistance = 20.0f;
+    float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);
+    float halfWidth = halfHeight * (screenWidth / screenHeight);
+
+    float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
+    float normalizedY = -(screenPos.y() - screenHeight / 2.0f) / (screenHeight / 2.0f);
+
+    float worldX = normalizedX * halfWidth;
+    float worldY = normalizedY * halfHeight;
+
+    // 找到最近的宝石
+    Gemstone* closestGem = nullptr;
+    float minDistance = std::numeric_limits<float>::max();
+    int closestRow = -1, closestCol = -1;
+
+    for (int i = 0; i < gemstoneContainer.size(); ++i) {
+        for (int j = 0; j < gemstoneContainer[i].size(); ++j) {
+            Gemstone* gem = gemstoneContainer[i][j];
+            if (gem) {
+                QVector3D gemPos = gem->transform()->translation();
+                float dx = gemPos.x() - worldX;
+                float dy = gemPos.y() - worldY;
+                float distance = std::sqrt(dx * dx + dy * dy);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestGem = gem;
+                    closestRow = i;
+                    closestCol = j;
+                }
             }
         }
     }
-    inactivityTimer->start(inactivityTimeout);
+
+    // 如果找到了靠近的宝石且可以形成2x2方框
+    if (closestGem && minDistance < 0.8f && canFormSquare(closestRow, closestCol)) {
+        // 如果悬停位置改变了
+        if (closestRow != hoverRow || closestCol != hoverCol) {
+            hoverRow = closestRow;
+            hoverCol = closestCol;
+
+            // 更新悬停框的位置
+            QVector3D topLeftPos = getPosition(hoverRow, hoverCol);
+            QVector3D bottomRightPos = getPosition(hoverRow + 1, hoverCol + 1);
+            hoverSquare->setPosition(topLeftPos, bottomRightPos);
+            hoverSquare->setVisible(true);
+        }
+    } else {
+        // 没有找到有效位置，隐藏悬停框
+        if (hoverSquare && hoverRow >= 0 && hoverCol >= 0) {
+            hoverSquare->setVisible(false);
+            hoverRow = -1;
+            hoverCol = -1;
+        }
+    }
+}
+
+void WhirlwindModeGameWidget::resetNoEliminationTimer() {
+    if (!noEliminationTimer) return;
+    if (!isVisible()) {
+        noEliminationTimer->stop();
+        return;
+    }
+    if (isFinishing) {
+        noEliminationTimer->stop();
+        return;
+    }
+    noEliminationTimeRemaining = noEliminationTimeout;
+    updateNoEliminationProgress();
+    noEliminationTimer->start();
+}
+
+void WhirlwindModeGameWidget::handleNoElimination() {
+    if (isFinishing) return;
+    appendDebug(QString("No elimination for %1 seconds - Game Over").arg(noEliminationTimeout/1000));
+
+    // 显示游戏结束
+    finishToFinalWidget();
+}
+
+void WhirlwindModeGameWidget::updateNoEliminationProgress() {
+    if (!noEliminationProgressBar) return;
+    noEliminationProgressBar->setValue(noEliminationTimeRemaining);
+
+    // 根据剩余时间动态更新文字和颜色
+    float seconds = noEliminationTimeRemaining / 1000.0f;
+    noEliminationProgressBar->setFormat(QString("时间追逐: %1 秒").arg(seconds, 0, 'f', 1));
+
+    // 根据剩余时间改变进度条颜色
+    if (noEliminationTimeRemaining > 6000) {
+        // 大于6秒：绿色
+        noEliminationProgressBar->setStyleSheet(R"(
+            QProgressBar {
+                border: 2px solid rgba(255, 255, 255, 80);
+                border-radius: 8px;
+                background-color: rgba(30, 30, 40, 180);
+                text-align: center;
+                color: white;
+                font-family: 'Microsoft YaHei';
+                font-size: 13px;
+                font-weight: bold;
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(100, 220, 100, 220),
+                    stop:1 rgba(80, 200, 80, 220));
+                border-radius: 6px;
+            }
+        )");
+    } else if (noEliminationTimeRemaining > 3000) {
+        // 3-6秒：黄色
+        noEliminationProgressBar->setStyleSheet(R"(
+            QProgressBar {
+                border: 2px solid rgba(255, 255, 255, 80);
+                border-radius: 8px;
+                background-color: rgba(30, 30, 40, 180);
+                text-align: center;
+                color: white;
+                font-family: 'Microsoft YaHei';
+                font-size: 13px;
+                font-weight: bold;
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(255, 220, 60, 220),
+                    stop:1 rgba(255, 180, 40, 220));
+                border-radius: 6px;
+            }
+        )");
+    } else {
+        // 小于3秒：红色
+        noEliminationProgressBar->setStyleSheet(R"(
+            QProgressBar {
+                border: 2px solid rgba(255, 255, 255, 80);
+                border-radius: 8px;
+                background-color: rgba(30, 30, 40, 180);
+                text-align: center;
+                color: white;
+                font-family: 'Microsoft YaHei';
+                font-size: 13px;
+                font-weight: bold;
+            }
+            QProgressBar::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(255, 80, 80, 220),
+                    stop:1 rgba(220, 50, 50, 220));
+                border-radius: 6px;
+            }
+        )");
+    }
 }
 
 std::vector<std::pair<int, int>> WhirlwindModeGameWidget::findPossibleMatches() {
@@ -1234,55 +1472,86 @@ std::vector<std::pair<int, int>> WhirlwindModeGameWidget::findPossibleMatches() 
     return matches;
 }
 
-void WhirlwindModeGameWidget::highlightMatches() {
-    if (!canOpe) return;
-    if (!isVisible()) return;
-    if (gemstoneContainer.size() != 8) return;
-    for (const auto& row : gemstoneContainer) {
-        if (row.size() != 8) return;
-    }
-
-    clearHighlights();
-
-    std::vector<std::pair<int, int>> matches = findPossibleMatches();
-    if (matches.empty()) {
-        appendDebug("No possible 2x2 squares found, resetting the game");
-        reset(2);
-        return;
-    }
-
-    appendDebug(QString("No activity detected for %1 seconds, highlighting %2 possible squares")
-               .arg(inactivityTimeout/1000).arg(matches.size()));
-
-    // 随机选择一个2x2方框高亮
-    int choice = QRandomGenerator::global()->bounded(matches.size());
-    const auto& pos = matches[choice];
-    int row = pos.first;
-    int col = pos.second;
-
-    RotationSquare* square = new RotationSquare(rootEntity);
-    QVector3D topLeftPos = getPosition(row, col);
-    QVector3D bottomRightPos = getPosition(row + 1, col + 1);
-    square->setPosition(topLeftPos, bottomRightPos);
-    square->setColor(QColor(255, 100, 100, 200));  // 红色提示
-    square->setVisible(true);
-    highlightSquares.push_back(square);
-}
-
-void WhirlwindModeGameWidget::clearHighlights() {
-    for (RotationSquare* square : highlightSquares) {
-        square->setVisible(false);
-        delete square;
-    }
-    highlightSquares.clear();
-}
-
 void WhirlwindModeGameWidget::setDifficulty(int diff) {
     difficulty = diff;
 }
 
 int WhirlwindModeGameWidget::getDifficulty() const {
     return difficulty;
+}
+
+// ============================================================================
+// 金币系统实现
+// ============================================================================
+
+void WhirlwindModeGameWidget::generateCoinGems(int count) {
+    if (count <= 0) return;
+    if (gemstoneContainer.empty() || gemstoneContainer.size() != 8) return;
+
+    // 收集所有非空宝石的位置
+    std::vector<std::pair<int, int>> validPositions;
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            if (gemstoneContainer[row][col] != nullptr) {
+                validPositions.push_back({row, col});
+            }
+        }
+    }
+
+    if (validPositions.empty()) return;
+
+    // 随机选择指定数量的宝石设置为金币
+    int actualCount = std::min(count, static_cast<int>(validPositions.size()));
+
+    // 打乱位置顺序
+    for (int i = validPositions.size() - 1; i > 0; --i) {
+        int j = QRandomGenerator::global()->bounded(i + 1);
+        std::swap(validPositions[i], validPositions[j]);
+    }
+
+    // 设置前actualCount个宝石为金币
+    for (int i = 0; i < actualCount; ++i) {
+        int row = validPositions[i].first;
+        int col = validPositions[i].second;
+        Gemstone* gem = gemstoneContainer[row][col];
+
+        if (gem) {
+            // 随机金币价值 1-5
+            int coinValue = QRandomGenerator::global()->bounded(1, 6);
+            gem->setCoinValue(coinValue);
+            gem->setCoinGem(true);
+
+            qDebug() << "[WhirlwindMode] Generated coin gem at (" << row << "," << col
+                     << ") with value:" << coinValue;
+        }
+    }
+
+    appendDebug(QString("Generated %1 coin gems on the board").arg(actualCount));
+}
+
+void WhirlwindModeGameWidget::collectCoinGem(Gemstone* gem) {
+    if (!gem || !gem->isCoinGem()) return;
+
+    int coinValue = gem->getCoinValue();
+
+    // 添加金币到系统
+    CoinSystem::instance().addCoins(coinValue, true);
+
+    // 累加本局获得的金币
+    earnedCoins += coinValue;
+
+    appendDebug(QString("Collected coin gem with value: %1. Total coins: %2, Earned this game: %3")
+                .arg(coinValue)
+                .arg(CoinSystem::instance().getCoins())
+                .arg(earnedCoins));
+
+    qDebug() << "[WhirlwindMode] Collected coin with value:" << coinValue
+             << "Total coins:" << CoinSystem::instance().getCoins()
+             << "Earned this game:" << earnedCoins;
+}
+
+int WhirlwindModeGameWidget::getEarnedCoins() const {
+    return earnedCoins;
 }
 
 // 将匹配的宝石分组（识别连续的匹配）

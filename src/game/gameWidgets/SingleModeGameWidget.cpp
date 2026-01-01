@@ -4,6 +4,8 @@
 #include "../GameWindow.h"
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
+#include "../data/CoinSystem.h"
+#include "../data/ItemSystem.h"
 #include "../../utils/AudioManager.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -12,6 +14,7 @@
 #include <QDialog>
 #include <QPropertyAnimation>
 #include <QParallelAnimationGroup>
+#include <QPixmap>
 #include <Qt3DExtras/Qt3DWindow>
 #include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DCore/QEntity>
@@ -294,16 +297,18 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(960, 960);
+    // container3d->setFixedSize(960, 960); // 移除固定大小
+    container3d->setMinimumSize(600, 600); // 设置最小大小
+    container3d->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true); // 启用鼠标追踪
     container3d->setAttribute(Qt::WA_Hover, true); // 启用hover事件
-    
+
     // 布局 - 左侧居中
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(50, 0, 50, 0); // 添加一些边距
-    
-        // 左侧容器：顶部进度条 + 下方3D窗口
+
+    // 左侧容器：顶部进度条 + 下方3D窗口
     QWidget* leftPanel = new QWidget(this);
     leftPanel->setStyleSheet("background: transparent;");
     auto* leftLayout = new QVBoxLayout(leftPanel);
@@ -313,12 +318,13 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     scoreProgressBar = new ScoreProgressBar(leftPanel);
     // 位置对应你截图蓝圈区域（3D区域上方），居中显示
     leftLayout->addWidget(scoreProgressBar, 0, Qt::AlignHCenter | Qt::AlignTop);
-    leftLayout->addWidget(container3d, 0, Qt::AlignHCenter | Qt::AlignVCenter);
+    leftLayout->addWidget(container3d, 1); // 3D区域自适应
 
     // 将左侧容器对齐到左侧，垂直居中
-    mainLayout->addWidget(leftPanel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    // mainLayout->addWidget(leftPanel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addWidget(leftPanel, 1); // 左侧面板自适应
 
-    mainLayout->addStretch(1);
+    mainLayout->addStretch(0);
     
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(420);
@@ -376,6 +382,156 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     infoLayout->addWidget(scoreBoardLabel);
     infoLayout->addWidget(timeBoardLabel);
     panelLayout->addWidget(infoCard, 0, Qt::AlignTop);
+
+    // 道具面板
+    itemPanel = new QWidget(rightPanel);
+    itemPanel->setStyleSheet(R"(
+        QWidget {
+            background-color: rgba(30, 40, 60, 180);
+            border: 1px solid rgba(255, 255, 255, 50);
+            border-radius: 16px;
+        }
+    )");
+    auto* itemShadow = new QGraphicsDropShadowEffect(itemPanel);
+    itemShadow->setBlurRadius(18);
+    itemShadow->setOffset(0, 7);
+    itemShadow->setColor(QColor(0, 0, 0, 120));
+    itemPanel->setGraphicsEffect(itemShadow);
+
+    auto* itemLayout = new QVBoxLayout(itemPanel);
+    itemLayout->setContentsMargins(12, 12, 12, 12);
+    itemLayout->setSpacing(8);
+
+    QLabel* itemTitle = new QLabel("道具", itemPanel);
+    QFont itemTitleFont = itemTitle->font();
+    itemTitleFont.setFamily("Microsoft YaHei");
+    itemTitleFont.setPointSize(14);
+    itemTitleFont.setBold(true);
+    itemTitle->setFont(itemTitleFont);
+    itemTitle->setStyleSheet("color: rgba(255,255,255,230); background: transparent; border: none;");
+    itemTitle->setAlignment(Qt::AlignHCenter);
+    itemLayout->addWidget(itemTitle);
+
+    // 创建四个道具按钮
+    std::vector<ItemType> itemTypes = {
+        ItemType::FREEZE_TIME,
+        ItemType::HAMMER,
+        ItemType::RESET_BOARD,
+        ItemType::CLEAR_ALL
+    };
+
+    for (ItemType type : itemTypes) {
+        ItemInfo info = ItemSystem::instance().getItemInfo(type);
+
+        QWidget* itemRow = new QWidget(itemPanel);
+        itemRow->setStyleSheet("background: transparent; border: none;");
+        QHBoxLayout* rowLayout = new QHBoxLayout(itemRow);
+        rowLayout->setContentsMargins(0, 0, 0, 0);
+        rowLayout->setSpacing(8);
+
+        // 创建带图标的按钮
+        QPushButton* btn = new QPushButton(itemRow);
+        btn->setFixedSize(60, 60);
+        btn->setCursor(Qt::PointingHandCursor);
+
+        // 加载图片并设置为按钮图标
+        QPixmap iconPixmap(QString::fromStdString(info.icon));
+        if (!iconPixmap.isNull()) {
+            QIcon icon(iconPixmap);
+            btn->setIcon(icon);
+            btn->setIconSize(QSize(50, 50));
+        }
+
+        btn->setStyleSheet(R"(
+            QPushButton {
+                background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+                    stop:0 rgba(60, 130, 200, 180),
+                    stop:1 rgba(40, 90, 160, 180));
+                border: 2px solid rgba(255,255,255,100);
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+                    stop:0 rgba(80, 150, 220, 200),
+                    stop:1 rgba(60, 110, 180, 200));
+                border: 2px solid rgba(255,255,255,150);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0,y1:0,x2:0,y2:1,
+                    stop:0 rgba(50, 120, 190, 160),
+                    stop:1 rgba(30, 70, 140, 160));
+            }
+            QPushButton:disabled {
+                background: rgba(80, 80, 80, 120);
+                border: 2px solid rgba(120,120,120,80);
+            }
+        )");
+
+        // 道具名称标签
+        QLabel* nameLabel = new QLabel(QString::fromStdString(info.name), itemRow);
+        QFont nameFont = nameLabel->font();
+        nameFont.setFamily("Microsoft YaHei");
+        nameFont.setPointSize(11);
+        nameFont.setBold(true);
+        nameLabel->setFont(nameFont);
+        nameLabel->setStyleSheet("color: rgba(255,255,255,230); background: transparent; border: none;");
+        nameLabel->setFixedWidth(80);
+
+        QLabel* countLabel = new QLabel("×0", itemRow);
+        QFont countFont = countLabel->font();
+        countFont.setFamily("Microsoft YaHei");
+        countFont.setPointSize(12);
+        countFont.setBold(true);
+        countLabel->setFont(countFont);
+        countLabel->setStyleSheet("color: rgba(150, 255, 150, 230); background: transparent; border: none;");
+        countLabel->setFixedWidth(50);
+
+        rowLayout->addWidget(btn);
+        rowLayout->addWidget(nameLabel);
+        rowLayout->addWidget(countLabel);
+        rowLayout->addStretch();
+
+        itemButtons[type] = btn;
+        itemCountLabels[type] = countLabel;
+
+        // 连接按钮点击事件
+        connect(btn, &QPushButton::clicked, this, [this, type]() {
+            switch (type) {
+                case ItemType::FREEZE_TIME:
+                    useItemFreezeTime();
+                    break;
+                case ItemType::HAMMER:
+                    useItemHammer();
+                    break;
+                case ItemType::RESET_BOARD:
+                    useItemResetBoard();
+                    break;
+                case ItemType::CLEAR_ALL:
+                    useItemClearAll();
+                    break;
+            }
+        });
+
+        itemLayout->addWidget(itemRow);
+
+        // 更新道具数量
+        int count = ItemSystem::instance().getItemCount(type);
+        countLabel->setText(QString("×%1").arg(count));
+        btn->setEnabled(count > 0);
+    }
+
+    // 连接道具系统信号以更新UI
+    connect(&ItemSystem::instance(), &ItemSystem::itemCountChanged,
+            this, [this](ItemType type, int newCount) {
+        auto countIt = itemCountLabels.find(type);
+        auto btnIt = itemButtons.find(type);
+        if (countIt != itemCountLabels.end() && btnIt != itemButtons.end()) {
+            countIt->second->setText(QString("×%1").arg(newCount));
+            btnIt->second->setEnabled(newCount > 0);
+        }
+    });
+
+    panelLayout->addWidget(itemPanel, 0, Qt::AlignTop);
 
     panelLayout->addStretch(1);
 
@@ -505,6 +661,16 @@ void SingleModeGameWidget::finishToFinalWidget() {
     if (selectionRing2) selectionRing2->setVisible(false);
 
     int total = gameTimeKeeper.totalSeconds();
+    int m = total / 60;
+    int s = total % 60;
+    QString timeText = QString("%1:%2")
+        .arg(m, 2, 10, QChar('0'))
+        .arg(s, 2, 10, QChar('0'));
+
+    QString gradeText = QString("本局得分：%1\n用时：%2\n获得金币：%3\n评价：Excellent!")
+        .arg(gameScore)
+        .arg(timeText)
+        .arg(earnedCoins);
 
     QTimer::singleShot(650, this, [this, total]() {
         if (!gameWindow) return;
@@ -602,6 +768,25 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     auto groups = groupMatches(matches);
     
     int removedCount = 0;
+    for (const auto& pos : matches) {
+        int row = pos.first;
+        int col = pos.second;
+        Gemstone* gem = gemstoneContainer[row][col];
+
+        if (gem) {
+            removedCount += 1;
+
+            // 如果是金币宝石，先收集金币
+            if (gem->isCoinGem()) {
+                collectCoinGem(gem);
+            }
+
+            // 播放消除动画
+            eliminateAnime(gem);
+            // 从容器中移除
+            gemstoneContainer[row][col] = nullptr;
+        }
+    }
     
     for (const auto& group : groups) {
         // 检查是否包含特殊宝石
@@ -878,8 +1063,33 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
     if (!canOpe) return;
     emit userActionOccurred(); // 发送用户操作信号
 
-    appendDebug(QString("Gemstone clicked! Type=%1 Mode=%2 CanOpe=%3 SelectedNum=%4")
-        .arg(gem->getType()).arg(mode).arg(canOpe).arg(selectedNum));
+    appendDebug(QString("Gemstone clicked! Type=%1 Mode=%2 CanOpe=%3 SelectedNum=%4 HammerMode=%5")
+        .arg(gem->getType()).arg(mode).arg(canOpe).arg(selectedNum).arg(hammerMode));
+
+    // 锤子模式：直接消除点击的宝石
+    if (hammerMode) {
+        // 找到宝石在容器中的位置
+        int row = -1, col = -1;
+        if (findGemstonePosition(gem, row, col)) {
+            appendDebug(QString("Hammer used on gem at (%1, %2)").arg(row).arg(col));
+
+            // 消除这个宝石
+            std::vector<std::pair<int, int>> toRemove;
+            toRemove.push_back({row, col});
+            removeMatches(toRemove);
+
+            // 增加一些分数
+            gameScore += 20;
+            updateScoreBoard();
+
+            // 触发掉落
+            drop();
+        }
+
+        // 退出锤子模式
+        disableHammerMode();
+        return;
+    }
 
     if (mode != 1 || !canOpe) {
         appendDebug(QString("Click ignored: mode=%1 canOpe=%2").arg(mode).arg(canOpe));
@@ -1169,6 +1379,11 @@ void SingleModeGameWidget::reset(int mode) {
     this->targetScore = 300;
     this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
+
+    // 记录游戏开始时的金币数
+    this->initialCoins = CoinSystem::instance().getCoins();
+    this->earnedCoins = 0;
+
     updateScoreBoard();
     updateTimeBoard();
     appendDebug(QString("reset mode=%1").arg(mode));
@@ -1225,7 +1440,11 @@ void SingleModeGameWidget::reset(int mode) {
         }
     }
     appendDebug("created 8x8 gemstones with no initial matches");
-    
+
+    // 生成金币宝石 (随机1-3个)
+    int coinCount = QRandomGenerator::global()->bounded(1, 4);
+    generateCoinGems(coinCount);
+
     // 重置选择状态
     selectedNum = 0;
     firstSelectedGemstone = nullptr;
@@ -1361,16 +1580,16 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
 void SingleModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    // 容器大小是 960x960
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    // 获取当前容器大小
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
-    // 相机参数：FOV=45度，distance=20，aspect=1.0
+    // 相机参数：FOV=45度，distance=20
     // 计算在z=0平面上的可视范围
     float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
     float cameraDistance = 20.0f;
     float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
-    float halfWidth = halfHeight;  // aspect = 1.0
+    float halfWidth = halfHeight * (screenWidth / screenHeight);  // 根据宽高比调整
 
     // 将屏幕坐标归一化到 [-1, 1]
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
@@ -1585,6 +1804,269 @@ int SingleModeGameWidget::getDifficulty() const {
     return difficulty;
 }
 
+// ============================================================================
+// 金币系统实现
+// ============================================================================
+
+void SingleModeGameWidget::generateCoinGems(int count) {
+    if (count <= 0) return;
+    if (gemstoneContainer.empty() || gemstoneContainer.size() != 8) return;
+
+    // 收集所有非空宝石的位置
+    std::vector<std::pair<int, int>> validPositions;
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            if (gemstoneContainer[row][col] != nullptr) {
+                validPositions.push_back({row, col});
+            }
+        }
+    }
+
+    if (validPositions.empty()) return;
+
+    // 随机选择指定数量的宝石设置为金币
+    int actualCount = std::min(count, static_cast<int>(validPositions.size()));
+
+    // 打乱位置顺序
+    for (int i = validPositions.size() - 1; i > 0; --i) {
+        int j = QRandomGenerator::global()->bounded(i + 1);
+        std::swap(validPositions[i], validPositions[j]);
+    }
+
+    // 设置前actualCount个宝石为金币
+    for (int i = 0; i < actualCount; ++i) {
+        int row = validPositions[i].first;
+        int col = validPositions[i].second;
+        Gemstone* gem = gemstoneContainer[row][col];
+
+        if (gem) {
+            // 随机金币价值 1-5
+            int coinValue = QRandomGenerator::global()->bounded(1, 6);
+            gem->setCoinValue(coinValue);
+            gem->setCoinGem(true);
+
+            qDebug() << "[SingleMode] Generated coin gem at (" << row << "," << col
+                     << ") with value:" << coinValue;
+        }
+    }
+
+    appendDebug(QString("Generated %1 coin gems on the board").arg(actualCount));
+}
+
+void SingleModeGameWidget::collectCoinGem(Gemstone* gem) {
+    if (!gem || !gem->isCoinGem()) return;
+
+    int coinValue = gem->getCoinValue();
+
+    // 添加金币到系统
+    CoinSystem::instance().addCoins(coinValue, true);
+
+    // 累加本局获得的金币
+    earnedCoins += coinValue;
+
+    appendDebug(QString("Collected coin gem with value: %1. Total coins: %2, Earned this game: %3")
+                .arg(coinValue)
+                .arg(CoinSystem::instance().getCoins())
+                .arg(earnedCoins));
+
+    qDebug() << "[SingleMode] Collected coin with value:" << coinValue
+             << "Total coins:" << CoinSystem::instance().getCoins()
+             << "Earned this game:" << earnedCoins;
+}
+
+int SingleModeGameWidget::getEarnedCoins() const {
+    return earnedCoins;
+}
+
+// ========== 道具系统实现 ==========
+
+void SingleModeGameWidget::useItemFreezeTime() {
+    if (!ItemSystem::instance().useItem(ItemType::FREEZE_TIME)) {
+        qWarning() << "[SingleMode] Failed to use FREEZE_TIME item";
+        return;
+    }
+
+    // 暂停游戏计时器10秒
+    if (timer && timer->isActive()) {
+        timer->stop();
+    }
+
+    freezeTimeRemaining = 10;  // 10秒冻结时间
+
+    // 创建冻结计时器
+    if (!freezeTimer) {
+        freezeTimer = new QTimer(this);
+        freezeTimer->setInterval(1000);  // 每秒触发
+    }
+
+    // 断开所有之前的连接
+    freezeTimer->disconnect();
+
+    connect(freezeTimer, &QTimer::timeout, this, [this]() {
+        freezeTimeRemaining--;
+
+        if (timeBoardLabel) {
+            timeBoardLabel->setText(QString("时间: %1 (冻结: %2s)")
+                .arg(gameTimeKeeper.displayText())
+                .arg(freezeTimeRemaining));
+        }
+
+        if (freezeTimeRemaining <= 0) {
+            freezeTimer->stop();
+            // 恢复游戏计时器
+            if (timer) {
+                timer->start();
+            }
+            updateTimeBoard();
+        }
+    });
+
+    freezeTimer->start();
+    appendDebug("Used FREEZE_TIME item - Time frozen for 10 seconds");
+    qDebug() << "[SingleMode] FREEZE_TIME item activated";
+}
+
+void SingleModeGameWidget::useItemHammer() {
+    if (!ItemSystem::instance().useItem(ItemType::HAMMER)) {
+        qWarning() << "[SingleMode] Failed to use HAMMER item";
+        return;
+    }
+
+    // 进入锤子模式
+    enableHammerMode();
+    appendDebug("Used HAMMER item - Click any gem to destroy it");
+    qDebug() << "[SingleMode] HAMMER mode activated";
+}
+
+void SingleModeGameWidget::useItemResetBoard() {
+    if (!ItemSystem::instance().useItem(ItemType::RESET_BOARD)) {
+        qWarning() << "[SingleMode] Failed to use RESET_BOARD item";
+        return;
+    }
+
+    // 清除所有现有宝石
+    for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
+        for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
+            Gemstone* gem = gemstoneContainer[i][j];
+            if (gem) {
+                eliminateAnime(gem);
+                gemstoneContainer[i][j] = nullptr;
+            }
+        }
+    }
+
+    // 禁止操作
+    canOpe = false;
+
+    // 等待消除动画完成后重新生成棋盘
+    QTimer::singleShot(600, this, [this]() {
+        if (isFinishing) return;
+
+        // 重新生成整个棋盘（类似reset方法中的逻辑）
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                int type = QRandomGenerator::global()->bounded(difficulty);
+
+                // 避免在初始化时创建三连
+                // 检查左边两个
+                if (j >= 2 && gemstoneContainer[i][j-1] && gemstoneContainer[i][j-2]) {
+                    int type1 = gemstoneContainer[i][j-1]->getType();
+                    int type2 = gemstoneContainer[i][j-2]->getType();
+                    if (type1 == type2 && type == type1) {
+                        type = (type + 1) % difficulty;
+                    }
+                }
+
+                // 检查上边两个
+                if (i >= 2 && gemstoneContainer[i-1][j] && gemstoneContainer[i-2][j]) {
+                    int type1 = gemstoneContainer[i-1][j]->getType();
+                    int type2 = gemstoneContainer[i-2][j]->getType();
+                    if (type1 == type2 && type == type1) {
+                        type = (type + 1) % difficulty;
+                    }
+                }
+
+                Gemstone* gem = new Gemstone(type, "default", rootEntity);
+                gem->transform()->setTranslation(getPosition(i, j));
+
+                // 连接点击信号
+                connect(gem, &Gemstone::clicked, this, &SingleModeGameWidget::handleGemstoneClicked);
+                connect(gem, &Gemstone::pickEvent, this, [this](const QString& info) {
+                    appendDebug(QString("Gemstone %1").arg(info));
+                });
+
+                gemstoneContainer[i][j] = gem;
+            }
+        }
+
+        // 生成金币宝石
+        int coinCount = QRandomGenerator::global()->bounded(1, 4);
+        generateCoinGems(coinCount);
+
+        // 恢复操作
+        canOpe = true;
+        resetInactivityTimer();
+
+        appendDebug("Used RESET_BOARD item - Board completely regenerated");
+        qDebug() << "[SingleMode] Board reset with RESET_BOARD item";
+    });
+}
+
+void SingleModeGameWidget::useItemClearAll() {
+    if (!ItemSystem::instance().useItem(ItemType::CLEAR_ALL)) {
+        qWarning() << "[SingleMode] Failed to use CLEAR_ALL item";
+        return;
+    }
+
+    // 消除所有宝石
+    std::vector<std::pair<int, int>> allGems;
+    for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
+        for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
+            if (gemstoneContainer[i][j]) {
+                allGems.push_back({i, j});
+            }
+        }
+    }
+
+    if (!allGems.empty()) {
+        removeMatches(allGems);
+
+        // 增加大量分数作为奖励
+        int bonus = allGems.size() * 50;
+        gameScore += bonus;
+        updateScoreBoard();
+
+        appendDebug(QString("Used CLEAR_ALL item - Cleared %1 gems, bonus: %2")
+                    .arg(allGems.size()).arg(bonus));
+        qDebug() << "[SingleMode] CLEAR_ALL item used, cleared" << allGems.size() << "gems";
+
+        // 触发掉落
+        drop();
+    }
+}
+
+void SingleModeGameWidget::enableHammerMode() {
+    hammerMode = true;
+
+    // 更新提示信息
+    if (timeBoardLabel) {
+        QString originalText = timeBoardLabel->text();
+        timeBoardLabel->setText("🔨 锤子模式 - 点击任意宝石");
+    }
+
+    // 改变光标
+    setCursor(Qt::CrossCursor);
+}
+
+void SingleModeGameWidget::disableHammerMode() {
+    hammerMode = false;
+
+    // 恢复提示信息
+    updateTimeBoard();
+
+    // 恢复光标
+    setCursor(Qt::ArrowCursor);
+}
 // 将匹配的宝石分组（识别连续的匹配）
 std::vector<std::vector<std::pair<int, int>>> SingleModeGameWidget::groupMatches(
     const std::vector<std::pair<int, int>>& matches) {

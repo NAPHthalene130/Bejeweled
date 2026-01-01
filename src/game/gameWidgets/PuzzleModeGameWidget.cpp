@@ -185,7 +185,9 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(960, 960);
+    // container3d->setFixedSize(960, 960); // 移除固定大小
+    container3d->setMinimumSize(600, 600); // 设置最小大小
+    container3d->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true); // 启用鼠标追踪
     container3d->setAttribute(Qt::WA_Hover, true); // 启用hover事件
@@ -201,12 +203,12 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(18);
 
-    leftLayout->addWidget(container3d, 0, Qt::AlignHCenter | Qt::AlignVCenter);
+    leftLayout->addWidget(container3d, 1);
 
     // 将左侧容器对齐到左侧，垂直居中
-    mainLayout->addWidget(leftPanel, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addWidget(leftPanel, 1);
 
-    mainLayout->addStretch(1);
+    mainLayout->addStretch(0);
     
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(420);
@@ -1112,12 +1114,6 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
     int StartPos = QRandomGenerator::global()->bounded(6);
     appendDebug(QString("CrossOrVertical=%1, StartPos=%2").arg(CrossOrVertical).arg(StartPos));
     
-    // 打印当前状态
-    QString currentState;
-    for (int i = 0; i < 8; ++i) {
-        currentState += QString("Col %1: %2 (len=%3)\n").arg(i).arg(TempGemState[i]).arg(lenthT[i]);
-    }
-    appendDebug(currentState);
     appendDebug(QString("%1  %2").arg(midX).arg(ConstChange));
     if(ConstChange) {
         if(lenthT[midX - 1] < 8&&lenthT[midX] < 8&&lenthT[midX + 1] < 8) {
@@ -1279,11 +1275,6 @@ void PuzzleModeGameWidget::reset(int mode) {
         MemberNum --;
     }
 
-    QString tempGemStateStr;
-    for (int i = 0; i < 8; ++i) {
-        tempGemStateStr += QString("Row %1: %2\n").arg(i).arg(TempGemState[i]);
-    }
-    appendDebug(tempGemStateStr);
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             if(TempGemState[j][i] < '0' || TempGemState[j][i] > '9') continue;
@@ -1299,7 +1290,7 @@ void PuzzleModeGameWidget::reset(int mode) {
             gemstoneContainer[7-i][j] = gem;
         }
     }
-    appendDebug("created puzzle gemstones with no initial matches");
+    appendDebug(QString("created puzzle gemstones with no initial matches,%1").arg(GemNumber));
     
     // 重置选择状态
     selectedNum = 0;
@@ -1530,12 +1521,12 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind)
     float screenWidth = 960.0f;
     float screenHeight = 960.0f;
 
-    // 相机参数：FOV=45度，distance=20，aspect=1.0
+    // 相机参数：FOV=45度，distance=20
     // 计算在z=0平面上的可视范围
     float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
     float cameraDistance = 20.0f;
     float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
-    float halfWidth = halfHeight;  // aspect = 1.0
+    float halfWidth = halfHeight * (screenWidth / screenHeight);  // 根据宽高比调整
 
     // 将屏幕坐标归一化到 [-1, 1]
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);

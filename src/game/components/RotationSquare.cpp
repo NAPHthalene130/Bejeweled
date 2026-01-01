@@ -72,16 +72,16 @@ void RotationSquare::setPosition(const QVector3D& topLeftPos, const QVector3D& b
     float z = 0.3f;
 
     // 上边：在顶部中心
-    topTransform->setTranslation(QVector3D(centerX, topLeftPos.y() + height / 2.0f, z));
+    topTransform->setTranslation(QVector3D(centerX, topLeftPos.y(), z));
 
     // 下边：在底部中心
-    bottomTransform->setTranslation(QVector3D(centerX, bottomRightPos.y() - height / 2.0f, z));
+    bottomTransform->setTranslation(QVector3D(centerX, bottomRightPos.y(), z));
 
     // 左边：在左侧中心
-    leftTransform->setTranslation(QVector3D(topLeftPos.x() - width / 2.0f, centerY, z));
+    leftTransform->setTranslation(QVector3D(topLeftPos.x(), centerY, z));
 
     // 右边：在右侧中心
-    rightTransform->setTranslation(QVector3D(bottomRightPos.x() + width / 2.0f, centerY, z));
+    rightTransform->setTranslation(QVector3D(bottomRightPos.x(), centerY, z));
 }
 
 void RotationSquare::setVisible(bool visible) {
