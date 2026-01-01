@@ -144,6 +144,12 @@ public:
     bool getCanBeChosen() const;
     void setCanBeChosen(bool can);
 
+    // 金币宝石相关
+    bool isCoinGem() const;
+    void setCoinGem(bool isCoin);
+    int getCoinValue() const;
+    void setCoinValue(int value);
+
 signals:
     void clicked(Gemstone* self);
     void pickEvent(const QString& info);
@@ -160,6 +166,10 @@ private:
     bool m_usingExternalModel = false;
     bool canBeChosen = true;
 
+    // 金币宝石属性
+    bool m_isCoinGem = false;
+    int m_coinValue = 0;
+
     Qt3DCore::QTransform* m_transform;
     Qt3DExtras::QPhongMaterial* m_material;
     Qt3DRender::QGeometryRenderer* m_mesh;
@@ -174,6 +184,10 @@ private:
     std::vector<Qt3DCore::QEntity*> m_particleEntities;
     std::vector<QPropertyAnimation*> m_particleAnimations;
 
+    // 金币图标
+    Qt3DCore::QEntity* m_coinIndicator = nullptr;
+    QPropertyAnimation* m_coinRotationAnimation = nullptr;
+
     void updateAppearance();
     void setupMesh();
     void setupExternalMesh();
@@ -181,6 +195,10 @@ private:
     void setupMaterial();
     void updateSpecialEffects();
     void clearSpecialEffects();
+
+    // 金币图标相关
+    void setupCoinIndicator();
+    void clearCoinIndicator();
     
     // 获取宝石颜色（根据当前风格）
     QColor getGemColor() const;

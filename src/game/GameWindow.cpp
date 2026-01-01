@@ -13,6 +13,8 @@
 #include "gameWidgets/MultiGameWaitWidget.h"
 #include "gameWidgets/AboutWidget.h"
 #include "components/MenuButton.h"
+#include "data/CoinSystem.h"
+#include "data/ItemSystem.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QString>
@@ -21,9 +23,19 @@
 #include "../utils/BGMManager.h"
 #include "../utils/ResourceUtils.h"
 #include "../utils/LogWindow.h"
+#include "data/OtherNetDataIO.h"
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
-    
+
+    // 初始化金币系统
+    CoinSystem::instance().initialize(userID);
+    qDebug() << "[GameWindow] CoinSystem initialized for user:" << QString::fromStdString(userID);
+
+    // 初始化道具系统
+    ItemSystem::instance().initialize(userID);
+    qDebug() << "[GameWindow] ItemSystem initialized for user:" << QString::fromStdString(userID);
+
+    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
     logWindow = new LogWindow();
     // logWindow->show();
 
@@ -90,6 +102,9 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     connect(menuWidget, &MenuWidget::openAbout, this, [this]() {
         switchWidget(aboutWidget);
     });
+    connect(menuWidget, &MenuWidget::openStore, this, [this]() {
+        switchWidget(storeWidget); // 点击商店时切换到商店界面
+    });
     
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
         whirlwindModeGameWidget->reset(2);
@@ -121,6 +136,9 @@ GameWindow::~GameWindow() {
     if (logWindow) {
         delete logWindow;
         logWindow = nullptr;
+    }
+    if (otherNetDataIO) {
+        otherNetDataIO.reset();
     }
 }
 

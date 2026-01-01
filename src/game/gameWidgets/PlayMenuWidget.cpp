@@ -61,7 +61,7 @@ void PlayMenuWidget::setupUI() {
     normalModeButton->setAttribute(Qt::WA_NativeWindow);
 
     // 按钮 2：旋转模式
-    rotateModeButton = new MenuButton(btnW, btnH, fontSize, QColor(147, 112, 219), "单人模式-旋风", this); // 中紫色
+    rotateModeButton = new MenuButton(btnW, btnH, fontSize, QColor(147, 112, 219), "单人模式-无尽旋风", this); // 中紫色
     rotateModeButton->setAttribute(Qt::WA_NativeWindow);
 
     // 按钮 3：多人模式
