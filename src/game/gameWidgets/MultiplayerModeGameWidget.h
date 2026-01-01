@@ -95,6 +95,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -103,7 +104,7 @@ private:
     bool isStop = false;
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
-    void handleManualClick(const QPoint& screenPos);
+    void handleManualClick(const QPoint& screenPos , int kind);
     void appendDebug(const QString& text);
     void refreshDebugStatus();
 
@@ -151,6 +152,7 @@ private:
     int comboCount = 0; 
     
     int difficulty = 4;
+    bool isDragging;
 
     GameWindow* gameWindow;
 
