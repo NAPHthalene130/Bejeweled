@@ -117,6 +117,8 @@ private:
     // 检查匹配组中是否包含特殊宝石
     bool hasSpecialGem(const std::vector<std::pair<int, int>>& group) const;
 
+    void remove3x3AreaChain(int centerRow, int centerCol);
+
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;
     std::vector<std::vector<Gemstone*>> gemstoneContainer;
