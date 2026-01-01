@@ -5,6 +5,8 @@
 #include <string>
 #include <map>
 
+class OtherNetDataIO;
+
 /**
  * @brief 道具类型枚举
  */
@@ -45,6 +47,24 @@ public:
      * @param userId 用户ID
      */
     void initialize(const std::string& userId);
+
+    /**
+     * @brief 设置网络IO对象（用于在线模式）
+     * @param netIO OtherNetDataIO指针
+     */
+    void setNetworkIO(OtherNetDataIO* netIO);
+
+    /**
+     * @brief 检查是否为离线模式
+     * @return true表示离线模式，false表示在线模式
+     */
+    bool isOfflineMode() const;
+
+    /**
+     * @brief 直接设置道具数量（用于从服务器加载）
+     * @param propNums 道具数量数组 [FREEZE_TIME, HAMMER, RESET_BOARD, CLEAR_ALL]
+     */
+    void setItemCounts(const std::vector<int>& propNums);
 
     /**
      * @brief 获取道具信息
@@ -122,6 +142,9 @@ private:
 
     std::string m_currentUserId;
     bool m_initialized;
+
+    // 网络IO对象（用于在线模式）
+    OtherNetDataIO* m_networkIO;
 
     // 道具信息
     std::map<ItemType, ItemInfo> m_itemInfos;

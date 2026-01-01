@@ -27,15 +27,37 @@
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
 
+    // 初始化网络IO（需要在CoinSystem和ItemSystem之前初始化）
+    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
+
     // 初始化金币系统
     CoinSystem::instance().initialize(userID);
     qDebug() << "[GameWindow] CoinSystem initialized for user:" << QString::fromStdString(userID);
 
     // 初始化道具系统
     ItemSystem::instance().initialize(userID);
+
+    // 设置网络IO并从服务器加载道具数量（仅在非离线模式下）
+    if (userID != "$#SINGLE#$") {
+        ItemSystem::instance().setNetworkIO(otherNetDataIO.get());
+
+        // 从服务器加载道具数量
+        std::vector<int> props = otherNetDataIO->getPropNums(userID);
+        if (props.size() == 4) {
+            // 设置道具数量到ItemSystem
+            ItemSystem::instance().setItemCounts(props);
+            qDebug() << "[GameWindow] Loaded props from server:"
+                     << props[0] << props[1] << props[2] << props[3];
+        } else {
+            qDebug() << "[GameWindow] Failed to load props from server, using local data";
+        }
+
+        qDebug() << "[GameWindow] ItemSystem network sync enabled";
+    } else {
+        qDebug() << "[GameWindow] ItemSystem running in offline mode";
+    }
     qDebug() << "[GameWindow] ItemSystem initialized for user:" << QString::fromStdString(userID);
 
-    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
     logWindow = new LogWindow();
     // logWindow->show();
 
