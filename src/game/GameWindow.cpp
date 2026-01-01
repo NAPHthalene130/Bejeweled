@@ -36,7 +36,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     qDebug() << "[GameWindow] ItemSystem initialized for user:" << QString::fromStdString(userID);
 
     otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
-    logWindow = new LogWindow();
+    // logWindow = new LogWindow();
     // logWindow->show();
 
     achievementsWidget = new AchievementsWidget(this, this);
