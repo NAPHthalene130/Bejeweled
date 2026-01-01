@@ -11,6 +11,7 @@
 #include <Qt3DRender/QCamera>
 #include <Qt3DRender/QPointLight>
 #include <Qt3DInput/QInputAspect>
+#include "../data/ItemSystem.h"
 
 class QTextEdit;
 class QLabel;
@@ -69,7 +70,20 @@ public:
 
     void setDifficulty(int diff);
     int getDifficulty() const;
-    
+
+    // 金币系统相关
+    void generateCoinGems(int count);
+    void collectCoinGem(Gemstone* gem);
+    int getEarnedCoins() const; // 获取本局获得的金币数
+
+    // 道具系统相关
+    void useItemFreezeTime();
+    void useItemHammer();
+    void useItemResetBoard();
+    void useItemClearAll();
+    void enableHammerMode();
+    void disableHammerMode();
+
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
@@ -168,6 +182,20 @@ private:
     QLabel* timeBoardLabel = nullptr;
     QPushButton* backToMenuButton = nullptr;
     ScoreProgressBar* scoreProgressBar = nullptr;
+
+    // 道具相关UI
+    QWidget* itemPanel = nullptr;
+    std::map<ItemType, QPushButton*> itemButtons;
+    std::map<ItemType, QLabel*> itemCountLabels;
+
+    // 道具状态
+    bool hammerMode = false;
+    int freezeTimeRemaining = 0;
+    QTimer* freezeTimer = nullptr;
+
+    // 金币统计
+    int initialCoins = 0;  // 游戏开始时的金币数
+    int earnedCoins = 0;   // 本局获得的金币数
     
 };
 
