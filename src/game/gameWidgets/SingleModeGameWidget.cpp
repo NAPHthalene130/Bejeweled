@@ -579,7 +579,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     focusInfoLabel = new QLabel(rightPanel);
     focusInfoLabel->setVisible(false);
     debugText = new QTextEdit(rightPanel);
-    debugText->setVisible(true);
+    debugText->setVisible(false);
     debugText->setReadOnly(true);
     debugTimer = new QTimer(this);debugText->setFixedSize(180, 54);
 
