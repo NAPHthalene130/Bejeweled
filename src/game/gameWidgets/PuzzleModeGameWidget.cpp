@@ -698,7 +698,7 @@ void PuzzleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     group->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
-//————————————————————————————————————————————————————————————————————最后一步
+// 添加选择宝石 的方法 ， 需在所有event后调用 
 void PuzzleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
     if (!gem) {
         appendDebug("handleGemstoneClicked: gem is null!");
@@ -792,14 +792,9 @@ void PuzzleModeGameWidget::mousePressEvent(QMouseEvent* event) {
     QWidget::mousePressEvent(event);
 }
 
-void PuzzleModeGameWidget::mouseMoveEvent(QMouseEvent* event) {
-    
-    QWidget::mouseMoveEvent(event);
-}
-
 void PuzzleModeGameWidget::mouseReleaseEvent(QMouseEvent* event) {
     appendDebug(QString("Mouse Released, button=%1, isDragging=%2").arg(event->button()).arg(isDragging));
-        
+
     // 如果鼠标释放时还在拖动状态但没有触发交换，则取消拖动
     appendDebug("Mouse released without triggering swap, cancelling drag");
     if(isDragging) {
@@ -1262,7 +1257,9 @@ void PuzzleModeGameWidget::reset(int mode) {
     GemNumber = 0;
     midX = midY = 0;
 
-    debugText->setText(QString("Start\n")); // 刷新显示
+    // debugText->setText(QString("Start\n")); // 刷新显示
+    //目前关闭debug窗口
+    
     int MemberNum = std::max(5 , std::min(10,3*Level));
     bool SpecialComplete = false;
     while(MemberNum) {
@@ -1512,7 +1509,7 @@ void PuzzleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
         .arg(row1).arg(col1).arg(row2).arg(col2));
 }
 
-//三      handle
+//三      handle，将模糊的点击地点转化为确切的宝石位置
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
 void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind) {
@@ -1600,74 +1597,6 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind)
             .arg(minDistance, 0, 'f', 2));
     }
 }
-
-// 专门用于拖动的点击处理 - 找到起始宝石
-// void PuzzleModeGameWidget::handleManualClickForDrag(const QPoint& screenPos) {
-//     // 容器大小是 960x960
-//     float screenWidth = 960.0f;
-//     float screenHeight = 960.0f;
-
-//     // 相机参数：FOV=45度，distance=20，aspect=1.0
-//     // 计算在z=0平面上的可视范围
-//     float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
-//     float cameraDistance = 20.0f;
-//     float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
-//     float halfWidth = halfHeight;  // aspect = 1.0
-
-//     // 将屏幕坐标归一化到 [-1, 1]
-//     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
-//     float normalizedY = -(screenPos.y() - screenHeight / 2.0f) / (screenHeight / 2.0f);  // Y轴反向
-
-//     // 转换到世界坐标（z=0平面）
-//     float worldX = normalizedX * halfWidth;
-//     float worldY = normalizedY * halfHeight;
-
-//     // 找到最接近这个位置的格子（不管是否有宝石）
-//     Gemstone* closestGem = nullptr;
-//     float minDistance = std::numeric_limits<float>::max();
-//     int closestRow = -1, closestCol = -1;
-
-//     for (int i = 0; i < gemstoneContainer.size(); ++i) {
-//         for (int j = 0; j < gemstoneContainer[i].size(); ++j) {
-//             // 计算格子中心位置
-//             QVector3D gridPos = getPosition(i, j);
-//             float dx = gridPos.x() - worldX;
-//             float dy = gridPos.y() - worldY;
-//             float distance = std::sqrt(dx * dx + dy * dy);
-
-//             if (distance < minDistance) {
-//                 minDistance = distance;
-//                 closestGem = gemstoneContainer[i][j];  // 可能是 nullptr（空位）
-//                 closestRow = i;
-//                 closestCol = j;
-//             }
-//         }
-//     }
-
-//     // 如果找到了足够近的格子（距离 < 0.8）并且有宝石
-//     if (minDistance < 0.8f && closestGem) {
-//         dragStartGemstone = closestGem;
-//         dragStartRow = closestRow;
-//         dragStartCol = closestCol;
-//         isDragging = true;
-        
-        
-//         appendDebug(QString("Drag started on gemstone at (%1,%2), distance=%3")
-//             .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
-//     } else {
-//         dragStartGemstone = nullptr;
-//         dragStartRow = -1;
-//         dragStartCol = -1;
-//         isDragging = false;
-        
-//         if (minDistance >= 0.8f) {
-//             appendDebug(QString("No grid found near drag start (min distance=%1)")
-//                 .arg(minDistance, 0, 'f', 2));
-//         } else {
-//             appendDebug("Drag started on empty space, ignoring");
-//         }
-//     }
-// }
 
 // 重置无操作计时器————————————————————————————————————————————————————————————————————————————————————————————————————————————
 void PuzzleModeGameWidget::resetInactivityTimer() {
