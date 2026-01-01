@@ -274,6 +274,7 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     debugText->setFixedHeight(200); // 固定高度
     // 添加到现有布局中（例如右侧面板）
     panelLayout->addWidget(debugText);
+    debugText->setVisible(false);//hide 一下
 
     // 新增重置按钮
     resetButton = new QPushButton("重置状态", rightPanel);
@@ -1257,7 +1258,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     GemNumber = 0;
     midX = midY = 0;
 
-    // debugText->setText(QString("Start\n")); // 刷新显示
+    debugText->setText(QString("Start\n")); // 刷新显示
     //目前关闭debug窗口
     
     int MemberNum = std::max(5 , std::min(10,3*Level));
