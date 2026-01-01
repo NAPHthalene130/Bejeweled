@@ -373,6 +373,9 @@ Gemstone::Gemstone(int type, std::string style, Qt3DCore::QNode* parent)
 }
 
 Gemstone::~Gemstone() {
+    // 清理金币图标
+    clearCoinIndicator();
+    // Qt3D 节点会自动清理
     // Qt3D 节点会自动清理子节点，但未设置父节点的组件需要手动清理
     if (m_mesh) {
         delete m_mesh;
@@ -835,10 +838,175 @@ void Gemstone::clearSpecialEffects() {
         delete m_particlesRoot;
         m_particlesRoot = nullptr;
     }
-    
+
     m_particleEntities.clear();
     for (auto anim : m_particleAnimations) {
         delete anim;
     }
     m_particleAnimations.clear();
+}
+
+// ============================================================================
+// 金币宝石实现
+// ============================================================================
+
+bool Gemstone::isCoinGem() const {
+    return m_isCoinGem;
+}
+
+void Gemstone::setCoinGem(bool isCoin) {
+    m_isCoinGem = isCoin;
+    // 如果设置为金币宝石，显示金币图标
+    if (m_isCoinGem) {
+        setupCoinIndicator();
+    } else {
+        clearCoinIndicator();
+    }
+}
+
+int Gemstone::getCoinValue() const {
+    return m_coinValue;
+}
+
+void Gemstone::setCoinValue(int value) {
+    m_coinValue = value;
+}
+
+// ============================================================================
+// 金币图标实现
+// ============================================================================
+
+void Gemstone::setupCoinIndicator() {
+    // 清除旧的金币图标（如果有）
+    clearCoinIndicator();
+
+    // 创建金币根实体
+    m_coinIndicator = new Qt3DCore::QEntity(this);
+
+    // === 主金币（圆柱体）===
+    auto* coinEntity = new Qt3DCore::QEntity(m_coinIndicator);
+
+    auto* coinMesh = new Qt3DExtras::QCylinderMesh(coinEntity);
+    coinMesh->setRadius(0.25f);  // 半径稍小
+    coinMesh->setLength(0.08f);  // 厚度（很薄，像硬币）
+    coinMesh->setRings(2);
+    coinMesh->setSlices(24);     // 更圆滑
+
+    // 金色材质 - 更亮的金色
+    auto* coinMaterial = new Qt3DExtras::QPhongMaterial(coinEntity);
+    coinMaterial->setDiffuse(QColor(255, 223, 0));      // 亮金色
+    coinMaterial->setAmbient(QColor(200, 160, 0));      // 深金色环境光
+    coinMaterial->setSpecular(QColor(255, 255, 220));   // 亮黄色高光
+    coinMaterial->setShininess(250.0f);                  // 高光泽度
+
+    auto* coinTransform = new Qt3DCore::QTransform(coinEntity);
+    coinTransform->setRotationX(0.0f);
+
+    coinEntity->addComponent(coinMesh);
+    coinEntity->addComponent(coinMaterial);
+    coinEntity->addComponent(coinTransform);
+
+    // === 数字显示（使用小球体组成数字形状）===
+    // 创建数字实体容器
+    auto* numberEntity = new Qt3DCore::QEntity(m_coinIndicator);
+    auto* numberTransform = new Qt3DCore::QTransform(numberEntity);
+    numberTransform->setTranslation(QVector3D(0.0f, 0.0f, 0.06f)); // 放在金币前面
+    numberTransform->setScale(0.4f); // 缩小数字
+    numberEntity->addComponent(numberTransform);
+
+    // 根据金币价值显示不同数量的小点
+    float dotRadius = 0.08f;
+    QColor numberColor(255, 100, 100); // 红色数字，醒目
+
+    // 根据数值显示点阵
+    std::vector<QVector3D> dotPositions;
+    switch (m_coinValue) {
+        case 1:
+            dotPositions.push_back(QVector3D(0.0f, 0.0f, 0.0f));
+            break;
+        case 2:
+            dotPositions.push_back(QVector3D(-0.12f, 0.0f, 0.0f));
+            dotPositions.push_back(QVector3D(0.12f, 0.0f, 0.0f));
+            break;
+        case 3:
+            dotPositions.push_back(QVector3D(-0.15f, 0.0f, 0.0f));
+            dotPositions.push_back(QVector3D(0.0f, 0.0f, 0.0f));
+            dotPositions.push_back(QVector3D(0.15f, 0.0f, 0.0f));
+            break;
+        case 4:
+            dotPositions.push_back(QVector3D(-0.12f, 0.12f, 0.0f));
+            dotPositions.push_back(QVector3D(0.12f, 0.12f, 0.0f));
+            dotPositions.push_back(QVector3D(-0.12f, -0.12f, 0.0f));
+            dotPositions.push_back(QVector3D(0.12f, -0.12f, 0.0f));
+            break;
+        case 5:
+            dotPositions.push_back(QVector3D(-0.12f, 0.12f, 0.0f));
+            dotPositions.push_back(QVector3D(0.12f, 0.12f, 0.0f));
+            dotPositions.push_back(QVector3D(0.0f, 0.0f, 0.0f));
+            dotPositions.push_back(QVector3D(-0.12f, -0.12f, 0.0f));
+            dotPositions.push_back(QVector3D(0.12f, -0.12f, 0.0f));
+            break;
+        default:
+            dotPositions.push_back(QVector3D(0.0f, 0.0f, 0.0f));
+            break;
+    }
+
+    // 创建数字点
+    for (const auto& pos : dotPositions) {
+        auto* dotEntity = new Qt3DCore::QEntity(numberEntity);
+
+        auto* dotMesh = new Qt3DExtras::QSphereMesh(dotEntity);
+        dotMesh->setRadius(dotRadius);
+        dotMesh->setRings(8);
+        dotMesh->setSlices(8);
+
+        auto* dotMaterial = new Qt3DExtras::QPhongMaterial(dotEntity);
+        dotMaterial->setDiffuse(numberColor);
+        dotMaterial->setAmbient(numberColor.darker(120));
+        dotMaterial->setSpecular(QColor(255, 200, 200));
+        dotMaterial->setShininess(100.0f);
+
+        auto* dotTransform = new Qt3DCore::QTransform(dotEntity);
+        dotTransform->setTranslation(pos);
+
+        dotEntity->addComponent(dotMesh);
+        dotEntity->addComponent(dotMaterial);
+        dotEntity->addComponent(dotTransform);
+    }
+
+    // === 金币整体位置变换 ===
+    auto* coinIndicatorTransform = new Qt3DCore::QTransform(m_coinIndicator);
+    coinIndicatorTransform->setTranslation(QVector3D(0.0f, 0.65f, 0.0f)); // 更贴近宝石
+    coinIndicatorTransform->setScale(0.8f);
+    coinIndicatorTransform->setRotationX(15.0f); // 稍微倾斜，更有立体感
+    m_coinIndicator->addComponent(coinIndicatorTransform);
+
+    // === 添加旋转动画 ===
+    m_coinRotationAnimation = new QPropertyAnimation(coinIndicatorTransform, "rotationY");
+    m_coinRotationAnimation->setStartValue(15.0f);      // 从15度开始
+    m_coinRotationAnimation->setEndValue(375.0f);       // 转到375度（360+15）
+    m_coinRotationAnimation->setDuration(3000);         // 3秒转一圈，更慢更优雅
+    m_coinRotationAnimation->setLoopCount(-1);
+    m_coinRotationAnimation->setEasingCurve(QEasingCurve::Linear);
+    m_coinRotationAnimation->start();
+
+    qDebug() << "[Gemstone] Coin indicator created with value:" << m_coinValue;
+}
+
+void Gemstone::clearCoinIndicator() {
+    if (m_coinIndicator) {
+        // 停止动画
+        if (m_coinRotationAnimation) {
+            m_coinRotationAnimation->stop();
+            delete m_coinRotationAnimation;
+            m_coinRotationAnimation = nullptr;
+        }
+
+        // 删除金币实体
+        m_coinIndicator->setParent((Qt3DCore::QNode*)nullptr);
+        delete m_coinIndicator;
+        m_coinIndicator = nullptr;
+
+        qDebug() << "[Gemstone] Coin indicator cleared";
+    }
 }

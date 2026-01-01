@@ -115,69 +115,6 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
     confirmPwdEdit->setPasswordMode(true);
     confirmPwdEdit->setMinimumHeight(48);
 
-    // === 邮箱输入区域 ===
-    QLabel* emailLabel = new QLabel("📧 邮箱地址", cardWidget);
-    emailLabel->setFont(labelFont);
-    emailLabel->setStyleSheet("color: #2d3748; background: transparent; padding: 3px 5px;");
-
-    emailHintLabel = new QLabel("", cardWidget);
-    emailHintLabel->setStyleSheet(R"(
-        color: #a0aec0; 
-        font-size: 10px; 
-        background: transparent; 
-        padding: 2px 5px;
-        font-style: italic;
-    )");
-
-    emailEdit = new AuthLineEdit("请输入您的邮箱地址", cardWidget);
-    emailEdit->setMinimumHeight(48);
-
-    // === 验证码区域 ===
-    QLabel* codeLabel = new QLabel("🔐 邮箱验证码", cardWidget);
-    codeLabel->setFont(labelFont);
-    codeLabel->setStyleSheet("color: #2d3748; background: transparent; padding: 3px 5px;");
-
-    QLabel* codeHintLabel = new QLabel("", cardWidget);
-    codeHintLabel->setStyleSheet(R"(
-        color: #a0aec0; 
-        font-size: 10px; 
-        background: transparent; 
-        padding: 2px 5px;
-        font-style: italic;
-    )");
-
-    // 验证码输入框和获取按钮
-    QHBoxLayout* emailCodeLayout = new QHBoxLayout();
-    emailCodeEdit = new AuthLineEdit("请输入邮箱验证码", cardWidget);
-    emailCodeEdit->setMinimumHeight(48);
-    
-    getCodeBtn = new AuthButton("📨 获取验证码", cardWidget);
-    getCodeBtn->setMinimumHeight(48);
-    getCodeBtn->setMinimumWidth(130);
-    getCodeBtn->setStyleSheet(R"(
-        QPushButton {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #ffa751, stop:1 #ffe259);
-            color: #2d3748;
-            border: none;
-            border-radius: 10px;
-            padding: 10px 15px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        QPushButton:hover {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #ff9640, stop:1 #ffd748);
-        }
-        QPushButton:pressed {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 #ee8530, stop:1 #eec737);
-        }
-    )");
-    emailCodeLayout->addWidget(emailCodeEdit, 2);
-    emailCodeLayout->addSpacing(10);
-    emailCodeLayout->addWidget(getCodeBtn, 1);
-
     // 分隔线
     QFrame* separator = new QFrame(cardWidget);
     separator->setFrameShape(QFrame::HLine);
@@ -265,22 +202,6 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
     cardLayout->addWidget(confirmPwdEdit);      // 输入框在下
     cardLayout->addSpacing(10);
     
-    // 邮箱（提示在输入框上方）
-    cardLayout->addWidget(emailLabel);
-    cardLayout->addSpacing(3);
-    cardLayout->addWidget(emailHintLabel);    // 提示在上
-    cardLayout->addSpacing(5);
-    cardLayout->addWidget(emailEdit);         // 输入框在下
-    cardLayout->addSpacing(10);
-    
-    // 验证码（提示在输入框上方）
-    cardLayout->addWidget(codeLabel);
-    cardLayout->addSpacing(3);
-    cardLayout->addWidget(codeHintLabel);     // 提示在上
-    cardLayout->addSpacing(5);
-    cardLayout->addLayout(emailCodeLayout);   // 输入框在下
-    cardLayout->addSpacing(12);  // 从15减小到12
-    
     // 分隔线和按钮
     cardLayout->addWidget(separator);
     cardLayout->addSpacing(10);  // 从12减小到10
@@ -300,13 +221,9 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
 
     // 信号连接
     connect(toLoginBtn, &QPushButton::clicked, this, &RegisterWidget::switchToLogin);
-    connect(getCodeBtn, &QPushButton::clicked, this, [=]() {
-        emit requestEmailCode(emailEdit->text());
-    });
     connect(registerBtn, &QPushButton::clicked, this, [=]() {
         emit registerClicked(idEdit->text(), passwordEdit->text(),
-                            confirmPwdEdit->text(), emailEdit->text(),
-                            emailCodeEdit->text());
+                            confirmPwdEdit->text());
     });
 }
 

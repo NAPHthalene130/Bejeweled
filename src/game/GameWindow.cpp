@@ -11,7 +11,10 @@
 #include "gameWidgets/PuzzleModeGameWidget.h"
 #include "gameWidgets/FinalWidget.h"
 #include "gameWidgets/MultiGameWaitWidget.h"
+#include "gameWidgets/AboutWidget.h"
 #include "components/MenuButton.h"
+#include "data/CoinSystem.h"
+#include "data/ItemSystem.h"
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QString>
@@ -20,11 +23,21 @@
 #include "../utils/BGMManager.h"
 #include "../utils/ResourceUtils.h"
 #include "../utils/LogWindow.h"
+#include "data/OtherNetDataIO.h"
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
-    
-    logWindow = new LogWindow();
-    logWindow->show();
+
+    // 初始化金币系统
+    CoinSystem::instance().initialize(userID);
+    qDebug() << "[GameWindow] CoinSystem initialized for user:" << QString::fromStdString(userID);
+
+    // 初始化道具系统
+    ItemSystem::instance().initialize(userID);
+    qDebug() << "[GameWindow] ItemSystem initialized for user:" << QString::fromStdString(userID);
+
+    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
+    // logWindow = new LogWindow();
+    // logWindow->show();
 
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
@@ -40,10 +53,12 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     puzzleModeGameWidget = new PuzzleModeGameWidget(this, this);
     finalWidget = new FinalWidget(this, this);
     multiGameWaitWidget = new MultiGameWaitWidget(this, this);
+    aboutWidget = new AboutWidget(this, this);
 
     // 连接排行榜信号
     connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { this->switchWidget(rankListWidget); });
     connect(rankListWidget, &RankListWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
+    connect(aboutWidget, &AboutWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
 
     achievementsWidget->hide();
     playMenuWidget->hide();
@@ -56,6 +71,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     puzzleModeGameWidget->hide();
     finalWidget->hide();
     multiGameWaitWidget->hide();
+    aboutWidget->hide();
 
     connect(menuWidget, &MenuWidget::startGame, [this]() {
         switchWidget(playMenuWidget);
@@ -81,6 +97,13 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     
     connect(menuWidget, &MenuWidget::openSettings, this, [this]() {
     switchWidget(settingWidget); // 点击设置时切换到设置界面
+    });
+
+    connect(menuWidget, &MenuWidget::openAbout, this, [this]() {
+        switchWidget(aboutWidget);
+    });
+    connect(menuWidget, &MenuWidget::openStore, this, [this]() {
+        switchWidget(storeWidget); // 点击商店时切换到商店界面
     });
     
     connect(playMenuWidget, &PlayMenuWidget::startRotateMode, [this]() {
@@ -177,15 +200,15 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
 
     switchWidget(menuWidget);
-    
-    resize(1600, 1000);
-    setWindowTitle("宝石迷阵");
 }
 
 GameWindow::~GameWindow() {
     if (logWindow) {
         delete logWindow;
         logWindow = nullptr;
+    }
+    if (otherNetDataIO) {
+        otherNetDataIO.reset();
     }
 }
 

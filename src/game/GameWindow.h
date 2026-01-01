@@ -17,8 +17,10 @@ class MultiplayerModeGameWidget;
 class PuzzleModeGameWidget;
 class FinalWidget;
 class MultiGameWaitWidget;
+class AboutWidget;
 class NetDataIO;
 class LogWindow;
+class OtherNetDataIO;
 
 #include <vector>
 #include "data/AchievementData.h"
@@ -41,6 +43,7 @@ public:
     FinalWidget* getFinalWidget() const { return finalWidget; }
     MultiGameWaitWidget* getMultiGameWaitWidget() const { return multiGameWaitWidget; }
     void setMultiGameWaitWidget(MultiGameWaitWidget* widget) { multiGameWaitWidget = widget; }
+    AboutWidget* getAboutWidget() const { return aboutWidget; }
 
     // NetDataIO access
     NetDataIO* getNetDataIO() const { return netDataIO; }
@@ -64,6 +67,19 @@ public:
 
     int getDifficulty() const { return difficulty; }
     void setDifficulty(int diff) { difficulty = diff; }
+    OtherNetDataIO* getOtherNetDataIO() const { return otherNetDataIO.get(); }
+
+    int getMoney() const;
+    void setMoney(int money);
+
+    std::vector<int> getPropNums() const;
+    void setPropNums(const std::vector<int>& propNums);
+
+    std::string getAchievementStr() const;
+    void setAchievementStr(const std::string& achievementStr);
+
+    std::vector<std::vector<std::pair<std::string, int>>> getRankLists() const;
+    void setRankLists(const std::vector<std::vector<std::pair<std::string, int>>>& ranks);
 private:
     std::string userID;
     std::string ip = "127.0.0.1";
@@ -82,10 +98,17 @@ private:
     PuzzleModeGameWidget* puzzleModeGameWidget = nullptr;
     FinalWidget* finalWidget = nullptr;
     MultiGameWaitWidget* multiGameWaitWidget = nullptr;
+    AboutWidget* aboutWidget = nullptr;
     NetDataIO* netDataIO = nullptr;
     LogWindow* logWindow = nullptr;
     std::string gemstoneStyle;
     std::vector<AchievementData> achievementsContainer;
+    
+    std::unique_ptr<OtherNetDataIO> otherNetDataIO;
+    int money = 0;
+    std::vector<int> propNums = {0,0,0,0};
+    std::string achievementStr = "0000000000";
+    std::vector<std::vector<std::pair<std::string, int>>> achievements;
 
 };
 

@@ -22,13 +22,13 @@ int main(int argc, char *argv[])
     std::cout << "Current Resource Path: " << ResourceUtils::getResourcesDir() << std::endl;
 
     // 启动登录注册窗口
-    // AuthWindow w;
-    // w.show();
+    AuthWindow w;
+    w.show();
 
     //测试用
-    int randNum = QRandomGenerator::global()->bounded(1000000); //随机ID
-    GameWindow gameWindow(nullptr, std::to_string(randNum));
-    gameWindow.show();
+    // int randNum = QRandomGenerator::global()->bounded(1000000); //随机ID
+    // GameWindow gameWindow(nullptr, std::to_string(randNum));
+    // gameWindow.show();
 
     // TestWindow testWindow;
     // testWindow.show();

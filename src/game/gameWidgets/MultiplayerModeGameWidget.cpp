@@ -188,7 +188,9 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     
     // 创建3D窗口容器
     container3d = QWidget::createWindowContainer(game3dWindow);
-    container3d->setFixedSize(1000, 1000);
+    // container3d->setFixedSize(1000, 1000); // 移除固定大小
+    container3d->setMinimumSize(600, 600); // 设置最小大小
+    container3d->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     container3d->setFocusPolicy(Qt::StrongFocus);
     container3d->setMouseTracking(true); // 启用鼠标追踪
     container3d->setAttribute(Qt::WA_Hover, true); // 启用hover事件
@@ -198,7 +200,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     mainLayout->setContentsMargins(50, 0, 50, 0); // 添加一些边距
     
     // 将容器对齐到左侧，垂直居中
-    mainLayout->addWidget(container3d, 0, Qt::AlignLeft | Qt::AlignVCenter);
+    mainLayout->addWidget(container3d, 1); // 这里的1表示拉伸因子
     
     // 中间布局用于放置状态信息
     QVBoxLayout* centerLayout = new QVBoxLayout();
@@ -296,7 +298,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     centerLayout->addStretch(1);
     centerLayout->addWidget(backToMenuButton, 0, Qt::AlignBottom | Qt::AlignHCenter);
 
-    mainLayout->addStretch(1);
+    // mainLayout->addStretch(1); // 移除多余的stretch，让左侧3D窗口占满剩余空间
     
     rightPanel = new QWidget(this);
     rightPanel->setFixedWidth(450); 
@@ -333,8 +335,10 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     player1Window = new Qt3DExtras::Qt3DWindow();
     setupSmall3DWindow(player1Window, &player1RootEntity, &player1Camera);
     player1Container = QWidget::createWindowContainer(player1Window);
-    player1Container->setFixedSize(400, 400); // 400x400
-    otherPlayersPanelLayout->addWidget(player1Container, 0, Qt::AlignHCenter);
+    // player1Container->setFixedSize(400, 400); // 移除固定大小
+    player1Container->setMinimumSize(200, 200); // 设置最小大小
+    player1Container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    otherPlayersPanelLayout->addWidget(player1Container, 1); // 自适应
 
     // Initialize Player 2 Window (Bottom)
     player2ScoreLabel = new QLabel("玩家2: 0分", rightPanel);
@@ -344,8 +348,10 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     player2Window = new Qt3DExtras::Qt3DWindow();
     setupSmall3DWindow(player2Window, &player2RootEntity, &player2Camera);
     player2Container = QWidget::createWindowContainer(player2Window);
-    player2Container->setFixedSize(400, 400); // 400x400
-    otherPlayersPanelLayout->addWidget(player2Container, 0, Qt::AlignHCenter);
+    // player2Container->setFixedSize(400, 400); // 移除固定大小
+    player2Container->setMinimumSize(200, 200); // 设置最小大小
+    player2Container->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    otherPlayersPanelLayout->addWidget(player2Container, 1); // 自适应
 
 
     panelLayout->addStretch(0);  // 去掉多余的stretch，让棋盘区域占用更多空间
@@ -375,7 +381,7 @@ MultiplayerModeGameWidget::MultiplayerModeGameWidget(QWidget* parent, GameWindow
     debugTimer = new QTimer(this);
 
     setLayout(mainLayout);
-    mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
+    // mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter); // 移除重复添加
     container3d->installEventFilter(this);
     game3dWindow->installEventFilter(this); // 关键：在3D窗口上安装事件过滤器
 
@@ -1436,16 +1442,16 @@ void MultiplayerModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int 
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
 void MultiplayerModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    // 容器大小是 960x960
-    float screenWidth = 960.0f;
-    float screenHeight = 960.0f;
+    // 获取当前容器大小
+    float screenWidth = static_cast<float>(container3d->width());
+    float screenHeight = static_cast<float>(container3d->height());
 
-    // 相机参数：FOV=45度，distance=20，aspect=1.0
+    // 相机参数：FOV=45度，distance=20
     // 计算在z=0平面上的可视范围
     float fovRadians = 45.0f * M_PI / 180.0f;  // 转换为弧度
     float cameraDistance = 20.0f;
     float halfHeight = cameraDistance * std::tan(fovRadians / 2.0f);  // z=0平面上的半高度
-    float halfWidth = halfHeight;  // aspect = 1.0
+    float halfWidth = halfHeight * (screenWidth / screenHeight);  // 根据宽高比调整
 
     // 将屏幕坐标归一化到 [-1, 1]
     float normalizedX = (screenPos.x() - screenWidth / 2.0f) / (screenWidth / 2.0f);
@@ -2290,7 +2296,6 @@ bool MultiplayerModeGameWidget::hasSpecialGem(const std::vector<std::pair<int, i
     }
     return false;
 }
-
 void MultiplayerModeGameWidget::sendNowBoard() {
     if (isStop) return;
     GameNetData data;
