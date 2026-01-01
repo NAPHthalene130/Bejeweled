@@ -27,9 +27,12 @@ TestWindow::~TestWindow() {
     if (rootEntity) {
         delete rootEntity;
     }
-    if (view3D) {
-        delete view3D;
-    }
+    // view3D is owned by the container (created via createWindowContainer)
+    // and will be deleted when the container is deleted.
+    // The container is owned by this widget layout, so it will be deleted automatically.
+    // if (view3D) {
+    //     delete view3D;
+    // }
 }
 
 void TestWindow::setup3DScene() {
@@ -45,13 +48,13 @@ void TestWindow::setup3DScene() {
     view3D->setRootEntity(rootEntity);
     
     // 相机
-    Qt3DRender::QCamera *camera = view3D->camera();
-    camera->lens()->setPerspectiveProjection(45.0f, 16.0f/9.0f, 0.1f, 1000.0f);
-    camera->setPosition(QVector3D(0, 0, 20.0f));
-    camera->setViewCenter(QVector3D(0, 0, 0));
+    cameraEntity = view3D->camera();
+    cameraEntity->lens()->setPerspectiveProjection(45.0f, 16.0f/9.0f, 0.1f, 1000.0f);
+    cameraEntity->setPosition(QVector3D(0, 0, 20.0f));
+    cameraEntity->setViewCenter(QVector3D(0, 0, 0));
     
     // 灯光
-    Qt3DCore::QEntity *lightEntity = new Qt3DCore::QEntity(rootEntity);
+    lightEntity = new Qt3DCore::QEntity(rootEntity);
     Qt3DRender::QPointLight *light = new Qt3DRender::QPointLight(lightEntity);
     light->setColor(Qt::white);
     light->setIntensity(1.0f);

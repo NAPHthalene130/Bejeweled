@@ -240,16 +240,19 @@ void GameWindow::switchWidget(QWidget* widget)
     BGMManager::instance().stop();
     // 防止 QMainWindow 删除之前的中央部件
     if (centralWidget()) {
-        takeCentralWidget();
-    }
-
-    if (currentWidget) {
-        currentWidget->hide();
-        // 不要让 setCentralWidget 删除之前的 widget
-        if (currentWidget->parent() == this) {
-            currentWidget->setParent(nullptr);
+        QWidget* oldWidget = takeCentralWidget();
+        if (oldWidget) {
+            oldWidget->setParent(this);
+            oldWidget->hide();
         }
     }
+
+    // currentWidget 只是用于跟踪当前显示的部件，不需要额外的 setParent(nullptr) 操作
+    // 因为 takeCentralWidget 已经处理了 ownership
+    if (currentWidget && currentWidget != widget) {
+        currentWidget->hide();
+    }
+    
     setCentralWidget(widget);
     widget->show();
     QString bgmPath;

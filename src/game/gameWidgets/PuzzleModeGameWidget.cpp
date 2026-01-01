@@ -676,7 +676,7 @@ void PuzzleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     QVector3D pos1 = gemstone1->transform()->translation();
     QVector3D pos2 = gemstone2->transform()->translation();
     
-    QParallelAnimationGroup* group = new QParallelAnimationGroup();
+    QParallelAnimationGroup* group = new QParallelAnimationGroup(this);
     
     QPropertyAnimation* anim1 = new QPropertyAnimation(gemstone1->transform(), "translation");
     anim1->setDuration(500); // 0.5s
@@ -930,14 +930,17 @@ bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
 
 PuzzleModeGameWidget::~PuzzleModeGameWidget() {
     clearHighlights();
-    delete inactivityTimer;
+    // inactivityTimer 是 this 的子对象，会自动析构，不需要手动 delete
+    // delete inactivityTimer; 
 
     if (rootEntity) {
         delete rootEntity;
     }
-    if (game3dWindow) {
-        delete game3dWindow;
-    }
+    // game3dWindow 被 container3d 拥有，container3d 是 this 的子对象
+    // 所以不需要手动 delete game3dWindow，否则会导致双重释放
+    // if (game3dWindow) {
+    //    delete game3dWindow;
+    // }
     if (debugTimer && debugTimer->isActive()) {
         debugTimer->stop();
     }
