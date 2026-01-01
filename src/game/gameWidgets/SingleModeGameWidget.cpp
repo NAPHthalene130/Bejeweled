@@ -1281,22 +1281,37 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
 }
 
 void SingleModeGameWidget::mousePressEvent(QMouseEvent* event) {
-    if (event->button() == Qt::RightButton) {
-        if (mode == 1) {
-            // 取消选择
-            if (firstSelectedGemstone) {
-                firstSelectedGemstone = nullptr;
-                selectionRing1->setVisible(false);
-            }
-            if (secondSelectedGemstone) {
-                secondSelectedGemstone = nullptr;
-                selectionRing2->setVisible(false);
-            }
-            selectedNum = 0;
-            this->setWindowTitle("Selection Cleared");
+    appendDebug("Mouse Pressed");
+    if (event->button() == Qt::LeftButton) {
+        // 左键按下开始拖动
+        if (mode == 1 && canOpe) {
+            // 重置拖动状态
+            isDragging = true;  // 先设置为false，等找到宝石再设为true
+            
+            handleManualClick(event -> pos(),1);
         }
+    } else if (event->button() == Qt::RightButton) {
+        firstSelectedGemstone = nullptr;
+        secondSelectedGemstone = nullptr;
+        selectedNum = 0;
+        selectionRing1->setVisible(false);
+        selectionRing2->setVisible(false);
+        appendDebug("Startale Says : Clear all selection by click RightButton.");
     }
     QWidget::mousePressEvent(event);
+}
+
+void SingleModeGameWidget::mouseReleaseEvent(QMouseEvent* event) {
+    appendDebug(QString("Mouse Released, button=%1, isDragging=%2").arg(event->button()).arg(isDragging));
+
+    // 如果鼠标释放时还在拖动状态但没有触发交换，则取消拖动
+    appendDebug("Mouse released without triggering swap, cancelling drag");
+    if(isDragging) {
+        isDragging = false;
+        handleManualClick(event -> pos() , 2);
+    }
+    
+    QWidget::mouseReleaseEvent(event);
 }
 
 void SingleModeGameWidget::showEvent(QShowEvent* event) {
@@ -1325,7 +1340,7 @@ void SingleModeGameWidget::hideEvent(QHideEvent* event) {
     }
     clearHighlights();
 }
-
+//————————————————————————————————————————————二、处理点击操作和点击拖动操作
 bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
     if (obj == container3d) {
         if (event->type() == QEvent::FocusIn) {
@@ -1341,16 +1356,74 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             appendDebug(QString("game3dWindow MouseButtonPress at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
 
-            // 手动处理点击 - 转换屏幕坐标到世界坐标
-            handleManualClick(mouseEvent->pos());
-            refreshDebugStatus();
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonPress,
+                container3d->mapFromGlobal(game3dWindow->mapToGlobal(mouseEvent->pos())),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            
             return false; // 不消费事件，让Qt3D也能处理
         } else if (event->type() == QEvent::MouseMove) {
-            // 追踪鼠标移动以确认事件被接收
+            // 处理鼠标移动事件
             static int moveCount = 0;
             if (++moveCount % 50 == 0) { // 每50次移动输出一次
                 appendDebug("Mouse moving over 3D window");
             }
+            return false; // 不消费事件，让Qt3D也能处理
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            // 处理鼠标释放事件
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            appendDebug(QString("game3dWindow MouseButtonRelease at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonRelease,
+                container3d->mapFromGlobal(game3dWindow->mapToGlobal(mouseEvent->pos())),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return false; // 不消费事件，让Qt3D也能处理
+        } else if (event->type() == QEvent::MouseMove) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseMoveEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseMove,
+                mouseEvent->pos() + rightPanel->pos(),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return true; // 消费事件
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            appendDebug(QString("rightPanel MouseButtonRelease at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonRelease,
+                mouseEvent->pos() + rightPanel->pos(),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return true; // 消费事件
         }
     }
     return QWidget::eventFilter(obj, event);
@@ -1712,8 +1785,11 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
 }
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
-void SingleModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    // 获取当前容器大小
+void SingleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind) {
+    if(kind == 2 && selectedNum == 0) {
+        appendDebug("Startale says : release gem could not be the first selected.");
+        return ;
+    }
     float screenWidth = static_cast<float>(container3d->width());
     float screenHeight = static_cast<float>(container3d->height());
 
@@ -1737,37 +1813,60 @@ void SingleModeGameWidget::handleManualClick(const QPoint& screenPos) {
         .arg(normalizedX, 0, 'f', 2).arg(normalizedY, 0, 'f', 2)
         .arg(worldX, 0, 'f', 2).arg(worldY, 0, 'f', 2));
 
-    // 找到最接近这个位置的宝石
+    // 找到最接近这个位置的格子（不管是否有宝石）
     Gemstone* closestGem = nullptr;
     float minDistance = std::numeric_limits<float>::max();
     int closestRow = -1, closestCol = -1;
 
     for (int i = 0; i < gemstoneContainer.size(); ++i) {
         for (int j = 0; j < gemstoneContainer[i].size(); ++j) {
-            Gemstone* gem = gemstoneContainer[i][j];
-            if (gem) {
-                QVector3D gemPos = gem->transform()->translation();
-                float dx = gemPos.x() - worldX;
-                float dy = gemPos.y() - worldY;
-                float distance = std::sqrt(dx * dx + dy * dy);
+            // 计算格子中心位置
+            QVector3D gridPos = getPosition(i, j);
+            float dx = gridPos.x() - worldX;
+            float dy = gridPos.y() - worldY;
+            float distance = std::sqrt(dx * dx + dy * dy);
 
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    closestGem = gem;
-                    closestRow = i;
-                    closestCol = j;
-                }
+            if (distance < minDistance) {
+                minDistance = distance;
+                closestGem = gemstoneContainer[i][j];  // 可能是 nullptr（空位）
+                closestRow = i;
+                closestCol = j;
             }
         }
     }
 
-    // 如果找到了足够近的宝石（距离 < 0.8，稍微放宽一点）
-    if (closestGem && minDistance < 0.8f) {
-        appendDebug(QString("Found gemstone at (%1,%2), distance=%3")
-            .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
-        handleGemstoneClicked(closestGem);
+    if(closestGem == firstSelectedGemstone || (closestGem == nullptr && selectedNum == 0)) {
+        appendDebug("Startale Says : this is wrong Answer!!!!!");
+        return ;
+    }
+    // 如果找到了足够近的格子（距离 < 0.8）
+    if (minDistance < 0.8f) {
+        if (closestGem) {
+            // 点击的是宝石
+            appendDebug(QString("Found gemstone at (%1,%2), distance=%3")
+                .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
+
+            handleGemstoneClicked(closestGem);
+        } else {
+            // 点击的是空位（nullptr）
+            appendDebug(QString("Clicked empty space at (%1,%2), distance=%3")
+                .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
+            
+            // 如果已经选择了一个宝石，尝试与空位交换
+            if (selectedNum == 1 && firstSelectedGemstone) {
+                int row1 = -1, col1 = -1;
+                if (findGemstonePosition(firstSelectedGemstone, row1, col1)) {
+                    if (areAdjacent(row1, col1, closestRow, closestCol)) {
+                        appendDebug("Selected gem is adjacent to empty space, performing swap!");
+                        performSwap(firstSelectedGemstone, nullptr, row1, col1, closestRow, closestCol);
+                    } else {
+                        appendDebug("Selected gem is NOT adjacent to empty space");
+                    }
+                }
+            }
+        }
     } else {
-        appendDebug(QString("No gemstone found near click (min distance=%1)")
+        appendDebug(QString("No grid found near click (min distance=%1)")
             .arg(minDistance, 0, 'f', 2));
     }
 }
