@@ -780,7 +780,12 @@ void PuzzleModeGameWidget::mousePressEvent(QMouseEvent* event) {
             handleManualClick(event -> pos(),1);
         }
     } else if (event->button() == Qt::RightButton) {
-        
+        firstSelectedGemstone = nullptr;
+        secondSelectedGemstone = nullptr;
+        selectedNum = 0;
+        selectionRing1->setVisible(false);
+        selectionRing2->setVisible(false);
+        appendDebug("Startale Says : Clear all selection by click RightButton.");
     }
     QWidget::mousePressEvent(event);
 }
