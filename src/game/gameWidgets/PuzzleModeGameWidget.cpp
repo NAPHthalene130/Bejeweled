@@ -5,6 +5,7 @@
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../../utils/AudioManager.h"
+#include "GradientLevelLabel.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -229,6 +230,24 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     panelLayout->setContentsMargins(18, 18, 18, 18);
     panelLayout->setSpacing(16);
 
+    // ========== 创建渐变Level显示标签 ==========
+    levelLabel = new GradientLevelLabel(rightPanel);
+    levelLabel->setLevel(Level);
+    levelLabel->setFixedSize(380, 115);
+    levelLabel->setStyleSheet("background: transparent; border: none;");
+    
+    // 可选：自定义渐变颜色（默认是粉色到紫色）
+    // levelLabel->setGradientColors(QColor(255, 150, 200), QColor(180, 100, 255));
+    
+    // 可选：关闭高光动画
+    // levelLabel->setAnimationEnabled(false);
+    
+    // 添加到面板布局（在分数面板上方）
+    panelLayout->addWidget(levelLabel, 0, Qt::AlignHCenter | Qt::AlignTop);
+    
+    // 添加一点间距
+    panelLayout->addSpacing(8);
+
     auto* infoCard = new QWidget(rightPanel);
     infoCard->setStyleSheet(R"(
         QWidget {
@@ -421,6 +440,8 @@ void PuzzleModeGameWidget::finishToNextLevel() {
     //此处应有 目标完成 前往下一关的弹幕生成
 
     /* ( ) */
+    Level ++;
+    updateLevelDisplay();  // 新增：更新Level显示
     PuzzleModeGameWidget::reset(1);
 }
 
@@ -1389,7 +1410,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     }
     gemstoneContainer.clear();
     
-    Level ++;
+   
     ConstChange = 0;
     // 重建8x8网格
     gemstoneContainer.resize(8);
@@ -1442,6 +1463,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     secondSelectedGemstone = nullptr;
     // drop();
     while(!lastGemStateStack.empty()) lastGemStateStack.pop();
+    updateLevelDisplay();
     pushInLastStateQueue();
     // 重置定时器
     if (timer->isActive()) {
@@ -2037,3 +2059,10 @@ void PuzzleModeGameWidget::pushInLastStateQueue() {
     lastGemStateStack.push(GemState);
     return ;
 }
+
+void PuzzleModeGameWidget::updateLevelDisplay() {
+    if (levelLabel) {
+        levelLabel->setLevel(Level);
+    }
+}
+

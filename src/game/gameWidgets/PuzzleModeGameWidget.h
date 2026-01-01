@@ -24,6 +24,7 @@ class Gemstone;
 class SelectedCircle;
 class GameWindow;
 class ScoreProgressBar;
+class GradientLevelLabel; 
 
 class PuzzleModeGameWidget : public QWidget {
     Q_OBJECT
@@ -73,6 +74,8 @@ public:
 
     void backToLastGemstoneState(std::string LastState);
     void checkLastGemState();  // 新增
+
+    void updateLevelDisplay();
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
@@ -134,7 +137,7 @@ private:
     
     int difficulty = 8;
     int GemNumber = 0;
-    int Level = 0;
+    int Level = 1;
     std::string TempGemState[8];
     int lenthT[8];
     std::stack<std::string> lastGemStateStack;
@@ -197,6 +200,7 @@ private:
     QPushButton* backToMenuButton = nullptr;
     QPushButton* resetButton = nullptr;  // 新增
     ScoreProgressBar* scoreProgressBar = nullptr;
+    GradientLevelLabel* levelLabel = nullptr;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H
