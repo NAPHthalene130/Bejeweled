@@ -93,18 +93,88 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         switchWidget(puzzleModeGameWidget);
     });
 
-    // Add test achievements
-    for (int i = 1; i <= 15; ++i) {
-        AchievementData ad;
-        ad.setTitle(QString("TITLE%1").arg(i));
-        ad.setDescription(QString("CONTENTS%1").arg(i));
-        ad.setUnlocked(i % 2 == 0);
-        if (ad.isUnlocked()) {
-            ad.setCompletedAt(QDateTime::currentDateTime());
-        }
-        addAchievement(ad);
-    }
+        // ============================================================
+    // 在 GameWindow.cpp 构造函数中
+    // 找到 "Add test achievements" 那段代码（大约第105-117行）
+    // 完全删除并替换成下面的代码：
+    // ============================================================
+
+    // 添加真实成就（按顺序 0-9）
+
+    // [0] 初试锋芒 - Easy
+    AchievementData achievement0("初试锋芒", 
+                                "成功完成首次宝石消除，踏上璀璨之旅的第一步。", 
+                                false);
+    achievement0.setDifficulty(AchievementData::Difficulty::Easy);
+    addAchievement(achievement0);
+
+    // [1] 奇异宝石创造者 - Easy
+    AchievementData achievement1("奇异宝石创造者", 
+                                "首次合成特殊宝石，开启高阶消除策略之门。", 
+                                false);
+    achievement1.setDifficulty(AchievementData::Difficulty::Easy);
+    addAchievement(achievement1);
+
+    // [2] 连击艺术 - Medium
+    AchievementData achievement2("连击艺术", 
+                                "在单局中累计实现 3 次三连消，展现精准操控与节奏感。", 
+                                false);
+    achievement2.setDifficulty(AchievementData::Difficulty::Medium);
+    addAchievement(achievement2);
+
+    // [3] 金币盈囊 - Medium
+    AchievementData achievement3("金币盈囊", 
+                                "累计通过消除金币宝石收获 100 金币，连小卖部老板都认可你的商业眼光。", 
+                                false);
+    achievement3.setDifficulty(AchievementData::Difficulty::Medium);
+    addAchievement(achievement3);
+
+    // [4] 极速掌控 - Medium
+    AchievementData achievement4("极速掌控", 
+                                "在单人模式下 5 分钟内完成一局，速度与效率并存。", 
+                                false);
+    achievement4.setDifficulty(AchievementData::Difficulty::Medium);
+    addAchievement(achievement4);
+
+    // [5] 随机谜题征服者 - Medium
+    AchievementData achievement5("随机谜题征服者", 
+                                "在随机生成的解谜棋盘上首次通关，实力与运气皆不凡。", 
+                                false);
+    achievement5.setDifficulty(AchievementData::Difficulty::Medium);
+    addAchievement(achievement5);
+
+    // [6] 旋风试炼 - Hard
+    AchievementData achievement6("旋风试炼", 
+                                "成功通关一次旋风模式，挑战手速与思维的双重巅峰。", 
+                                false);
+    achievement6.setDifficulty(AchievementData::Difficulty::Hard);
+    addAchievement(achievement6);
+
+    // [7] 破除界限 - Hard
+    AchievementData achievement7("破除界限", 
+                                "首次达成六连消，突破常规消除的极限，操作令人叹服。", 
+                                false);
+    achievement7.setDifficulty(AchievementData::Difficulty::Hard);
+    addAchievement(achievement7);
+
+    // [8] 全模式巡礼 - Hard
+    AchievementData achievement8("全模式巡礼", 
+                                "成功体验所有游戏模式，成为真正的游戏通才。", 
+                                false);
+    achievement8.setDifficulty(AchievementData::Difficulty::Hard);
+    addAchievement(achievement8);
+
+    // [9] 成就收藏家 - Ultimate
+    AchievementData achievement9("成就收藏家", 
+                                "解锁全部成就，见证从新手到大师的完整旅程，你的名字将镌刻在宝石传奇的编年史中。", 
+                                false);
+    achievement9.setDifficulty(AchievementData::Difficulty::Ultimate);
+    addAchievement(achievement9);
+
+    // 刷新成就界面
     if (achievementsWidget) achievementsWidget->updateView();
+
+
 
     switchWidget(menuWidget);
     

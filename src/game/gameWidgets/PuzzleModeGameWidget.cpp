@@ -567,7 +567,6 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
         GemNumber -= removedCount;
         appendDebug(QString("Still %1 Gems there.").arg(GemNumber));
         gameScore += removedCount * 10;
-        GemNumber -= removedCount;
         updateScoreBoard();
         triggerFinishIfNeeded();
     }
@@ -1025,12 +1024,6 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
     int StartPos = QRandomGenerator::global()->bounded(6);
     appendDebug(QString("CrossOrVertical=%1, StartPos=%2").arg(CrossOrVertical).arg(StartPos));
     
-    // 打印当前状态
-    QString currentState;
-    for (int i = 0; i < 8; ++i) {
-        currentState += QString("Col %1: %2 (len=%3)\n").arg(i).arg(TempGemState[i]).arg(lenthT[i]);
-    }
-    appendDebug(currentState);
     appendDebug(QString("%1  %2").arg(midX).arg(ConstChange));
     if(ConstChange) {
         if(lenthT[midX - 1] < 8&&lenthT[midX] < 8&&lenthT[midX + 1] < 8) {
@@ -1192,11 +1185,6 @@ void PuzzleModeGameWidget::reset(int mode) {
         MemberNum --;
     }
 
-    QString tempGemStateStr;
-    for (int i = 0; i < 8; ++i) {
-        tempGemStateStr += QString("Row %1: %2\n").arg(i).arg(TempGemState[i]);
-    }
-    appendDebug(tempGemStateStr);
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             if(TempGemState[j][i] < '0' || TempGemState[j][i] > '9') continue;
@@ -1212,7 +1200,7 @@ void PuzzleModeGameWidget::reset(int mode) {
             gemstoneContainer[7-i][j] = gem;
         }
     }
-    appendDebug("created puzzle gemstones with no initial matches");
+    appendDebug(QString("created puzzle gemstones with no initial matches,%1").arg(GemNumber));
     
     // 重置选择状态
     selectedNum = 0;
