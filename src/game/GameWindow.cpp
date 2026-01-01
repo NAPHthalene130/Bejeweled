@@ -20,9 +20,10 @@
 #include "../utils/BGMManager.h"
 #include "../utils/ResourceUtils.h"
 #include "../utils/LogWindow.h"
+#include "data/OtherNetDataIO.h"
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
-    
+    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
     logWindow = new LogWindow();
     // logWindow->show();
 
@@ -113,6 +114,9 @@ GameWindow::~GameWindow() {
     if (logWindow) {
         delete logWindow;
         logWindow = nullptr;
+    }
+    if (otherNetDataIO) {
+        otherNetDataIO.reset();
     }
 }
 
