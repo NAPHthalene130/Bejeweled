@@ -32,6 +32,25 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // 初始化金币系统
     CoinSystem::instance().initialize(userID);
+
+    // 设置网络IO并从服务器加载金币（仅在非离线模式下）
+    if (userID != "$#SINGLE#$") {
+        CoinSystem::instance().setNetworkIO(otherNetDataIO.get());
+
+        // 从服务器加载金币数量
+        int coins = otherNetDataIO->getMoney(userID);
+        if (coins >= 0) {
+            // 设置金币数量到CoinSystem (不自动保存，避免重复写入)
+            CoinSystem::instance().setCoins(coins, false);
+            qDebug() << "[GameWindow] Loaded coins from server:" << coins;
+        } else {
+            qDebug() << "[GameWindow] Failed to load coins from server, using local data";
+        }
+
+        qDebug() << "[GameWindow] CoinSystem network sync enabled";
+    } else {
+        qDebug() << "[GameWindow] CoinSystem running in offline mode";
+    }
     qDebug() << "[GameWindow] CoinSystem initialized for user:" << QString::fromStdString(userID);
 
     // 初始化道具系统

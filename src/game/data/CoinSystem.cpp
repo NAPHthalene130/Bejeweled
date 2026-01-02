@@ -1,5 +1,6 @@
 #include "CoinSystem.h"
 #include "CoinDatabase.h"
+#include "OtherNetDataIO.h"
 #include <QDebug>
 #include <QSettings>
 
@@ -13,6 +14,7 @@ CoinSystem::CoinSystem()
     , m_currentUserId("")
     , m_currentCoins(0)
     , m_initialized(false)
+    , m_networkIO(nullptr)
     , m_dbSaveCallback(nullptr)
     , m_dbLoadCallback(nullptr)
 {
@@ -30,12 +32,28 @@ void CoinSystem::initialize(const std::string& userId) {
 
     qDebug() << "[CoinSystem] Initialized for user:" << QString::fromStdString(userId);
 
-    // 从数据库加载金币
-    loadFromDatabase();
+    // 判断是否为离线模式
+    if (isOfflineMode()) {
+        qDebug() << "[CoinSystem] Offline mode detected, will use local storage";
+        // 离线模式：从本地加载
+        loadFromDatabase();
+    } else {
+        qDebug() << "[CoinSystem] Online mode detected, will load from server in GameWindow";
+        // 在线模式：不在这里加载，由GameWindow通过setCoins设置
+    }
 }
 
 std::string CoinSystem::getCurrentUserId() const {
     return m_currentUserId;
+}
+
+void CoinSystem::setNetworkIO(OtherNetDataIO* netIO) {
+    m_networkIO = netIO;
+    qDebug() << "[CoinSystem] Network IO set:" << (netIO != nullptr ? "enabled" : "disabled");
+}
+
+bool CoinSystem::isOfflineMode() const {
+    return m_currentUserId == "$#SINGLE#$";
 }
 
 void CoinSystem::addCoins(int amount, bool autoSave) {
@@ -123,10 +141,28 @@ void CoinSystem::saveToDatabase() {
         qDebug() << "[CoinSystem] Saving to database via callback:" << m_currentCoins
                  << "coins for user:" << QString::fromStdString(m_currentUserId);
         m_dbSaveCallback(m_currentUserId, m_currentCoins);
+    } else if (isOfflineMode()) {
+        // 离线模式：使用QSettings本地存储
+        QSettings settings("BejeweledGame", "CoinData");
+        settings.setValue(QString::fromStdString(m_currentUserId), m_currentCoins);
+        qDebug() << "[CoinSystem] Saved coin data locally for user:" << QString::fromStdString(m_currentUserId);
     } else {
-        // 使用CoinDatabase保存
-        qDebug() << "[CoinSystem] Saving to CoinDatabase:" << m_currentCoins << "coins";
-        CoinDatabase::instance().saveCoinData(m_currentUserId, m_currentCoins);
+        // 在线模式：同步到服务器
+        if (m_networkIO) {
+            bool success = m_networkIO->setMoney(m_currentUserId, m_currentCoins);
+            if (success) {
+                qDebug() << "[CoinSystem] Synced coin data to server for user:" << QString::fromStdString(m_currentUserId);
+            } else {
+                qWarning() << "[CoinSystem] Failed to sync coin data to server, falling back to local storage";
+                // 失败时回退到本地存储
+                QSettings settings("BejeweledGame", "CoinData");
+                settings.setValue(QString::fromStdString(m_currentUserId), m_currentCoins);
+            }
+        } else {
+            qWarning() << "[CoinSystem] Network IO not set, using local storage";
+            QSettings settings("BejeweledGame", "CoinData");
+            settings.setValue(QString::fromStdString(m_currentUserId), m_currentCoins);
+        }
     }
 }
 
@@ -142,10 +178,28 @@ void CoinSystem::loadFromDatabase() {
         loadedCoins = m_dbLoadCallback(m_currentUserId);
         qDebug() << "[CoinSystem] Loaded from database via callback:" << loadedCoins
                  << "coins for user:" << QString::fromStdString(m_currentUserId);
+    } else if (isOfflineMode()) {
+        // 离线模式：从QSettings本地加载
+        QSettings settings("BejeweledGame", "CoinData");
+        loadedCoins = settings.value(QString::fromStdString(m_currentUserId), 0).toInt();
+        qDebug() << "[CoinSystem] Loaded coin data locally for user:" << QString::fromStdString(m_currentUserId);
     } else {
-        // 使用CoinDatabase加载
-        loadedCoins = CoinDatabase::instance().loadCoinData(m_currentUserId);
-        qDebug() << "[CoinSystem] Loaded from CoinDatabase:" << loadedCoins << "coins";
+        // 在线模式：从服务器加载
+        if (m_networkIO) {
+            loadedCoins = m_networkIO->getMoney(m_currentUserId);
+            if (loadedCoins >= 0) {
+                qDebug() << "[CoinSystem] Loaded coin data from server for user:" << QString::fromStdString(m_currentUserId);
+            } else {
+                qWarning() << "[CoinSystem] Failed to load from server, falling back to local storage";
+                // 失败时回退到本地存储
+                QSettings settings("BejeweledGame", "CoinData");
+                loadedCoins = settings.value(QString::fromStdString(m_currentUserId), 0).toInt();
+            }
+        } else {
+            qWarning() << "[CoinSystem] Network IO not set, using local storage";
+            QSettings settings("BejeweledGame", "CoinData");
+            loadedCoins = settings.value(QString::fromStdString(m_currentUserId), 0).toInt();
+        }
     }
 
     if (loadedCoins < 0) {
@@ -170,5 +224,6 @@ void CoinSystem::reset() {
     m_currentUserId = "";
     m_currentCoins = 0;
     m_initialized = false;
+    m_networkIO = nullptr;
     qDebug() << "[CoinSystem] Reset";
 }
