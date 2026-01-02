@@ -27,16 +27,57 @@
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
 
+    // 初始化网络IO（需要在CoinSystem和ItemSystem之前初始化）
+    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
+
     // 初始化金币系统
     CoinSystem::instance().initialize(userID);
+
+    // 设置网络IO并从服务器加载金币（仅在非离线模式下）
+    if (userID != "$#SINGLE#$") {
+        CoinSystem::instance().setNetworkIO(otherNetDataIO.get());
+
+        // 从服务器加载金币数量
+        int coins = otherNetDataIO->getMoney(userID);
+        if (coins >= 0) {
+            // 设置金币数量到CoinSystem (不自动保存，避免重复写入)
+            CoinSystem::instance().setCoins(coins, false);
+            qDebug() << "[GameWindow] Loaded coins from server:" << coins;
+        } else {
+            qDebug() << "[GameWindow] Failed to load coins from server, using local data";
+        }
+
+        qDebug() << "[GameWindow] CoinSystem network sync enabled";
+    } else {
+        qDebug() << "[GameWindow] CoinSystem running in offline mode";
+    }
     qDebug() << "[GameWindow] CoinSystem initialized for user:" << QString::fromStdString(userID);
 
     // 初始化道具系统
     ItemSystem::instance().initialize(userID);
+
+    // 设置网络IO并从服务器加载道具数量（仅在非离线模式下）
+    if (userID != "$#SINGLE#$") {
+        ItemSystem::instance().setNetworkIO(otherNetDataIO.get());
+
+        // 从服务器加载道具数量
+        std::vector<int> props = otherNetDataIO->getPropNums(userID);
+        if (props.size() == 4) {
+            // 设置道具数量到ItemSystem
+            ItemSystem::instance().setItemCounts(props);
+            qDebug() << "[GameWindow] Loaded props from server:"
+                     << props[0] << props[1] << props[2] << props[3];
+        } else {
+            qDebug() << "[GameWindow] Failed to load props from server, using local data";
+        }
+
+        qDebug() << "[GameWindow] ItemSystem network sync enabled";
+    } else {
+        qDebug() << "[GameWindow] ItemSystem running in offline mode";
+    }
     qDebug() << "[GameWindow] ItemSystem initialized for user:" << QString::fromStdString(userID);
 
-    otherNetDataIO = std::make_unique<OtherNetDataIO>(this);
-    // logWindow = new LogWindow();
+    logWindow = new LogWindow();
     // logWindow->show();
 
     achievementsWidget = new AchievementsWidget(this, this);
@@ -115,12 +156,6 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         puzzleModeGameWidget->reset(1);
         switchWidget(puzzleModeGameWidget);
     });
-
-        // ============================================================
-    // 在 GameWindow.cpp 构造函数中
-    // 找到 "Add test achievements" 那段代码（大约第105-117行）
-    // 完全删除并替换成下面的代码：
-    // ============================================================
 
     // 添加真实成就（按顺序 0-9）
 

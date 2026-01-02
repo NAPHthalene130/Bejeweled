@@ -6,6 +6,8 @@
 #include <functional>
 #include <QObject>
 
+class OtherNetDataIO;
+
 /**
  * @brief 金币系统
  * 管理用户金币的收集、存储和持久化
@@ -68,6 +70,17 @@ public:
     void loadFromDatabase();
 
     /**
+     * @brief 设置网络IO（用于在线模式的服务器同步）
+     * @param netIO 网络IO指针
+     */
+    void setNetworkIO(OtherNetDataIO* netIO);
+
+    /**
+     * @brief 判断是否为离线模式
+     */
+    bool isOfflineMode() const;
+
+    /**
      * @brief 设置数据库保存回调
      * @param callback 回调函数，参数为(userId, coinAmount)
      */
@@ -106,6 +119,9 @@ private:
     std::string m_currentUserId;
     int m_currentCoins;
     bool m_initialized;
+
+    // 网络IO指针（用于在线模式）
+    OtherNetDataIO* m_networkIO;
 
     // 数据库回调函数
     std::function<void(const std::string&, int)> m_dbSaveCallback;
