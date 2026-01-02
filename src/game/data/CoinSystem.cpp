@@ -1,5 +1,6 @@
 #include "CoinSystem.h"
 #include "CoinDatabase.h"
+#include "../data/AchievementSystem.h"
 #include <QDebug>
 #include <QSettings>
 
@@ -50,6 +51,7 @@ void CoinSystem::addCoins(int amount, bool autoSave) {
     }
 
     m_currentCoins += amount;
+    AchievementSystem::instance().triggerCoinEarned(m_currentCoins);
 
     qDebug() << "[CoinSystem] Added" << amount << "coins. Total:" << m_currentCoins;
 
@@ -66,6 +68,7 @@ int CoinSystem::getCoins() const {
 }
 
 void CoinSystem::setCoins(int amount, bool autoSave) {
+
     if (!m_initialized) {
         qWarning() << "[CoinSystem] Not initialized, cannot set coins";
         return;
@@ -77,6 +80,7 @@ void CoinSystem::setCoins(int amount, bool autoSave) {
     }
 
     m_currentCoins = amount;
+    AchievementSystem::instance().triggerCoinEarned(m_currentCoins);
 
     qDebug() << "[CoinSystem] Set coins to:" << m_currentCoins;
 

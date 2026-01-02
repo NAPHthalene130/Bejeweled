@@ -539,7 +539,6 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     panelLayout->addStretch(1);
 
     backToMenuButton = new QPushButton("返回菜单", rightPanel);
-    backToMenuButton->setFixedSize(180, 54);
     backToMenuButton->setCursor(Qt::PointingHandCursor);
     backToMenuButton->setStyleSheet(R"(
         QPushButton {
@@ -564,6 +563,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     backShadow->setOffset(0, 8);
     backShadow->setColor(QColor(0, 0, 0, 120));
     backToMenuButton->setGraphicsEffect(backShadow);
+    backToMenuButton->setFixedSize(180, 54);
 
     connect(backToMenuButton, &QPushButton::clicked, this, [this]() {
         GameBackDialog dlg(this);
@@ -581,6 +581,8 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     focusInfoLabel = new QLabel(rightPanel);
     focusInfoLabel->setVisible(false);
     debugText = new QTextEdit(rightPanel);
+
+
     debugText->setVisible(false);
     debugText->setReadOnly(true);
     debugTimer = new QTimer(this);
@@ -1724,7 +1726,7 @@ bool SingleModeGameWidget::areAdjacent(int row1, int col1, int row2, int col2) c
 // 执行交换
 void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2) {
     if (!gem1 || !gem2) return;
-
+    canOpe = false;
     // 先在逻辑容器中交换
     gemstoneContainer[row1][col1] = gem2;
     gemstoneContainer[row2][col2] = gem1;
@@ -1801,12 +1803,16 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
     selectedNum = 0;
     selectionRing1->setVisible(false);
     selectionRing2->setVisible(false);
+    QTimer::singleShot(1000, this, [this]() {
+        canOpe = true;
+    });
 
     appendDebug(QString("Swapped gems at (%1,%2) and (%3,%4)").arg(row1).arg(col1).arg(row2).arg(col2));
 }
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
 void SingleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind) {
+    if(canOpe == false) return ;
     if(kind == 2 && selectedNum == 0) {
         appendDebug("Startale says : release gem could not be the first selected.");
         return ;
@@ -2135,7 +2141,6 @@ void SingleModeGameWidget::collectCoinGem(Gemstone* gem) {
     // 添加金币到系统
     CoinSystem::instance().addCoins(coinValue, true);
 
-    AchievementSystem::instance().triggerCoinEarned(coinValue);
 
     // 累加本局获得的金币
     earnedCoins += coinValue;

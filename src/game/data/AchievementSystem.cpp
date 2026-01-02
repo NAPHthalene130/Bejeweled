@@ -1,11 +1,14 @@
 #include "AchievementSystem.h"
 #include "../GameWindow.h"
 #include "../gameWidgets/AchievementsWidget.h"
+#include "../gameWidgets/SingleModeGameWidget.h"
 #include "OtherNetDataIO.h"
 #include "AchievementData.h"
 #include <QDebug>
 #include <QDateTime>
 #include <QMessageBox>  // 临时调试用
+
+class SingleModeGameWidget;
 
 AchievementSystem& AchievementSystem::instance() {
     static AchievementSystem instance;
@@ -112,35 +115,36 @@ void AchievementSystem::unlock(AchievementIndex index) {
     int idx = static_cast<int>(index);
     if (idx < 0 || idx >= 10) return;
     
-    // 已解锁则跳过
-    if (achievements[idx]) return;
+    bool wasUnlocked = achievements[idx];
     
-    achievements[idx] = true;
-    qDebug() << "[AchievementSystem] Achievement unlocked:" << idx;
+    // 设置为已解锁
+    if (!wasUnlocked) {
+        achievements[idx] = true;
+        qDebug() << "[AchievementSystem] Achievement unlocked:" << idx;
+    }
     
-    // 更新GameWindow中的成就状态
+    // ===== 关键修改：无论之前是否解锁，都更新 GameWindow =====
     updateGameWindowAchievement(idx, true);
     
-    // 获取成就标题
-    QString title;
-    if (gameWindow) {
-        const auto& achievementList = gameWindow->getAchievements();
-        if (idx < static_cast<int>(achievementList.size())) {
-            title = achievementList[idx].getTitle();
+    // 只有新解锁时才发送信号和同步
+    if (!wasUnlocked) {
+        QString title;
+        if (gameWindow) {
+            const auto& achievementList = gameWindow->getAchievements();
+            if (idx < static_cast<int>(achievementList.size())) {
+                title = achievementList[idx].getTitle();
+            }
+        }
+        
+        emit achievementUnlocked(idx, title);
+        syncToServer();
+        
+        if (idx != 9) {
+            checkAllAchievementsUnlocked();
         }
     }
-    
-    // 发送信号
-    emit achievementUnlocked(idx, title);
-    
-    // 同步到服务端
-    syncToServer();
-    
-    // 检查是否可以解锁"成就收藏家"
-    if (idx != 9) {
-        checkAllAchievementsUnlocked();
-    }
 }
+
 
 // ========== 触发接口实现 ==========
 
@@ -185,14 +189,14 @@ void AchievementSystem::triggerCombo(int comboCount) {
 }
 
 void AchievementSystem::triggerCoinEarned(int coins) {
-    totalCoinsEarned += coins;
-    qDebug() << "[AchievementSystem] Total coins earned:" << totalCoinsEarned;
     
     // 累计100金币
-    if (totalCoinsEarned >= 100 && !isUnlocked(AchievementIndex::COIN_COLLECTOR)) {
+    if (coins >= 100 && !isUnlocked(AchievementIndex::COIN_COLLECTOR)) {
         qDebug() << "[AchievementSystem] Trigger: Coin Collector";
         unlock(AchievementIndex::COIN_COLLECTOR);
+
     }
+
 }
 
 void AchievementSystem::triggerMatchCount(int matchCount) {
@@ -213,7 +217,7 @@ void AchievementSystem::triggerSingleModeComplete(int timeSeconds) {
     qDebug() << "[AchievementSystem] Single mode complete in" << timeSeconds << "seconds";
     
     // 5分钟 = 300秒内完成
-    if (timeSeconds <= 300 && !isUnlocked(AchievementIndex::SPEED_MASTER)) {
+    if (timeSeconds <= 18000 && !isUnlocked(AchievementIndex::SPEED_MASTER)) {
         qDebug() << "[AchievementSystem] Trigger: Speed Master";
         unlock(AchievementIndex::SPEED_MASTER);
     }
@@ -230,7 +234,7 @@ void AchievementSystem::triggerWhirlwindSurvival(int timeSeconds) {
     qDebug() << "[AchievementSystem] Whirlwind survival:" << timeSeconds << "seconds";
     
     // 坚持2分钟 = 120秒
-    if (timeSeconds >= 120 && !isUnlocked(AchievementIndex::WHIRLWIND_TRIAL)) {
+    if (timeSeconds >= 7200 && !isUnlocked(AchievementIndex::WHIRLWIND_TRIAL)) {
         qDebug() << "[AchievementSystem] Trigger: Whirlwind Trial";
         unlock(AchievementIndex::WHIRLWIND_TRIAL);
     }

@@ -6,6 +6,7 @@
 #include "../data/ItemSystem.h"
 #include "../../utils/BackgroundManager.h"
 #include "../../utils/ResourceUtils.h"
+#include "../data/AchievementSystem.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -165,6 +166,7 @@ void StoreWidget::setupUI() {
 void StoreWidget::updateCoinDisplay(int newCoins) {
     if (coinLabel) {
         coinLabel->setText(QString("金币: %1").arg(newCoins));
+        AchievementSystem::instance().triggerCoinEarned(newCoins);
     }
 }
 

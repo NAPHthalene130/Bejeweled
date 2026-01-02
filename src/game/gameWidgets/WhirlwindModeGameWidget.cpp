@@ -604,6 +604,7 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
                     if (pos == specialPos) {
                         // 保留并设为特殊宝石
                         gem->setSpecial(true);
+                        AchievementSystem::instance().triggerSpecialGemCreated();
                         appendDebug(QString("Special gem created at (%1,%2)").arg(row).arg(col));
                     } else {
                         // 移除其他宝石

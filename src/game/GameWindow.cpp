@@ -197,6 +197,14 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     achievement9.setDifficulty(AchievementData::Difficulty::Ultimate);
     addAchievement(achievement9);
 
+    for (int i = 0; i < 10; ++i) {
+        auto idx = static_cast<AchievementIndex>(i);
+        if (AchievementSystem::instance().isUnlocked(idx)) {
+            // unlock() 现在是幂等的：即使之前已解锁，也会更新 GameWindow/UI
+            AchievementSystem::instance().unlock(idx);
+        }
+    }
+
     // 刷新成就界面
     if (achievementsWidget) achievementsWidget->updateView();
 

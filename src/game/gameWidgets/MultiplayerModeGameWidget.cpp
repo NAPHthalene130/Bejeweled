@@ -8,6 +8,7 @@
 #include "../data/GameNetData.h"
 #include "../../utils/LogWindow.h"
 #include "../../utils/AudioManager.h"
+#include "../data/AchievementSystem.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -647,6 +648,7 @@ void MultiplayerModeGameWidget::removeMatches(const std::vector<std::pair<int, i
                     if (pos == specialPos) {
                         // 保留并设为特殊宝石
                         gem->setSpecial(true);
+                        AchievementSystem::instance().triggerSpecialGemCreated();
                         appendDebug(QString("Special gem created at (%1,%2)").arg(row).arg(col));
                     } else {
                         // 移除其他宝石
