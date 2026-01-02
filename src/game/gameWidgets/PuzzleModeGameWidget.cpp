@@ -5,7 +5,9 @@
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../../utils/AudioManager.h"
+#include "../../utils/ResourceUtils.h"
 #include "GradientLevelLabel.h"
+#include "VictoryBanner.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -437,13 +439,42 @@ void PuzzleModeGameWidget::triggerFinishIfNeeded() {
 }
 
 void PuzzleModeGameWidget::finishToNextLevel() {
-    //此处应有 目标完成 前往下一关的弹幕生成
-
-    /* ( ) */
-    Level ++;
-    updateLevelDisplay();  // 新增：更新Level显示
-    PuzzleModeGameWidget::reset(1);
+    if (isFinishing) return;
+    isFinishing = true;
+    canOpe = false;
+    
+    
+    if (timer && timer->isActive()) timer->stop();
+    if (inactivityTimer) inactivityTimer->stop();
+    
+    int currentLevel = Level;
+    int currentScore = gameScore;
+    QString timeText = gameTimeKeeper.displayText().replace("游戏进行时间：", "");
+    
+    QTimer::singleShot(600, this, [this, currentLevel, currentScore, timeText]() {
+        // ★ 隐藏3D窗口，否则会挡住弹幕
+        container3d->hide();
+        
+        VictoryBanner* banner = new VictoryBanner(this);
+        
+        QString imagePath = QString::fromStdString(
+            ResourceUtils::getPath("images/victory.png")
+        );
+        banner->setVictoryImage(imagePath);
+        
+        connect(banner, &VictoryBanner::finished, this, [this]() {
+            // ★ 弹幕结束后恢复3D窗口
+            container3d->show();
+            isFinishing = false;
+            Level++;
+            updateLevelDisplay();  // 新增：更新Level显示
+            reset(1);
+        });
+        
+        banner->show(currentLevel, currentScore, timeText);
+    });
 }
+
 
 // 查找所有需要消除的宝石（三连或更多）
 std::vector<std::pair<int, int>> PuzzleModeGameWidget::findMatches() {
@@ -1992,45 +2023,57 @@ void PuzzleModeGameWidget::checkLastGemState() {
 // 将匹配的宝石分组（识别连续的匹配）
 std::vector<std::vector<std::pair<int, int>>> PuzzleModeGameWidget::groupMatches(
     const std::vector<std::pair<int, int>>& matches) {
-    
     std::vector<std::vector<std::pair<int, int>>> groups;
-    std::set<std::pair<int, int>> processed;
+    std::set<std::pair<int, int>> visited;
     
-    for (const auto& pos : matches) {
-        if (processed.count(pos)) continue;
+    for (const auto& match : matches) {
+        if (visited.count(match)) continue;
+        
+        // 【关键修复】获取当前宝石的类型
+        Gemstone* matchGem = gemstoneContainer[match.first][match.second];
+        if (!matchGem) continue;
+        int matchType = matchGem->getType();
         
         std::vector<std::pair<int, int>> group;
-        std::queue<std::pair<int, int>> queue;
-        queue.push(pos);
-        processed.insert(pos);
+        std::queue<std::pair<int, int>> q;
+        q.push(match);
+        visited.insert(match);
         
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
+        while (!q.empty()) {
+            auto current = q.front();
+            q.pop();
             group.push_back(current);
             
-            // 检查4个方向的相邻宝石
-            int dx[] = {-1, 1, 0, 0};
-            int dy[] = {0, 0, -1, 1};
+            int dr[] = {-1, 1, 0, 0};
+            int dc[] = {0, 0, -1, 1};
             
-            for (int i = 0; i < 4; i++) {
-                int nr = current.first + dx[i];
-                int nc = current.second + dy[i];
+            for (int i = 0; i < 4; ++i) {
+                int nr = current.first + dr[i];
+                int nc = current.second + dc[i];
+                
                 std::pair<int, int> neighbor = {nr, nc};
                 
+                // 【关键修复】只有当邻居宝石类型相同时才加入组
                 if (std::find(matches.begin(), matches.end(), neighbor) != matches.end() &&
-                    !processed.count(neighbor)) {
-                    processed.insert(neighbor);
-                    queue.push(neighbor);
+                    !visited.count(neighbor)) {
+                    
+                    Gemstone* neighborGem = gemstoneContainer[nr][nc];
+                    if (neighborGem && neighborGem->getType() == matchType) {
+                        visited.insert(neighbor);
+                        q.push(neighbor);
+                    }
                 }
             }
         }
         
-        groups.push_back(group);
+        if (!group.empty()) {
+            groups.push_back(group);
+        }
     }
     
     return groups;
 }
+
 
 
 // 检查匹配组中是否包含特殊宝石

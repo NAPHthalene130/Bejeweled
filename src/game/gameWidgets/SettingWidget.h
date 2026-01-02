@@ -77,7 +77,6 @@ private:
     
     // 图像设置控件
     QComboBox *resolutionCombo;
-    QComboBox *qualityCombo;
     QPushButton *selectBgBtn;
     QLabel *bgPreviewLabel;
     

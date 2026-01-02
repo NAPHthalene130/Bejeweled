@@ -11,12 +11,120 @@
 #include <QDir>
 #include <QMessageBox>
 #include <QTimer>
+#include <QPropertyAnimation>
 #include <random>
 #include <cmath>
 #include <QGraphicsDropShadowEffect>
 #include "MenuWidget.h"
 #include "../../utils/BGMManager.h"
 #include <QSettings>
+
+// ==================== 自定义保存成功对话框 ====================
+class SettingSaveDialog : public QDialog {
+public:
+    explicit SettingSaveDialog(const QString& message, QWidget* parent = nullptr) 
+        : QDialog(parent), messageText(message) {
+        setWindowFlags(Qt::Dialog | Qt::WindowTitleHint | Qt::WindowCloseButtonHint);
+        setModal(true);
+        setFixedSize(480, 280);
+        setWindowTitle("提示");
+
+        auto* layout = new QVBoxLayout(this);
+        layout->setContentsMargins(30, 28, 30, 26);
+        layout->setSpacing(20);
+
+        // 设置对话框背景
+        setStyleSheet(R"(
+            QDialog {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 rgb(50, 35, 25),
+                    stop:0.5 rgb(40, 28, 20),
+                    stop:1 rgb(35, 25, 18));
+                border: 2px solid rgb(255, 160, 60);
+                border-radius: 20px;
+            }
+        )");
+
+        // 成功图标（使用Unicode符号）
+        auto* iconLabel = new QLabel("✓", this);
+        QFont iconFont = iconLabel->font();
+        iconFont.setPointSize(48);
+        iconFont.setBold(true);
+        iconFont.setFamily("Microsoft YaHei");
+        iconLabel->setFont(iconFont);
+        iconLabel->setAlignment(Qt::AlignHCenter);
+        iconLabel->setStyleSheet(R"(
+            color: #FFD700;
+            background: transparent;
+        )");
+        iconLabel->setFixedHeight(60);
+
+        // 标题标签
+        auto* titleLabel = new QLabel("保存成功", this);
+        QFont titleFont = titleLabel->font();
+        titleFont.setPointSize(18);
+        titleFont.setBold(true);
+        titleFont.setFamily("Microsoft YaHei");
+        titleLabel->setFont(titleFont);
+        titleLabel->setAlignment(Qt::AlignHCenter);
+        titleLabel->setStyleSheet("color: rgba(255,255,255,245); background: transparent;");
+
+        // 消息内容标签
+        auto* contentLabel = new QLabel(message, this);
+        QFont contentFont = contentLabel->font();
+        contentFont.setPointSize(13);
+        contentFont.setFamily("Microsoft YaHei");
+        contentLabel->setFont(contentFont);
+        contentLabel->setAlignment(Qt::AlignHCenter);
+        contentLabel->setWordWrap(true);
+        contentLabel->setStyleSheet("color: rgba(255,255,255,220); background: transparent;");
+
+        // 确定按钮
+        auto* okBtn = new QPushButton("确定", this);
+        okBtn->setFixedSize(160, 48);
+        okBtn->setCursor(Qt::PointingHandCursor);
+        okBtn->setStyleSheet(R"(
+            QPushButton {
+                color: white;
+                border-radius: 14px;
+                border: 2px solid rgba(255,215,0,100);
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
+                    stop:0 rgba(255,160,60,230), 
+                    stop:1 rgba(255,140,40,230));
+                font-family: 'Microsoft YaHei';
+                font-size: 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
+                    stop:0 rgba(255,180,80,250), 
+                    stop:1 rgba(255,160,60,250));
+                border: 2px solid rgba(255,215,0,150);
+            }
+            QPushButton:pressed {
+                background: qlineargradient(x1:0,y1:0,x2:1,y2:1, 
+                    stop:0 rgba(230,140,50,230), 
+                    stop:1 rgba(210,120,30,230));
+            }
+        )");
+
+        connect(okBtn, &QPushButton::clicked, this, &QDialog::accept);
+
+        layout->addWidget(iconLabel);
+        layout->addWidget(titleLabel);
+        layout->addWidget(contentLabel);
+        layout->addSpacing(10);
+        
+        QHBoxLayout* btnLayout = new QHBoxLayout();
+        btnLayout->addStretch();
+        btnLayout->addWidget(okBtn);
+        btnLayout->addStretch();
+        layout->addLayout(btnLayout);
+    }
+
+private:
+    QString messageText;
+};
 
 // ==================== 静态方法 ====================
 
@@ -83,11 +191,9 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
 
     // 图像设置控件
     resolutionCombo = new QComboBox(this);
-    qualityCombo = new QComboBox(this);
     selectBgBtn = new QPushButton("选择图片", this);
     bgPreviewLabel = new QLabel(this);
     QLabel* resolutionLabel = new QLabel("分辨率", this);
-    QLabel* qualityLabel = new QLabel("画质", this);
     QLabel* bgLabel = new QLabel("菜单背景图", this);
 
     // 游戏设置控件
@@ -112,7 +218,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     
     // 标签样式
     QList<QLabel*> labels = {bgMusicLabel, eliminateSoundLabel, bgVolLabel, eliminateVolLabel,
-                             resolutionLabel, qualityLabel, bgLabel, gameTipLabel, gemStyleLabel, 
+                             resolutionLabel, bgLabel, gameTipLabel, gemStyleLabel, 
                              eliminateSoundSelectLabel, gemStyleDescLabel, difficultyLabel};
     for (QLabel* label : labels) {
         label->setStyleSheet(R"(
@@ -238,7 +344,6 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
         }
     )";
     resolutionCombo->setStyleSheet(comboStyle);
-    qualityCombo->setStyleSheet(comboStyle);
     gemStyleCombo->setStyleSheet(comboStyle);
     eliminateSoundCombo->setStyleSheet(comboStyle);
     difficultyCombo->setStyleSheet(comboStyle);
@@ -406,12 +511,6 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     resolutionLayout->addWidget(resolutionCombo);
     resolutionLayout->addStretch();
     
-    QHBoxLayout* qualityLayout = new QHBoxLayout();
-    qualityLayout->addWidget(qualityLabel);
-    qualityLayout->addSpacing(20);
-    qualityLayout->addWidget(qualityCombo);
-    qualityLayout->addStretch();
-    
     QVBoxLayout* bgLayout = new QVBoxLayout();
     QHBoxLayout* bgCtrlLayout = new QHBoxLayout();
     bgCtrlLayout->addWidget(selectBgBtn);
@@ -422,7 +521,6 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     bgLayout->addLayout(bgCtrlLayout);
     
     imageLayout->addLayout(resolutionLayout);
-    imageLayout->addLayout(qualityLayout);
     imageLayout->addLayout(bgLayout);
     imageLayout->addStretch();
 
@@ -511,9 +609,6 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
                 this->gameWindow->showNormal();
             }
             this->gameWindow->resize(w, h);
-            
-            // 确保窗口在屏幕内（可选，简单resize即可）
-            // 如果窗口变得很大，可能需要调整位置，但通常resize会保持左上角或者系统处理
         }
     });
 
@@ -633,11 +728,9 @@ void SettingWidget::loadSettings() {
 
     // 图像设置
     QString resolution = settings->value("Image/Resolution", "1600x1000").toString();
-    QString quality = settings->value("Image/Quality", "中").toString();
     QString defaultBg = QString::fromStdString(ResourceUtils::getPath("images/default_bg.png"));
     currentBgPath = settings->value("Image/MenuBg", defaultBg).toString();
     resolutionCombo->setCurrentText(resolution);
-    qualityCombo->setCurrentText(quality);
 
     QPixmap bgPixmap(currentBgPath);
     if (!bgPixmap.isNull()) {
@@ -674,7 +767,6 @@ void SettingWidget::saveSettings() {
 
     // 保存图像设置
     settings->setValue("Image/Resolution", resolutionCombo->currentText());
-    settings->setValue("Image/Quality", qualityCombo->currentText());
     settings->setValue("Image/MenuBg", currentBgPath);
 
     // 保存游戏设置 - 宝石风格
@@ -697,7 +789,10 @@ void SettingWidget::saveSettings() {
 
     emit backgroundImageChanged(currentBgPath);
     
-    QMessageBox::information(this, "成功", "设置已保存！\n宝石风格已切换为：" + selectedStyle);
+    // ========== 使用自定义美观对话框 ==========
+    QString message = QString("设置已成功保存！\n\n当前宝石风格：%1").arg(selectedStyle);
+    SettingSaveDialog dlg(message, this);
+    dlg.exec();
 }
 
 // ==================== 其他方法 ====================
