@@ -6,6 +6,7 @@
 #include "../components/RotationSquare.h"
 #include "../data/CoinSystem.h"
 #include "../../utils/AudioManager.h"
+#include "../data/AchievementSystem.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -413,6 +414,12 @@ void WhirlwindModeGameWidget::finishToFinalWidget() {
     isFinishing = true;
     canOpe = false;
 
+    int survivalSeconds = gameTimeKeeper.totalSeconds();
+    
+    // 触发旋风试炼成就（坚持2分钟=120秒）
+    AchievementSystem::instance().triggerWhirlwindSurvival(survivalSeconds);
+
+
     if (gameWindow->getUserID() != "$#SINGLE#$") {
         gameWindow->getOtherNetDataIO()->sendWhirlTime(gameWindow->getUserID(), gameScore);
     }
@@ -509,11 +516,31 @@ std::vector<std::pair<int, int>> WhirlwindModeGameWidget::findMatches() {
 }
 
 // 移除匹配的宝石
+// ============================================================================
+// WhirlwindModeGameWidget.cpp 修复补丁
+// ============================================================================
+// 
+// 使用方法：
+// 1. 在头文件 WhirlwindModeGameWidget.h 的 private 部分添加声明:
+//    void remove3x3AreaChain(int centerRow, int centerCol);
+//
+// 2. 用以下代码替换 WhirlwindModeGameWidget.cpp 中的 removeMatches 函数
+// 3. 用以下代码替换 WhirlwindModeGameWidget.cpp 中的 remove3x3Area 函数
+// 4. 添加新的 remove3x3AreaChain 函数
+// ============================================================================
+
+// ============================================================================
+// 替换原有的 removeMatches 函数
+// 注意：原代码中有一个严重bug - 先遍历matches消除所有宝石，然后才处理groups
+// 这导致当检查 group.size() >= 4 时，宝石已经全部被消除了
+// ============================================================================
+
 void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>& matches) {
     if (matches.empty()) {
         appendDebug("No matches to remove");
         return;
     }
+    AchievementSystem::instance().triggerFirstElimination();
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
@@ -521,39 +548,52 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
     auto groups = groupMatches(matches);
     
     int removedCount = 0;
-    for (const auto& pos : matches) {
-        int row = pos.first;
-        int col = pos.second;
-        Gemstone* gem = gemstoneContainer[row][col];
-
-        if (gem) {
-            removedCount += 1;
-
-            // 如果是金币宝石，先收集金币
-            if (gem->isCoinGem()) {
-                collectCoinGem(gem);
-            }
-
-            eliminateAnime(gem);
-            gemstoneContainer[row][col] = nullptr;
-        }
-    }
+    
+    // 【关键修复】删除原来的第一个for循环（那个遍历matches的循环）
+    // 原代码bug：先消除所有matches中的宝石，再处理groups
+    // 修复后：直接处理groups，在处理过程中消除宝石
+    
     for (const auto& group : groups) {
+        int groupSize = static_cast<int>(group.size());
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         
         if (hasSpecial) {
-            // 找到特殊宝石的位置
+            // 【修复】收集所有需要触发的特殊宝石位置
+            std::vector<std::pair<int, int>> specialPositions;
             for (const auto& pos : group) {
                 Gemstone* gem = gemstoneContainer[pos.first][pos.second];
                 if (gem && gem->isSpecial()) {
-                    // 消除3×3区域
-                    remove3x3Area(pos.first, pos.second);
-                    break;  // 只处理第一个特殊宝石
+                    specialPositions.push_back(pos);
                 }
             }
-        } else if (group.size() == 4) {
-            // 4连或更多：保留第2颗宝石作为特殊宝石
+            
+            // 先消除组内的非特殊宝石
+            for (const auto& pos : group) {
+                int row = pos.first;
+                int col = pos.second;
+                Gemstone* gem = gemstoneContainer[row][col];
+                
+                if (gem && !gem->isSpecial()) {
+                    removedCount++;
+                    // 如果是金币宝石，先收集金币
+                    if (gem->isCoinGem()) {
+                        collectCoinGem(gem);
+                    }
+                    eliminateAnime(gem);
+                    gemstoneContainer[row][col] = nullptr;
+                }
+            }
+            
+            // 然后触发所有特殊宝石（支持连锁）
+            for (const auto& specialPos : specialPositions) {
+                Gemstone* specialGem = gemstoneContainer[specialPos.first][specialPos.second];
+                if (specialGem && specialGem->isSpecial()) {
+                    remove3x3Area(specialPos.first, specialPos.second);
+                }
+            }
+        } else if (group.size() >= 4) {
+            // 【修复】4连或更多：保留第2颗宝石作为特殊宝石
             appendDebug(QString("Found %1-match, creating special gem").arg(group.size()));
             
             // 对组内位置排序（按行优先，然后列）
@@ -576,6 +616,9 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
                     } else {
                         // 移除其他宝石
                         removedCount++;
+                        if (gem->isCoinGem()) {
+                            collectCoinGem(gem);
+                        }
                         eliminateAnime(gem);
                         gemstoneContainer[row][col] = nullptr;
                     }
@@ -590,6 +633,9 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
                 
                 if (gem) {
                     removedCount++;
+                    if (gem->isCoinGem()) {
+                        collectCoinGem(gem);
+                    }
                     eliminateAnime(gem);
                     gemstoneContainer[row][col] = nullptr;
                 }
@@ -598,11 +644,117 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
     }
 
     if (removedCount > 0) {
-        gameScore += removedCount * 10;
+        comboCount++;
+        int comboBonus = comboCount > 1 ? (comboCount - 1) * 5 : 0;
+        gameScore += removedCount * 10 + comboBonus;
         updateScoreBoard();
         triggerFinishIfNeeded();
+        
+        // 重置无消除计时器
+        resetNoEliminationTimer();
     }
 }
+
+// ============================================================================
+// 替换原有的 remove3x3Area 函数
+// ============================================================================
+
+void WhirlwindModeGameWidget::remove3x3Area(int centerRow, int centerCol) {
+    appendDebug(QString("Removing 3x3 area centered at (%1,%2)").arg(centerRow).arg(centerCol));
+    
+    // 【修复】收集范围内的特殊宝石，用于连锁触发
+    std::vector<std::pair<int, int>> chainSpecialGems;
+    
+    // 消除以(centerRow, centerCol)为中心的3×3区域
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            int r = centerRow + dr;
+            int c = centerCol + dc;
+            
+            // 检查边界
+            if (r < 0 || r >= 8 || c < 0 || c >= 8) {
+                continue;
+            }
+            
+            Gemstone* gem = gemstoneContainer[r][c];
+            if (gem) {
+                // 【修复】检查是否是另一个特殊宝石（不是中心的那个）
+                if (gem->isSpecial() && !(r == centerRow && c == centerCol)) {
+                    // 记录位置，稍后触发连锁
+                    chainSpecialGems.push_back({r, c});
+                    appendDebug(QString("Found chain special gem at (%1,%2)").arg(r).arg(c));
+                }
+                
+                // 如果是金币宝石，先收集金币
+                if (gem->isCoinGem()) {
+                    collectCoinGem(gem);
+                }
+                
+                // 消除宝石
+                eliminateAnime(gem);
+                gemstoneContainer[r][c] = nullptr;
+                
+                // 增加分数
+                gameScore += 10;
+            }
+        }
+    }
+    
+    updateScoreBoard();
+    
+    // 【修复】递归触发范围内的其他特殊宝石
+    for (const auto& pos : chainSpecialGems) {
+        appendDebug(QString("Chain triggering at (%1,%2)").arg(pos.first).arg(pos.second));
+        remove3x3AreaChain(pos.first, pos.second);
+    }
+}
+
+// ============================================================================
+// 新增函数 - 添加到 WhirlwindModeGameWidget.cpp 中
+// ============================================================================
+
+void WhirlwindModeGameWidget::remove3x3AreaChain(int centerRow, int centerCol) {
+    appendDebug(QString("Chain removing 3x3 area at (%1,%2)").arg(centerRow).arg(centerCol));
+    
+    // 收集范围内的特殊宝石
+    std::vector<std::pair<int, int>> chainSpecialGems;
+    
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            int r = centerRow + dr;
+            int c = centerCol + dc;
+            
+            if (r < 0 || r >= 8 || c < 0 || c >= 8) {
+                continue;
+            }
+            
+            Gemstone* gem = gemstoneContainer[r][c];
+            if (gem) {
+                // 检查是否是特殊宝石
+                if (gem->isSpecial()) {
+                    chainSpecialGems.push_back({r, c});
+                    appendDebug(QString("Chain found special gem at (%1,%2)").arg(r).arg(c));
+                }
+                
+                if (gem->isCoinGem()) {
+                    collectCoinGem(gem);
+                }
+                
+                eliminateAnime(gem);
+                gemstoneContainer[r][c] = nullptr;
+                gameScore += 10;
+            }
+        }
+    }
+    
+    updateScoreBoard();
+    
+    // 递归触发连锁
+    for (const auto& pos : chainSpecialGems) {
+        remove3x3AreaChain(pos.first, pos.second);
+    }
+}
+
 
 void WhirlwindModeGameWidget::eliminate() {
     if (isFinishing) return;
@@ -1066,6 +1218,7 @@ void WhirlwindModeGameWidget::setMode(int mode) {
 }
 
 void WhirlwindModeGameWidget::reset(int mode) {
+    AchievementSystem::instance().resetSessionStats();
     if (gameWindow) {
         difficulty = gameWindow->getDifficulty();
     }
@@ -1565,71 +1718,57 @@ int WhirlwindModeGameWidget::getEarnedCoins() const {
 // 将匹配的宝石分组（识别连续的匹配）
 std::vector<std::vector<std::pair<int, int>>> WhirlwindModeGameWidget::groupMatches(
     const std::vector<std::pair<int, int>>& matches) {
-    
     std::vector<std::vector<std::pair<int, int>>> groups;
-    std::set<std::pair<int, int>> processed;
+    std::set<std::pair<int, int>> visited;
     
-    for (const auto& pos : matches) {
-        if (processed.count(pos)) continue;
+    for (const auto& match : matches) {
+        if (visited.count(match)) continue;
+        
+        // 【关键修复】获取当前宝石的类型
+        Gemstone* matchGem = gemstoneContainer[match.first][match.second];
+        if (!matchGem) continue;
+        int matchType = matchGem->getType();
         
         std::vector<std::pair<int, int>> group;
-        std::queue<std::pair<int, int>> queue;
-        queue.push(pos);
-        processed.insert(pos);
+        std::queue<std::pair<int, int>> q;
+        q.push(match);
+        visited.insert(match);
         
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
+        while (!q.empty()) {
+            auto current = q.front();
+            q.pop();
             group.push_back(current);
             
-            // 检查4个方向的相邻宝石
-            int dx[] = {-1, 1, 0, 0};
-            int dy[] = {0, 0, -1, 1};
+            int dr[] = {-1, 1, 0, 0};
+            int dc[] = {0, 0, -1, 1};
             
-            for (int i = 0; i < 4; i++) {
-                int nr = current.first + dx[i];
-                int nc = current.second + dy[i];
+            for (int i = 0; i < 4; ++i) {
+                int nr = current.first + dr[i];
+                int nc = current.second + dc[i];
+                
                 std::pair<int, int> neighbor = {nr, nc};
                 
+                // 【关键修复】只有当邻居宝石类型相同时才加入组
                 if (std::find(matches.begin(), matches.end(), neighbor) != matches.end() &&
-                    !processed.count(neighbor)) {
-                    processed.insert(neighbor);
-                    queue.push(neighbor);
+                    !visited.count(neighbor)) {
+                    
+                    Gemstone* neighborGem = gemstoneContainer[nr][nc];
+                    if (neighborGem && neighborGem->getType() == matchType) {
+                        visited.insert(neighbor);
+                        q.push(neighbor);
+                    }
                 }
             }
         }
         
-        groups.push_back(group);
+        if (!group.empty()) {
+            groups.push_back(group);
+        }
     }
     
     return groups;
 }
 
-// 消除以特殊宝石为中心的3×3区域
-void WhirlwindModeGameWidget::remove3x3Area(int centerRow, int centerCol) {
-    appendDebug(QString("Special gem exploding at (%1,%2) - removing 3x3 area")
-        .arg(centerRow).arg(centerCol));
-    
-    int removed = 0;
-    for (int i = centerRow - 1; i <= centerRow + 1; i++) {
-        for (int j = centerCol - 1; j <= centerCol + 1; j++) {
-            if (i >= 0 && i < 8 && j >= 0 && j < 8) {
-                Gemstone* gem = gemstoneContainer[i][j];
-                if (gem) {
-                    removed++;
-                    eliminateAnime(gem);
-                    gemstoneContainer[i][j] = nullptr;
-                }
-            }
-        }
-    }
-    
-    if (removed > 0) {
-        gameScore += removed * 15;  // 特殊宝石消除给更多分数
-        updateScoreBoard();
-        appendDebug(QString("Special gem removed %1 gems in 3x3 area").arg(removed));
-    }
-}
 
 // 检查匹配组中是否包含特殊宝石
 bool WhirlwindModeGameWidget::hasSpecialGem(const std::vector<std::pair<int, int>>& group) const {

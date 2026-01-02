@@ -5,6 +5,10 @@
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../../utils/AudioManager.h"
+#include "../../utils/ResourceUtils.h"
+#include "GradientLevelLabel.h"
+#include "../data/AchievementSystem.h"
+#include "VictoryBanner.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -158,7 +162,8 @@ protected:
 
 PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWindow) 
     : QWidget(parent), gameWindow(gameWindow), canOpe(true), nowTimeHave(0), mode(1),
-      firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0) {
+      firstSelectedGemstone(nullptr), secondSelectedGemstone(nullptr), selectedNum(0),
+      isDragging(false), dragStartGemstone(nullptr), dragStartRow(-1), dragStartCol(-1) {
     
     // 初始化定时器
     timer = new QTimer(this);
@@ -228,6 +233,24 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     panelLayout->setContentsMargins(18, 18, 18, 18);
     panelLayout->setSpacing(16);
 
+    // ========== 创建渐变Level显示标签 ==========
+    levelLabel = new GradientLevelLabel(rightPanel);
+    levelLabel->setLevel(Level);
+    levelLabel->setFixedSize(380, 115);
+    levelLabel->setStyleSheet("background: transparent; border: none;");
+    
+    // 可选：自定义渐变颜色（默认是粉色到紫色）
+    // levelLabel->setGradientColors(QColor(255, 150, 200), QColor(180, 100, 255));
+    
+    // 可选：关闭高光动画
+    // levelLabel->setAnimationEnabled(false);
+    
+    // 添加到面板布局（在分数面板上方）
+    panelLayout->addWidget(levelLabel, 0, Qt::AlignHCenter | Qt::AlignTop);
+    
+    // 添加一点间距
+    panelLayout->addSpacing(8);
+
     auto* infoCard = new QWidget(rightPanel);
     infoCard->setStyleSheet(R"(
         QWidget {
@@ -273,6 +296,7 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     debugText->setFixedHeight(200); // 固定高度
     // 添加到现有布局中（例如右侧面板）
     panelLayout->addWidget(debugText);
+    debugText->setVisible(false);//hide 一下
 
     // 新增重置按钮
     resetButton = new QPushButton("重置状态", rightPanel);
@@ -356,6 +380,7 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
     container3d->installEventFilter(this);
     game3dWindow->installEventFilter(this); // 关键：在3D窗口上安装事件过滤器
+    rightPanel->installEventFilter(this); // 为右侧面板安装事件过滤器
 
     // 初始化无操作计时器
     inactivityTimer = new QTimer(this);
@@ -415,11 +440,43 @@ void PuzzleModeGameWidget::triggerFinishIfNeeded() {
 }
 
 void PuzzleModeGameWidget::finishToNextLevel() {
-    //此处应有 目标完成 前往下一关的弹幕生成
-
-    /* ( ) */
-    PuzzleModeGameWidget::reset(1);
+    if (isFinishing) return;
+    isFinishing = true;
+    canOpe = false;
+    
+    AchievementSystem::instance().triggerPuzzleModeComplete();
+    
+    if (timer && timer->isActive()) timer->stop();
+    if (inactivityTimer) inactivityTimer->stop();
+    
+    int currentLevel = Level;
+    int currentScore = gameScore;
+    QString timeText = gameTimeKeeper.displayText().replace("游戏进行时间：", "");
+    
+    QTimer::singleShot(600, this, [this, currentLevel, currentScore, timeText]() {
+        // ★ 隐藏3D窗口，否则会挡住弹幕
+        container3d->hide();
+        
+        VictoryBanner* banner = new VictoryBanner(this);
+        
+        QString imagePath = QString::fromStdString(
+            ResourceUtils::getPath("images/victory.png")
+        );
+        banner->setVictoryImage(imagePath);
+        
+        connect(banner, &VictoryBanner::finished, this, [this]() {
+            // ★ 弹幕结束后恢复3D窗口
+            container3d->show();
+            isFinishing = false;
+            Level++;
+            updateLevelDisplay();  // 新增：更新Level显示
+            reset(1);
+        });
+        
+        banner->show(currentLevel, currentScore, timeText);
+    });
 }
+
 
 // 查找所有需要消除的宝石（三连或更多）
 std::vector<std::pair<int, int>> PuzzleModeGameWidget::findMatches() {
@@ -493,11 +550,33 @@ std::vector<std::pair<int, int>> PuzzleModeGameWidget::findMatches() {
 }
 
 // 移除匹配的宝石
+// ============================================================================
+// PuzzleModeGameWidget.cpp 修复补丁
+// ============================================================================
+// 
+// 差异点：
+// - 有 GemNumber 计数（需要更新）
+// - 没有金币系统
+// - 没有 comboBonus
+// - 消除后不填充新宝石，只下落
+//
+// 使用方法：
+// 1. 在头文件 PuzzleModeGameWidget.h 的 private 部分添加声明:
+//    void remove3x3AreaChain(int centerRow, int centerCol);
+//
+// 2. 用以下代码替换对应函数
+// ============================================================================
+
+// ============================================================================
+// 替换原有的 removeMatches 函数
+// ============================================================================
+
 void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>& matches) {
     if (matches.empty()) {
         appendDebug("No matches to remove");
         return;
     }
+    AchievementSystem::instance().triggerFirstElimination();
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
@@ -507,21 +586,42 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     int removedCount = 0;
     
     for (const auto& group : groups) {
+        int groupSize = static_cast<int>(group.size());
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         
         if (hasSpecial) {
-            // 找到特殊宝石的位置
+            // 【修复】收集所有需要触发的特殊宝石位置
+            std::vector<std::pair<int, int>> specialPositions;
             for (const auto& pos : group) {
                 Gemstone* gem = gemstoneContainer[pos.first][pos.second];
                 if (gem && gem->isSpecial()) {
-                    // 消除3×3区域
-                    remove3x3Area(pos.first, pos.second);
-                    break;  // 只处理第一个特殊宝石
+                    specialPositions.push_back(pos);
                 }
             }
-        } else if (group.size() == 4) {
-            // 4连或更多：保留第2颗宝石作为特殊宝石
+            
+            // 【修复】先消除组内的非特殊宝石
+            for (const auto& pos : group) {
+                int row = pos.first;
+                int col = pos.second;
+                Gemstone* gem = gemstoneContainer[row][col];
+                
+                if (gem && !gem->isSpecial()) {
+                    removedCount++;
+                    eliminateAnime(gem);
+                    gemstoneContainer[row][col] = nullptr;
+                }
+            }
+            
+            // 【修复】然后触发所有特殊宝石（支持连锁）
+            for (const auto& specialPos : specialPositions) {
+                Gemstone* specialGem = gemstoneContainer[specialPos.first][specialPos.second];
+                if (specialGem && specialGem->isSpecial()) {
+                    remove3x3Area(specialPos.first, specialPos.second);
+                }
+            }
+        } else if (group.size() >= 4) {
+            // 【修复】4连或更多：保留第2颗宝石作为特殊宝石
             appendDebug(QString("Found %1-match, creating special gem").arg(group.size()));
             
             // 对组内位置排序（按行优先，然后列）
@@ -567,13 +667,114 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
 
     if (removedCount > 0) {
         GemNumber -= removedCount;
-        appendDebug(QString("Still %1 Gems there.").arg(GemNumber));
         gameScore += removedCount * 10;
         updateScoreBoard();
         triggerFinishIfNeeded();
     }
-
 }
+
+// ============================================================================
+// 替换原有的 remove3x3Area 函数
+// ============================================================================
+
+void PuzzleModeGameWidget::remove3x3Area(int centerRow, int centerCol) {
+    appendDebug(QString("Removing 3x3 area centered at (%1,%2)").arg(centerRow).arg(centerCol));
+    
+    // 【修复】收集范围内的特殊宝石，用于连锁触发
+    std::vector<std::pair<int, int>> chainSpecialGems;
+    int removedInArea = 0;
+    
+    // 消除以(centerRow, centerCol)为中心的3×3区域
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            int r = centerRow + dr;
+            int c = centerCol + dc;
+            
+            // 检查边界
+            if (r < 0 || r >= 8 || c < 0 || c >= 8) {
+                continue;
+            }
+            
+            Gemstone* gem = gemstoneContainer[r][c];
+            if (gem) {
+                // 【修复】检查是否是另一个特殊宝石（不是中心的那个）
+                if (gem->isSpecial() && !(r == centerRow && c == centerCol)) {
+                    // 记录位置，稍后触发连锁
+                    chainSpecialGems.push_back({r, c});
+                    appendDebug(QString("Found chain special gem at (%1,%2)").arg(r).arg(c));
+                }
+                
+                // 消除宝石
+                eliminateAnime(gem);
+                gemstoneContainer[r][c] = nullptr;
+                removedInArea++;
+                
+                // 增加分数
+                gameScore += 10;
+            }
+        }
+    }
+    
+    // 更新GemNumber
+    GemNumber -= removedInArea;
+    appendDebug(QString("Removed %1 gems in 3x3 area, %2 remaining").arg(removedInArea).arg(GemNumber));
+    updateScoreBoard();
+    triggerFinishIfNeeded();
+    
+    // 【修复】递归触发范围内的其他特殊宝石
+    for (const auto& pos : chainSpecialGems) {
+        appendDebug(QString("Chain triggering at (%1,%2)").arg(pos.first).arg(pos.second));
+        remove3x3AreaChain(pos.first, pos.second);
+    }
+}
+
+// ============================================================================
+// 新增函数 - 添加到 PuzzleModeGameWidget.cpp 中
+// ============================================================================
+
+void PuzzleModeGameWidget::remove3x3AreaChain(int centerRow, int centerCol) {
+    appendDebug(QString("Chain removing 3x3 area at (%1,%2)").arg(centerRow).arg(centerCol));
+    
+    // 收集范围内的特殊宝石
+    std::vector<std::pair<int, int>> chainSpecialGems;
+    int removedInArea = 0;
+    
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            int r = centerRow + dr;
+            int c = centerCol + dc;
+            
+            if (r < 0 || r >= 8 || c < 0 || c >= 8) {
+                continue;
+            }
+            
+            Gemstone* gem = gemstoneContainer[r][c];
+            if (gem) {
+                // 检查是否是特殊宝石
+                if (gem->isSpecial()) {
+                    chainSpecialGems.push_back({r, c});
+                    appendDebug(QString("Chain found special gem at (%1,%2)").arg(r).arg(c));
+                }
+                
+                eliminateAnime(gem);
+                gemstoneContainer[r][c] = nullptr;
+                removedInArea++;
+                gameScore += 10;
+            }
+        }
+    }
+    
+    GemNumber -= removedInArea;
+    updateScoreBoard();
+    triggerFinishIfNeeded();
+    
+    // 递归触发连锁
+    for (const auto& pos : chainSpecialGems) {
+        remove3x3AreaChain(pos.first, pos.second);
+    }
+}
+
+
 
 
 void PuzzleModeGameWidget::eliminate() {
@@ -675,7 +876,7 @@ void PuzzleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     QVector3D pos1 = gemstone1->transform()->translation();
     QVector3D pos2 = gemstone2->transform()->translation();
     
-    QParallelAnimationGroup* group = new QParallelAnimationGroup();
+    QParallelAnimationGroup* group = new QParallelAnimationGroup(this);
     
     QPropertyAnimation* anim1 = new QPropertyAnimation(gemstone1->transform(), "translation");
     anim1->setDuration(500); // 0.5s
@@ -697,6 +898,7 @@ void PuzzleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     group->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
+// 添加选择宝石 的方法 ， 需在所有event后调用 
 void PuzzleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
     if (!gem) {
         appendDebug("handleGemstoneClicked: gem is null!");
@@ -749,6 +951,8 @@ void PuzzleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
             if (areAdjacent(row1, col1, row2, col2)) {
                 appendDebug("Gems are adjacent, performing swap!");
                 performSwap(firstSelectedGemstone, secondSelectedGemstone, row1, col1, row2, col2);
+
+                isDragging = false;//取消release时的影响
             } else {
                 appendDebug("Gems are NOT adjacent, clearing selection");
                 // 不相邻，清除选择
@@ -765,22 +969,43 @@ void PuzzleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
 }
 
 void PuzzleModeGameWidget::mousePressEvent(QMouseEvent* event) {
-    if (event->button() == Qt::RightButton) {
-        if (mode == 1) {
-            // 取消选择
-            if (firstSelectedGemstone) {
-                firstSelectedGemstone = nullptr;
-                selectionRing1->setVisible(false);
-            }
-            if (secondSelectedGemstone) {
-                secondSelectedGemstone = nullptr;
-                selectionRing2->setVisible(false);
-            }
-            selectedNum = 0;
-            this->setWindowTitle("Selection Cleared");
+    appendDebug("Mouse Pressed");
+    if (event->button() == Qt::LeftButton) {
+        // 左键按下开始拖动
+        if (mode == 1 && canOpe) {
+            // 重置拖动状态
+            isDragging = true;  // 先设置为false，等找到宝石再设为true
+            dragStartGemstone = nullptr;
+            dragStartRow = -1;
+            dragStartCol = -1;
+            
+            handleManualClick(event -> pos(),1);
         }
+    } else if (event->button() == Qt::RightButton) {
+        firstSelectedGemstone = nullptr;
+        secondSelectedGemstone = nullptr;
+        selectedNum = 0;
+        selectionRing1->setVisible(false);
+        selectionRing2->setVisible(false);
+        appendDebug("Startale Says : Clear all selection by click RightButton.");
     }
     QWidget::mousePressEvent(event);
+}
+
+void PuzzleModeGameWidget::mouseReleaseEvent(QMouseEvent* event) {
+    appendDebug(QString("Mouse Released, button=%1, isDragging=%2").arg(event->button()).arg(isDragging));
+
+    // 如果鼠标释放时还在拖动状态但没有触发交换，则取消拖动
+    appendDebug("Mouse released without triggering swap, cancelling drag");
+    if(isDragging) {
+        isDragging = false;
+        handleManualClick(event -> pos() , 2);
+        dragStartGemstone = nullptr;
+        dragStartRow = -1;
+        dragStartCol = -1;
+    }
+    
+    QWidget::mouseReleaseEvent(event);
 }
 
 void PuzzleModeGameWidget::showEvent(QShowEvent* event) {
@@ -809,7 +1034,7 @@ void PuzzleModeGameWidget::hideEvent(QHideEvent* event) {
     }
     clearHighlights();
 }
-
+//————————————————————————————————————————————二、处理点击操作和点击拖动操作
 bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
     if (obj == container3d) {
         if (event->type() == QEvent::FocusIn) {
@@ -825,16 +1050,74 @@ bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             appendDebug(QString("game3dWindow MouseButtonPress at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
 
-            // 手动处理点击 - 转换屏幕坐标到世界坐标
-            handleManualClick(mouseEvent->pos());
-            refreshDebugStatus();
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonPress,
+                container3d->mapFromGlobal(game3dWindow->mapToGlobal(mouseEvent->pos())),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            
             return false; // 不消费事件，让Qt3D也能处理
         } else if (event->type() == QEvent::MouseMove) {
-            // 追踪鼠标移动以确认事件被接收
+            // 处理鼠标移动事件
             static int moveCount = 0;
             if (++moveCount % 50 == 0) { // 每50次移动输出一次
                 appendDebug("Mouse moving over 3D window");
             }
+            return false; // 不消费事件，让Qt3D也能处理
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            // 处理鼠标释放事件
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            appendDebug(QString("game3dWindow MouseButtonRelease at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonRelease,
+                container3d->mapFromGlobal(game3dWindow->mapToGlobal(mouseEvent->pos())),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return false; // 不消费事件，让Qt3D也能处理
+        } else if (event->type() == QEvent::MouseMove) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseMoveEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseMove,
+                mouseEvent->pos() + rightPanel->pos(),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return true; // 消费事件
+        } else if (event->type() == QEvent::MouseButtonRelease) {
+            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+            appendDebug(QString("rightPanel MouseButtonRelease at (%1, %2)").arg(mouseEvent->pos().x()).arg(mouseEvent->pos().y()));
+            
+            // 将事件转发到PuzzleModeGameWidget的mouseReleaseEvent
+            QMouseEvent* forwardedEvent = new QMouseEvent(
+                QEvent::MouseButtonRelease,
+                mouseEvent->pos() + rightPanel->pos(),
+                mouseEvent->globalPos(),
+                mouseEvent->button(),
+                mouseEvent->buttons(),
+                mouseEvent->modifiers()
+            );
+            
+            QCoreApplication::postEvent(this, forwardedEvent);
+            return true; // 消费事件
         }
     }
     return QWidget::eventFilter(obj, event);
@@ -842,14 +1125,17 @@ bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
 
 PuzzleModeGameWidget::~PuzzleModeGameWidget() {
     clearHighlights();
-    delete inactivityTimer;
+    // inactivityTimer 是 this 的子对象，会自动析构，不需要手动 delete
+    // delete inactivityTimer; 
 
     if (rootEntity) {
         delete rootEntity;
     }
-    if (game3dWindow) {
-        delete game3dWindow;
-    }
+    // game3dWindow 被 container3d 拥有，container3d 是 this 的子对象
+    // 所以不需要手动 delete game3dWindow，否则会导致双重释放
+    // if (game3dWindow) {
+    //    delete game3dWindow;
+    // }
     if (debugTimer && debugTimer->isActive()) {
         debugTimer->stop();
     }
@@ -1140,6 +1426,7 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
 }
 
 void PuzzleModeGameWidget::reset(int mode) {
+    AchievementSystem::instance().resetSessionStats();
     this->mode = mode;
     this->canOpe = true;
     this->isFinishing = false;
@@ -1159,7 +1446,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     }
     gemstoneContainer.clear();
     
-    Level ++;
+   
     ConstChange = 0;
     // 重建8x8网格
     gemstoneContainer.resize(8);
@@ -1172,6 +1459,8 @@ void PuzzleModeGameWidget::reset(int mode) {
     midX = midY = 0;
 
     debugText->setText(QString("Start\n")); // 刷新显示
+    //目前关闭debug窗口
+    
     int MemberNum = std::max(5 , std::min(10,3*Level));
     bool SpecialComplete = false;
     while(MemberNum) {
@@ -1210,6 +1499,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     secondSelectedGemstone = nullptr;
     // drop();
     while(!lastGemStateStack.empty()) lastGemStateStack.pop();
+    updateLevelDisplay();
     pushInLastStateQueue();
     // 重置定时器
     if (timer->isActive()) {
@@ -1421,11 +1711,14 @@ void PuzzleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
         .arg(row1).arg(col1).arg(row2).arg(col2));
 }
 
-
+//三      handle，将模糊的点击地点转化为确切的宝石位置
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
-void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos) {
-    // 获取当前容器大小
+void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind) {
+    if(kind == 2 && selectedNum == 0) {
+        appendDebug("Startale says : release gem could not be the first selected.");
+        return ;
+    }
     float screenWidth = static_cast<float>(container3d->width());
     float screenHeight = static_cast<float>(container3d->height());
 
@@ -1471,12 +1764,17 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos) {
         }
     }
 
+    if(closestGem == firstSelectedGemstone || (closestGem == nullptr && selectedNum == 0)) {
+        appendDebug("Startale Says : this is wrong Answer!!!!!");
+        return ;
+    }
     // 如果找到了足够近的格子（距离 < 0.8）
     if (minDistance < 0.8f) {
         if (closestGem) {
             // 点击的是宝石
             appendDebug(QString("Found gemstone at (%1,%2), distance=%3")
                 .arg(closestRow).arg(closestCol).arg(minDistance, 0, 'f', 2));
+
             handleGemstoneClicked(closestGem);
         } else {
             // 点击的是空位（nullptr）
@@ -1730,71 +2028,58 @@ void PuzzleModeGameWidget::checkLastGemState() {
 // 将匹配的宝石分组（识别连续的匹配）
 std::vector<std::vector<std::pair<int, int>>> PuzzleModeGameWidget::groupMatches(
     const std::vector<std::pair<int, int>>& matches) {
-    
     std::vector<std::vector<std::pair<int, int>>> groups;
-    std::set<std::pair<int, int>> processed;
+    std::set<std::pair<int, int>> visited;
     
-    for (const auto& pos : matches) {
-        if (processed.count(pos)) continue;
+    for (const auto& match : matches) {
+        if (visited.count(match)) continue;
+        
+        // 【关键修复】获取当前宝石的类型
+        Gemstone* matchGem = gemstoneContainer[match.first][match.second];
+        if (!matchGem) continue;
+        int matchType = matchGem->getType();
         
         std::vector<std::pair<int, int>> group;
-        std::queue<std::pair<int, int>> queue;
-        queue.push(pos);
-        processed.insert(pos);
+        std::queue<std::pair<int, int>> q;
+        q.push(match);
+        visited.insert(match);
         
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
+        while (!q.empty()) {
+            auto current = q.front();
+            q.pop();
             group.push_back(current);
             
-            // 检查4个方向的相邻宝石
-            int dx[] = {-1, 1, 0, 0};
-            int dy[] = {0, 0, -1, 1};
+            int dr[] = {-1, 1, 0, 0};
+            int dc[] = {0, 0, -1, 1};
             
-            for (int i = 0; i < 4; i++) {
-                int nr = current.first + dx[i];
-                int nc = current.second + dy[i];
+            for (int i = 0; i < 4; ++i) {
+                int nr = current.first + dr[i];
+                int nc = current.second + dc[i];
+                
                 std::pair<int, int> neighbor = {nr, nc};
                 
+                // 【关键修复】只有当邻居宝石类型相同时才加入组
                 if (std::find(matches.begin(), matches.end(), neighbor) != matches.end() &&
-                    !processed.count(neighbor)) {
-                    processed.insert(neighbor);
-                    queue.push(neighbor);
+                    !visited.count(neighbor)) {
+                    
+                    Gemstone* neighborGem = gemstoneContainer[nr][nc];
+                    if (neighborGem && neighborGem->getType() == matchType) {
+                        visited.insert(neighbor);
+                        q.push(neighbor);
+                    }
                 }
             }
         }
         
-        groups.push_back(group);
+        if (!group.empty()) {
+            groups.push_back(group);
+        }
     }
     
     return groups;
 }
 
-// 消除以特殊宝石为中心的3×3区域
-void PuzzleModeGameWidget::remove3x3Area(int centerRow, int centerCol) {
-    appendDebug(QString("Special gem exploding at (%1,%2) - removing 3x3 area")
-        .arg(centerRow).arg(centerCol));
-    
-    int removed = 0;
-    for (int i = centerRow - 1; i <= centerRow + 1; i++) {
-        for (int j = centerCol - 1; j <= centerCol + 1; j++) {
-            if (i >= 0 && i < 8 && j >= 0 && j < 8) {
-                Gemstone* gem = gemstoneContainer[i][j];
-                if (gem) {
-                    removed++;
-                    eliminateAnime(gem);
-                    gemstoneContainer[i][j] = nullptr;
-                }
-            }
-        }
-    }
-    
-    if (removed > 0) {
-        gameScore += removed * 15;  // 特殊宝石消除给更多分数
-        updateScoreBoard();
-        appendDebug(QString("Special gem removed %1 gems in 3x3 area").arg(removed));
-    }
-}
+
 
 // 检查匹配组中是否包含特殊宝石
 bool PuzzleModeGameWidget::hasSpecialGem(const std::vector<std::pair<int, int>>& group) const {
@@ -1822,3 +2107,10 @@ void PuzzleModeGameWidget::pushInLastStateQueue() {
     lastGemStateStack.push(GemState);
     return ;
 }
+
+void PuzzleModeGameWidget::updateLevelDisplay() {
+    if (levelLabel) {
+        levelLabel->setLevel(Level);
+    }
+}
+

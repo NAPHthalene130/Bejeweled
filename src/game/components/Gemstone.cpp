@@ -390,6 +390,7 @@ void Gemstone::onGlobalStyleChanged(GemstoneStyle newStyle) {
     // 风格变化时重新加载模型
     reloadModel();
     clearSpecialEffects();
+    clearHintEffects();
 }
 
 int Gemstone::getType() const {
@@ -638,7 +639,7 @@ QColor Gemstone::getGemstoneColor() const {
     // 宝石风格颜色
     switch (type % 8) {
         case 0: return QColor(255, 102, 153);   // 粉色水晶
-        case 1: return QColor(26, 179, 77);     // 祖母绿
+        case 1: return QColor(69, 26, 150);     // 祖母紫 （（（（））））
         case 2: return QColor(26, 153, 204);    // 青蓝水晶
         case 3: return QColor(255, 140, 26);    // 橙色钻石
         case 4: return QColor(51, 217, 89);     // 明亮绿色
@@ -709,6 +710,13 @@ void Gemstone::setSpecial(bool special) {
     if (this->special != special) {
         this->special = special;
         updateSpecialEffects();
+    }
+}
+
+void Gemstone::setHint(bool hint) {
+    if(this->hint != hint) {
+        this -> hint = hint;
+        updateHintEffects();
     }
 }
 
@@ -820,6 +828,85 @@ void Gemstone::updateSpecialEffects() {
         orbitAnim->start();
         m_particleAnimations.push_back(orbitAnim);
     }
+}
+
+void Gemstone::updateHintEffects() {
+    clearHintEffects();
+
+    if (!hint) {
+        return;
+    }
+
+    // 粒子效果
+    m_particlesRoot_hint = new Qt3DCore::QEntity(this);
+    int particleCount = 6;
+    
+    for (int i = 0; i < particleCount; ++i) {
+        Qt3DCore::QEntity* pEntity = new Qt3DCore::QEntity(m_particlesRoot_hint);
+        
+        Qt3DExtras::QSphereMesh* pMesh = new Qt3DExtras::QSphereMesh();
+        pMesh->setRadius(0.08f);
+        
+        Qt3DExtras::QPhongMaterial* pMat = new Qt3DExtras::QPhongMaterial();
+        pMat->setDiffuse(QColor(40, 60, 255));
+        pMat->setAmbient(QColor(40, 100, 255));
+        pMat->setShininess(50.0f);
+        
+        Qt3DCore::QTransform* pTransform = new Qt3DCore::QTransform();
+        
+        pEntity->addComponent(pMesh);
+        pEntity->addComponent(pMat);
+        pEntity->addComponent(pTransform);
+        
+        m_particleEntities_hint.push_back(pEntity);
+
+        Qt3DCore::QEntity* pivot = new Qt3DCore::QEntity(m_particlesRoot_hint);
+        Qt3DCore::QTransform* pivotTransform = new Qt3DCore::QTransform();
+        pivot->addComponent(pivotTransform);
+        
+        pEntity->setParent(pivot);
+        pTransform->setTranslation(QVector3D(0.9f, 0.0f, 0.0f));
+        
+        QPropertyAnimation* orbitAnim = new QPropertyAnimation(pivotTransform, "rotationY");
+        orbitAnim->setStartValue(0.0f);
+        orbitAnim->setEndValue(360.0f);
+        int duration = 1500 + QRandomGenerator::global()->bounded(1500);
+        orbitAnim->setDuration(duration);
+        orbitAnim->setLoopCount(-1);
+        
+        float startAngle = (360.0f / particleCount) * i;
+        pivotTransform->setRotationY(startAngle);
+        orbitAnim->setStartValue(startAngle);
+        orbitAnim->setEndValue(startAngle + 360.0f);
+        
+        float tiltX = QRandomGenerator::global()->bounded(60) - 30;
+        float tiltZ = QRandomGenerator::global()->bounded(60) - 30;
+        QQuaternion tilt = QQuaternion::fromEulerAngles(tiltX, 0, tiltZ);
+        
+        Qt3DCore::QEntity* tiltRoot = new Qt3DCore::QEntity(m_particlesRoot_hint);
+        Qt3DCore::QTransform* tiltTransform = new Qt3DCore::QTransform();
+        tiltTransform->setRotation(tilt);
+        tiltRoot->addComponent(tiltTransform);
+        
+        pivot->setParent(tiltRoot);
+
+        orbitAnim->start();
+        m_particleAnimations_hint.push_back(orbitAnim);
+    }
+}
+
+void Gemstone::clearHintEffects() {
+    if (m_particlesRoot_hint) {
+        m_particlesRoot_hint->setParent((Qt3DCore::QNode*)nullptr);
+        delete m_particlesRoot_hint;
+        m_particlesRoot_hint = nullptr;
+    }
+
+    m_particleEntities_hint.clear();
+    for (auto anim : m_particleAnimations_hint) {
+        delete anim;
+    }
+    m_particleAnimations_hint.clear();
 }
 
 void Gemstone::clearSpecialEffects() {

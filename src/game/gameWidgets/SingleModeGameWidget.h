@@ -86,6 +86,7 @@ public:
 
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
@@ -94,7 +95,7 @@ protected:
 private:
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
-    void handleManualClick(const QPoint& screenPos); // 手动处理点击
+    void handleManualClick(const QPoint& screenPos , int kind); // 手动处理点击
     void appendDebug(const QString& text);
     void refreshDebugStatus();
 
@@ -123,6 +124,8 @@ private:
     
     // 检查匹配组中是否包含特殊宝石
     bool hasSpecialGem(const std::vector<std::pair<int, int>>& group) const;
+
+    void remove3x3AreaChain(int centerRow, int centerCol);
 
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;
@@ -167,7 +170,10 @@ private:
 
     QTimer* inactivityTimer;       // 无操作计时器
     int inactivityTimeout = 5000;  // 超时时间(毫秒)，这里设为5秒
-    std::vector<SelectedCircle*> highlightRings;  // 用于标记可消除宝石的高亮环
+    std::vector<Gemstone*> highlightGems;  // 用于标记可消除宝石的高亮环
+    
+    const int dx[4] = {0,0,1,-1};
+    const int dy[4] = {1,-1,0,0};
     
     int selectedNum;
 
@@ -200,6 +206,8 @@ private:
     int initialCoins = 0;  // 游戏开始时的金币数
     int earnedCoins = 0;   // 本局获得的金币数
     
+    //有关滑动交换
+    bool isDragging = false;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H

@@ -24,6 +24,7 @@ class Gemstone;
 class SelectedCircle;
 class GameWindow;
 class ScoreProgressBar;
+class GradientLevelLabel; 
 
 class PuzzleModeGameWidget : public QWidget {
     Q_OBJECT
@@ -73,8 +74,11 @@ public:
 
     void backToLastGemstoneState(std::string LastState);
     void checkLastGemState();  // 新增
+
+    void updateLevelDisplay();
 protected:
     void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -82,7 +86,7 @@ protected:
 private:
     QVector3D getPosition(int row, int col) const;
     void handleGemstoneClicked(Gemstone* gem);
-    void handleManualClick(const QPoint& screenPos); // 手动处理点击
+    void handleManualClick(const QPoint& screenPos , int kind); // 手动处理点击
     void appendDebug(const QString& text);
     void refreshDebugStatus();
 
@@ -119,6 +123,8 @@ private:
     // 检查匹配组中是否包含特殊宝石
     bool hasSpecialGem(const std::vector<std::pair<int, int>>& group) const;
 
+    void remove3x3AreaChain(int centerRow, int centerCol);
+
     Qt3DExtras::Qt3DWindow* game3dWindow;
     QWidget* container3d;
     std::vector<std::vector<Gemstone*>> gemstoneContainer;
@@ -131,7 +137,7 @@ private:
     
     int difficulty = 8;
     int GemNumber = 0;
-    int Level = 0;
+    int Level = 1;
     std::string TempGemState[8];
     int lenthT[8];
     std::stack<std::string> lastGemStateStack;
@@ -173,6 +179,14 @@ private:
     
     int selectedNum;
 
+    // Swipe/drag state
+    bool isDragging;
+    QPoint dragStartPos;
+    Gemstone* dragStartGemstone;
+    int dragStartRow;
+    int dragStartCol;
+    const int SWIPE_THRESHOLD = 30; // 滑动阈值（像素）
+
     void setup3DScene();
 
     // Debug UI
@@ -186,6 +200,7 @@ private:
     QPushButton* backToMenuButton = nullptr;
     QPushButton* resetButton = nullptr;  // 新增
     ScoreProgressBar* scoreProgressBar = nullptr;
+    GradientLevelLabel* levelLabel = nullptr;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H

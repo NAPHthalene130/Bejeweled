@@ -13,6 +13,7 @@
 #include "gameWidgets/MultiGameWaitWidget.h"
 #include "gameWidgets/AboutWidget.h"
 #include "components/MenuButton.h"
+#include "data/AchievementSystem.h"
 #include "data/CoinSystem.h"
 #include "data/ItemSystem.h"
 #include <QMainWindow>
@@ -79,6 +80,10 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     logWindow = new LogWindow();
     // logWindow->show();
+        // ===== 初始化成就系统 =====
+    AchievementSystem::instance().initialize(this, userID);
+    qDebug() << "[GameWindow] AchievementSystem initialized";
+
 
     achievementsWidget = new AchievementsWidget(this, this);
     menuWidget = new MenuWidget(this, this);
@@ -173,75 +178,71 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
         switchWidget(puzzleModeGameWidget);
     });
 
-    // 添加真实成就（按顺序 0-9）
+        // ===== 连接成就解锁信号（可选，用于显示通知）=====
+    connect(&AchievementSystem::instance(), &AchievementSystem::achievementUnlocked,
+            this, [](int index, const QString& title) {
+        qDebug() << "Achievement unlocked:" << index << title;
+        // 可在此显示解锁通知弹窗
+    });
 
     // [0] 初试锋芒 - Easy
+    // [0] 初试锋芒
     AchievementData achievement0("初试锋芒", 
-                                "成功完成首次宝石消除，踏上璀璨之旅的第一步。", 
-                                false);
+        "成功完成首次宝石消除，踏上璀璨之旅的第一步。", false);
     achievement0.setDifficulty(AchievementData::Difficulty::Easy);
     addAchievement(achievement0);
 
-    // [1] 奇异宝石创造者 - Easy
+    // [1] 奇异宝石创造者
     AchievementData achievement1("奇异宝石创造者", 
-                                "首次合成特殊宝石，开启高阶消除策略之门。", 
-                                false);
+        "首次合成特殊宝石，开启高阶消除策略之门。", false);
     achievement1.setDifficulty(AchievementData::Difficulty::Easy);
     addAchievement(achievement1);
 
-    // [2] 连击艺术 - Medium
+    // [2] 连击艺术
     AchievementData achievement2("连击艺术", 
-                                "在单局中累计实现 3 次三连消，展现精准操控与节奏感。", 
-                                false);
+        "在单人模式-原版中累计实现 1 次三连消，展现精准操控与节奏感。", false);
     achievement2.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement2);
 
-    // [3] 金币盈囊 - Medium
+    // [3] 金币盈囊
     AchievementData achievement3("金币盈囊", 
-                                "累计通过消除金币宝石收获 100 金币，连小卖部老板都认可你的商业眼光。", 
-                                false);
+        "累计通过消除金币宝石收获 100 金币，连小卖部老板都认可你的商业眼光。", false);
     achievement3.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement3);
 
-    // [4] 极速掌控 - Medium
-    AchievementData achievement4("极速掌控", 
-                                "在单人模式下 5 分钟内完成一局，速度与效率并存。", 
-                                false);
+    // [4] 四消突破
+    AchievementData achievement4("四消突破", 
+        "在单人模式-原版中首次达成四连消，解锁更高效的消除技巧。", false);
     achievement4.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement4);
 
-    // [5] 随机谜题征服者 - Medium
-    AchievementData achievement5("随机谜题征服者", 
-                                "在随机生成的解谜棋盘上首次通关，实力与运气皆不凡。", 
-                                false);
+    // [5] 极速掌控
+    AchievementData achievement5("极速掌控", 
+        "在单人模式-原版下 5 分钟内完成一局，速度与效率并存。", false);
     achievement5.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement5);
 
-    // [6] 旋风试炼 - Hard
-    AchievementData achievement6("旋风试炼", 
-                                "成功通关一次旋风模式，挑战手速与思维的双重巅峰。", 
-                                false);
-    achievement6.setDifficulty(AchievementData::Difficulty::Hard);
+    // [6] 随机谜题征服者
+    AchievementData achievement6("随机谜题征服者", 
+        "在随机生成的解谜棋盘上首次通关，实力与运气皆不凡。", false);
+    achievement6.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement6);
 
-    // [7] 破除界限 - Hard
-    AchievementData achievement7("破除界限", 
-                                "首次达成六连消，突破常规消除的极限，操作令人叹服。", 
-                                false);
+    // [7] 旋风试炼
+    AchievementData achievement7("旋风试炼", 
+        "成功在旋风模式坚持2分钟，挑战手速与思维的双重巅峰。", false);
     achievement7.setDifficulty(AchievementData::Difficulty::Hard);
     addAchievement(achievement7);
 
-    // [8] 全模式巡礼 - Hard
-    AchievementData achievement8("全模式巡礼", 
-                                "成功体验所有游戏模式，成为真正的游戏通才。", 
-                                false);
+    // [8] 破除界限
+    AchievementData achievement8("破除界限", 
+        "在单人模式-原版中首次达成六连消，突破常规消除的极限，操作令人叹服。", false);
     achievement8.setDifficulty(AchievementData::Difficulty::Hard);
     addAchievement(achievement8);
 
-    // [9] 成就收藏家 - Ultimate
+    // [9] 成就收藏家
     AchievementData achievement9("成就收藏家", 
-                                "解锁全部成就，见证从新手到大师的完整旅程，你的名字将镌刻在宝石传奇的编年史中。", 
-                                false);
+        "解锁全部成就，见证从新手到大师的完整旅程，你的名字将镌刻在宝石传奇的编年史中。", false);
     achievement9.setDifficulty(AchievementData::Difficulty::Ultimate);
     addAchievement(achievement9);
 
@@ -291,16 +292,19 @@ void GameWindow::switchWidget(QWidget* widget)
     BGMManager::instance().stop();
     // 防止 QMainWindow 删除之前的中央部件
     if (centralWidget()) {
-        takeCentralWidget();
-    }
-
-    if (currentWidget) {
-        currentWidget->hide();
-        // 不要让 setCentralWidget 删除之前的 widget
-        if (currentWidget->parent() == this) {
-            currentWidget->setParent(nullptr);
+        QWidget* oldWidget = takeCentralWidget();
+        if (oldWidget) {
+            oldWidget->setParent(this);
+            oldWidget->hide();
         }
     }
+
+    // currentWidget 只是用于跟踪当前显示的部件，不需要额外的 setParent(nullptr) 操作
+    // 因为 takeCentralWidget 已经处理了 ownership
+    if (currentWidget && currentWidget != widget) {
+        currentWidget->hide();
+    }
+    
     setCentralWidget(widget);
     widget->show();
     QString bgmPath;
@@ -314,9 +318,9 @@ void GameWindow::switchWidget(QWidget* widget)
         // 设置界面可以播放单独的背景音乐或暂停
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/setting_bgm.mp3"));
     } else if (widget == storeWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/store_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/store_bgm.mp3"));
     } else if (widget == rankListWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.mp3"));
     } else if (widget == singleModeGameWidget || widget == whirlwindModeGameWidget || widget == multiplayerModeGameWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.mp3"));
     }
