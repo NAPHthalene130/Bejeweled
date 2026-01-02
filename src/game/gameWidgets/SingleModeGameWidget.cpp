@@ -1405,6 +1405,7 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             static int moveCount = 0;
             if (++moveCount % 50 == 0) { // 每50次移动输出一次
                 appendDebug("Mouse moving over 3D window");
+            }
             // 锤子模式下的鼠标悬停处理
             if (hammerMode) {
                 QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
@@ -1479,7 +1480,9 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             
             QCoreApplication::postEvent(this, forwardedEvent);
             return false; // 不消费事件，让Qt3D也能处理
-        } else if (event->type() == QEvent::MouseMove) {
+        }
+    } else if (obj == rightPanel) {
+        if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             
             // 将事件转发到PuzzleModeGameWidget的mouseMoveEvent
