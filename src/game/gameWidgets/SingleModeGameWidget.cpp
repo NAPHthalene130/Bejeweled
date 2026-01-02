@@ -497,20 +497,21 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
 
         // 连接按钮点击事件
         connect(btn, &QPushButton::clicked, this, [this, type]() {
-            switch (type) {
-                case ItemType::FREEZE_TIME:
-                    useItemFreezeTime();
-                    break;
-                case ItemType::HAMMER:
-                    useItemHammer();
-                    break;
-                case ItemType::RESET_BOARD:
-                    useItemResetBoard();
-                    break;
-                case ItemType::CLEAR_ALL:
-                    useItemClearAll();
-                    break;
-            }
+            if(hammerMode == false)
+                switch (type) {
+                    case ItemType::FREEZE_TIME:
+                        useItemFreezeTime();
+                        break;
+                    case ItemType::HAMMER:
+                        useItemHammer();
+                        break;
+                    case ItemType::RESET_BOARD:
+                        useItemResetBoard();
+                        break;
+                    case ItemType::CLEAR_ALL:
+                        useItemClearAll();
+                        break;
+                }
         });
 
         itemLayout->addWidget(itemRow);
