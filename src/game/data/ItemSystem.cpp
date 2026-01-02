@@ -1,5 +1,6 @@
 #include "ItemSystem.h"
 #include "CoinSystem.h"
+#include "OtherNetDataIO.h"
 #include <QDebug>
 #include <QSettings>
 
@@ -12,6 +13,7 @@ ItemSystem::ItemSystem()
     : QObject(nullptr)
     , m_currentUserId("")
     , m_initialized(false)
+    , m_networkIO(nullptr)
 {
     initializeItems();
 }
@@ -33,8 +35,53 @@ void ItemSystem::initialize(const std::string& userId) {
 
     qDebug() << "[ItemSystem] Initialized for user:" << QString::fromStdString(userId);
 
-    // 从数据库加载道具数据
-    loadFromDatabase();
+    // 判断是否为离线模式
+    if (isOfflineMode()) {
+        qDebug() << "[ItemSystem] Offline mode detected, will use local storage";
+        // 离线模式：从本地加载
+        loadFromDatabase();
+    } else {
+        qDebug() << "[ItemSystem] Online mode detected, will load from server in GameWindow";
+        // 在线模式：不在这里加载，由GameWindow通过setItemCounts设置
+    }
+}
+
+void ItemSystem::setNetworkIO(OtherNetDataIO* netIO) {
+    m_networkIO = netIO;
+    qDebug() << "[ItemSystem] Network IO set:" << (netIO != nullptr ? "enabled" : "disabled");
+}
+
+bool ItemSystem::isOfflineMode() const {
+    return m_currentUserId == "$#SINGLE#$";
+}
+
+void ItemSystem::setItemCounts(const std::vector<int>& propNums) {
+    if (!m_initialized) {
+        qWarning() << "[ItemSystem] Not initialized, cannot set item counts";
+        return;
+    }
+
+    if (propNums.size() != 4) {
+        qWarning() << "[ItemSystem] Invalid propNums size:" << propNums.size();
+        return;
+    }
+
+    // 设置道具数量
+    m_itemCounts[ItemType::FREEZE_TIME] = propNums[0];
+    m_itemCounts[ItemType::HAMMER] = propNums[1];
+    m_itemCounts[ItemType::RESET_BOARD] = propNums[2];
+    m_itemCounts[ItemType::CLEAR_ALL] = propNums[3];
+
+    qDebug() << "[ItemSystem] Item counts set from server:"
+             << "FREEZE_TIME=" << propNums[0]
+             << "HAMMER=" << propNums[1]
+             << "RESET_BOARD=" << propNums[2]
+             << "CLEAR_ALL=" << propNums[3];
+
+    // 发送所有道具数量变化信号以更新UI
+    for (const auto& pair : m_itemCounts) {
+        emit itemCountChanged(pair.first, pair.second);
+    }
 }
 
 void ItemSystem::initializeItems() {
@@ -167,16 +214,53 @@ void ItemSystem::saveToDatabase() {
         return;
     }
 
-    QSettings settings("BejeweledGame", "ItemData");
-    settings.beginGroup(QString::fromStdString(m_currentUserId));
+    // 转换道具数量为vector格式 (按照ItemType枚举顺序)
+    std::vector<int> propNums(4, 0);
+    propNums[0] = getItemCount(ItemType::FREEZE_TIME);
+    propNums[1] = getItemCount(ItemType::HAMMER);
+    propNums[2] = getItemCount(ItemType::RESET_BOARD);
+    propNums[3] = getItemCount(ItemType::CLEAR_ALL);
 
-    for (const auto& pair : m_itemCounts) {
-        QString key = QString("item_%1").arg(static_cast<int>(pair.first));
-        settings.setValue(key, pair.second);
+    if (isOfflineMode()) {
+        // 离线模式：使用QSettings本地存储
+        QSettings settings("BejeweledGame", "ItemData");
+        settings.beginGroup(QString::fromStdString(m_currentUserId));
+
+        for (const auto& pair : m_itemCounts) {
+            QString key = QString("item_%1").arg(static_cast<int>(pair.first));
+            settings.setValue(key, pair.second);
+        }
+
+        settings.endGroup();
+        qDebug() << "[ItemSystem] Saved item data locally for user:" << QString::fromStdString(m_currentUserId);
+    } else {
+        // 在线模式：同步到服务器
+        if (m_networkIO) {
+            bool success = m_networkIO->setPropNums(m_currentUserId, propNums);
+            if (success) {
+                qDebug() << "[ItemSystem] Synced item data to server for user:" << QString::fromStdString(m_currentUserId);
+            } else {
+                qWarning() << "[ItemSystem] Failed to sync item data to server, falling back to local storage";
+                // 失败时回退到本地存储
+                QSettings settings("BejeweledGame", "ItemData");
+                settings.beginGroup(QString::fromStdString(m_currentUserId));
+                for (const auto& pair : m_itemCounts) {
+                    QString key = QString("item_%1").arg(static_cast<int>(pair.first));
+                    settings.setValue(key, pair.second);
+                }
+                settings.endGroup();
+            }
+        } else {
+            qWarning() << "[ItemSystem] Network IO not set, using local storage";
+            QSettings settings("BejeweledGame", "ItemData");
+            settings.beginGroup(QString::fromStdString(m_currentUserId));
+            for (const auto& pair : m_itemCounts) {
+                QString key = QString("item_%1").arg(static_cast<int>(pair.first));
+                settings.setValue(key, pair.second);
+            }
+            settings.endGroup();
+        }
     }
-
-    settings.endGroup();
-    qDebug() << "[ItemSystem] Saved item data for user:" << QString::fromStdString(m_currentUserId);
 }
 
 void ItemSystem::loadFromDatabase() {
@@ -185,16 +269,53 @@ void ItemSystem::loadFromDatabase() {
         return;
     }
 
-    QSettings settings("BejeweledGame", "ItemData");
-    settings.beginGroup(QString::fromStdString(m_currentUserId));
+    if (isOfflineMode()) {
+        // 离线模式：从QSettings本地加载
+        QSettings settings("BejeweledGame", "ItemData");
+        settings.beginGroup(QString::fromStdString(m_currentUserId));
 
-    for (auto& pair : m_itemCounts) {
-        QString key = QString("item_%1").arg(static_cast<int>(pair.first));
-        pair.second = settings.value(key, 0).toInt();
+        for (auto& pair : m_itemCounts) {
+            QString key = QString("item_%1").arg(static_cast<int>(pair.first));
+            pair.second = settings.value(key, 0).toInt();
+        }
+
+        settings.endGroup();
+        qDebug() << "[ItemSystem] Loaded item data locally for user:" << QString::fromStdString(m_currentUserId);
+    } else {
+        // 在线模式：从服务器加载
+        if (m_networkIO) {
+            std::vector<int> propNums = m_networkIO->getPropNums(m_currentUserId);
+
+            if (propNums.size() == 4) {
+                // 按照顺序解析道具数量
+                m_itemCounts[ItemType::FREEZE_TIME] = propNums[0];
+                m_itemCounts[ItemType::HAMMER] = propNums[1];
+                m_itemCounts[ItemType::RESET_BOARD] = propNums[2];
+                m_itemCounts[ItemType::CLEAR_ALL] = propNums[3];
+
+                qDebug() << "[ItemSystem] Loaded item data from server for user:" << QString::fromStdString(m_currentUserId);
+            } else {
+                qWarning() << "[ItemSystem] Failed to load from server, falling back to local storage";
+                // 失败时回退到本地存储
+                QSettings settings("BejeweledGame", "ItemData");
+                settings.beginGroup(QString::fromStdString(m_currentUserId));
+                for (auto& pair : m_itemCounts) {
+                    QString key = QString("item_%1").arg(static_cast<int>(pair.first));
+                    pair.second = settings.value(key, 0).toInt();
+                }
+                settings.endGroup();
+            }
+        } else {
+            qWarning() << "[ItemSystem] Network IO not set, using local storage";
+            QSettings settings("BejeweledGame", "ItemData");
+            settings.beginGroup(QString::fromStdString(m_currentUserId));
+            for (auto& pair : m_itemCounts) {
+                QString key = QString("item_%1").arg(static_cast<int>(pair.first));
+                pair.second = settings.value(key, 0).toInt();
+            }
+            settings.endGroup();
+        }
     }
-
-    settings.endGroup();
-    qDebug() << "[ItemSystem] Loaded item data for user:" << QString::fromStdString(m_currentUserId);
 
     // 发送所有道具数量变化信号
     for (const auto& pair : m_itemCounts) {
@@ -205,6 +326,7 @@ void ItemSystem::loadFromDatabase() {
 void ItemSystem::reset() {
     m_currentUserId = "";
     m_initialized = false;
+    m_networkIO = nullptr;
     m_itemCounts.clear();
     qDebug() << "[ItemSystem] Reset";
 }

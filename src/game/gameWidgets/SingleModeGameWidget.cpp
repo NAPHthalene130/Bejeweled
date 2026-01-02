@@ -42,6 +42,7 @@
 #include <set>
 #include <tuple>
 
+#include "../data/OtherNetDataIO.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -652,6 +653,9 @@ void SingleModeGameWidget::triggerFinishIfNeeded() {
     if (isFinishing) return;
     if (gameScore < targetScore) return;
     finishToFinalWidget();
+    if (gameWindow->getUserID() != "$#SINGLE#$") {
+        gameWindow->getOtherNetDataIO()->sendNormalTime(gameWindow->getUserID(), gameTimeKeeper.totalSeconds()/60);
+    }
 }
 
 void SingleModeGameWidget::finishToFinalWidget() {
@@ -1225,9 +1229,12 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
         // 找到宝石在容器中的位置
         int row = -1, col = -1;
         if (findGemstonePosition(gem, row, col)) {
-            appendDebug(QString("Hammer used on gem at (%1, %2)").arg(row).arg(col));
+            appendDebug(QString("🔨 Hammer used on gem at (%1, %2)").arg(row).arg(col));
 
-            // 消除这个宝石
+            // 播放锤击音效
+            AudioManager::instance().playClickSound();
+
+            // 直接消除这个宝石
             std::vector<std::pair<int, int>> toRemove;
             toRemove.push_back({row, col});
             removeMatches(toRemove);
@@ -1335,6 +1342,10 @@ void SingleModeGameWidget::mouseReleaseEvent(QMouseEvent* event) {
     
     QWidget::mouseReleaseEvent(event);
 }
+void SingleModeGameWidget::mouseMoveEvent(QMouseEvent* event) {
+    // 鼠标移动事件现在由eventFilter处理（在game3dWindow上）
+    QWidget::mouseMoveEvent(event);
+}
 
 void SingleModeGameWidget::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
@@ -1396,6 +1407,61 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             static int moveCount = 0;
             if (++moveCount % 50 == 0) { // 每50次移动输出一次
                 appendDebug("Mouse moving over 3D window");
+            // 锤子模式下的鼠标悬停处理
+            if (hammerMode) {
+                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+                QPoint mousePos = mouseEvent->pos();
+
+                // 遍历所有宝石，找到鼠标悬停的宝石
+                Gemstone* hoveredGem = nullptr;
+                float minDistance = std::numeric_limits<float>::max();
+
+                QSize windowSize = game3dWindow->size();
+                float centerX = windowSize.width() / 2.0f;
+                float centerY = windowSize.height() / 2.0f;
+                float scale = windowSize.height() / 18.0f;
+
+                for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
+                    for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
+                        Gemstone* gem = gemstoneContainer[i][j];
+                        if (!gem) continue;
+
+                        QVector3D gemPos3D = gem->transform()->translation();
+                        float screenX = centerX + gemPos3D.x() * scale;
+                        float screenY = centerY - gemPos3D.y() * scale;
+
+                        float dx = mousePos.x() - screenX;
+                        float dy = mousePos.y() - screenY;
+                        float distance = std::sqrt(dx * dx + dy * dy);
+
+                        if (distance < minDistance && distance < scale * 0.6f) {
+                            minDistance = distance;
+                            hoveredGem = gem;
+                        }
+                    }
+                }
+
+                // 更新悬停状态
+                if (hoveredGem != hammerHoverGem) {
+                    hammerHoverGem = hoveredGem;
+
+                    if (hoveredGem && hammerHoverRing) {
+                        hammerHoverRing->setPosition(hoveredGem->transform()->translation());
+                        hammerHoverRing->setVisible(true);
+                        static int debugCount = 0;
+                        if (debugCount++ % 10 == 0) {
+                            qDebug() << "[Hammer] Hover on gem at" << hoveredGem->transform()->translation();
+                        }
+                    } else if (hammerHoverRing) {
+                        hammerHoverRing->setVisible(false);
+                    }
+                }
+            } else {
+                // 非锤子模式，追踪鼠标移动以确认事件被接收
+                static int moveCount = 0;
+                if (++moveCount % 50 == 0) {
+                    appendDebug("Mouse moving over 3D window");
+                }
             }
             return false; // 不消费事件，让Qt3D也能处理
         } else if (event->type() == QEvent::MouseButtonRelease) {
@@ -1508,6 +1574,10 @@ void SingleModeGameWidget::setup3DScene() {
     selectionRing1 = new SelectedCircle(rootEntity);
     selectionRing2 = new SelectedCircle(rootEntity);
 
+    // 初始化锤子模式的悬停高亮圈（红色/橙色，更醒目）
+    hammerHoverRing = new SelectedCircle(rootEntity);
+    hammerHoverRing->setVisible(false);
+
     qDebug() << "[SingleModeGameWidget] 3D Scene setup complete - InputSettings and PickingSettings configured";
 }
 
@@ -1605,7 +1675,7 @@ void SingleModeGameWidget::reset(int mode) {
     this->canOpe = true;
     this->isFinishing = false;
     this->gameScore = 0;
-    this->targetScore = 300;
+    this->targetScore = 1000;
     this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
 
@@ -2329,24 +2399,51 @@ void SingleModeGameWidget::useItemClearAll() {
 void SingleModeGameWidget::enableHammerMode() {
     hammerMode = true;
 
+    // 设置锤子高亮圈的颜色为红色/橙色
+    if (hammerHoverRing) {
+        hammerHoverRing->setColor(QColor(255, 100, 0, 200));  // 橙红色
+        qDebug() << "[Hammer] Hover ring color set to orange-red";
+    } else {
+        qWarning() << "[Hammer] ERROR: hammerHoverRing is null!";
+    }
+
     // 更新提示信息
     if (timeBoardLabel) {
         QString originalText = timeBoardLabel->text();
         timeBoardLabel->setText("🔨 锤子模式 - 点击任意宝石");
     }
 
-    // 改变光标
-    setCursor(Qt::CrossCursor);
+    // 在3D窗口上设置光标和鼠标追踪
+    if (container3d) {
+        container3d->setCursor(Qt::CrossCursor);
+        container3d->setMouseTracking(true);
+        qDebug() << "[Hammer] Cursor and mouse tracking set on container3d";
+    } else {
+        qWarning() << "[Hammer] container3d is null!";
+    }
+
+    qDebug() << "[Hammer] Hammer mode ENABLED";
 }
 
 void SingleModeGameWidget::disableHammerMode() {
     hammerMode = false;
 
+    // 隐藏悬停高亮圈
+    if (hammerHoverRing) {
+        hammerHoverRing->setVisible(false);
+    }
+    hammerHoverGem = nullptr;
+
     // 恢复提示信息
     updateTimeBoard();
 
-    // 恢复光标
-    setCursor(Qt::ArrowCursor);
+    // 恢复光标和鼠标追踪
+    if (container3d) {
+        container3d->setCursor(Qt::ArrowCursor);
+        container3d->setMouseTracking(false);
+    }
+
+    qDebug() << "[Hammer] Hammer mode DISABLED";
 }
 // 将匹配的宝石分组（识别连续的匹配）
 std::vector<std::vector<std::pair<int, int>>> SingleModeGameWidget::groupMatches(
