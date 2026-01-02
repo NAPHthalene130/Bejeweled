@@ -413,6 +413,10 @@ void WhirlwindModeGameWidget::finishToFinalWidget() {
     isFinishing = true;
     canOpe = false;
 
+    if (gameWindow->getUserID() != "$#SINGLE#$") {
+        gameWindow->getOtherNetDataIO()->sendWhirlTime(gameWindow->getUserID(), gameScore);
+    }
+    
     if (timer && timer->isActive()) timer->stop();
     if (noEliminationTimer) noEliminationTimer->stop();
     if (rotationSquare) rotationSquare->setVisible(false);
