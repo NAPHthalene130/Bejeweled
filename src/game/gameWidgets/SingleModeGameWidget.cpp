@@ -581,7 +581,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     debugText = new QTextEdit(rightPanel);
     debugText->setVisible(false);
     debugText->setReadOnly(true);
-    debugTimer = new QTimer(this);debugText->setFixedSize(180, 54);
+    debugTimer = new QTimer(this);
 
     setLayout(mainLayout);
     mainLayout->addWidget(rightPanel, 0, Qt::AlignRight | Qt::AlignVCenter);
