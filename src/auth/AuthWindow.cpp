@@ -109,8 +109,7 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
     
     // 连接注册信号，处理注册数据
     connect(registerWidget, &RegisterWidget::registerClicked, this,
-            [=](const QString& id, const QString& password, const QString& confirmPwd,
-                const QString& email, const QString& emailCode) {
+            [=](const QString& id, const QString& password, const QString& confirmPwd) {
         
         if (password != confirmPwd) {
             emit registerResult(false, "两次输入的密码不一致");
@@ -121,8 +120,6 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
         authData.setType(2);
         authData.setId(id.toStdString());
         authData.setPassword(password.toStdString());
-        authData.setEmail(email.toStdString());
-        authData.setData(emailCode.toStdString());
         
         QMetaObject::Connection* conn = new QMetaObject::Connection;
         *conn = connect(this, &AuthWindow::registerResult, this, [=](bool success, const QString& msg) {
@@ -142,30 +139,6 @@ AuthWindow::AuthWindow(QWidget *parent) : QWidget(parent), socket(new QTcpSocket
         handleRegisterRequest(authData);
     });
 
-    // 连接请求邮箱验证码信号
-    connect(registerWidget, &RegisterWidget::requestEmailCode, this, [=](const QString& email) {
-        AuthNetData authData;
-        authData.setType(3);
-        authData.setEmail(email.toStdString());
-        
-        QMetaObject::Connection* conn = new QMetaObject::Connection;
-        *conn = connect(this, &AuthWindow::emailCodeResult, this, [=](bool success, const QString& msg) {
-            if (success) {
-                AuthNoticeDialog* dlg = new AuthNoticeDialog("提示", msg, 1, this);
-                dlg->exec();
-                delete dlg;
-            } else {
-                AuthNoticeDialog* dlg = new AuthNoticeDialog("错误", msg, 2, this);
-                dlg->exec();
-                delete dlg;
-            }
-            disconnect(*conn);
-            delete conn;
-        });
-        
-        handleRequestEmailCode(authData);
-    });
-    
     // 离线登录处理
     connect(loginWidget, &LoginWidget::oflLoginClicked, this, [=]() {
         GameWindow* mainUI = new GameWindow(nullptr, "$#SINGLE#$");
@@ -220,7 +193,8 @@ bool AuthWindow::validate(AuthNetData& data) const {
     std::regex pwdRegex("^(?=.*[a-zA-Z])(?=.*[0-9]).+$");
     if (!std::regex_match(password, pwdRegex)) return false;
 
-    // 注册类型额外校验邮箱和验证码
+    // 注册类型额外校验邮箱和验证码 - 已取消
+    /*
     if (data.getType() == 2) {
         std::string email = data.getEmail();
         if (email.empty() || !std::regex_match(email, std::regex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)"))) return false;
@@ -228,6 +202,7 @@ bool AuthWindow::validate(AuthNetData& data) const {
         std::string code = data.getData();
         if (code.empty()) return false;
     }
+    */
 
     return true;
 }
@@ -285,27 +260,7 @@ void AuthWindow::handleRegisterRequest(AuthNetData& data) {
     }
 }
 
-// 处理验证码请求
-void AuthWindow::handleRequestEmailCode(AuthNetData& data) {
-    const std::string& email = data.getEmail();
-    if (email.empty() || !std::regex_match(email, std::regex(R"(^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$)"))) {
-        emit emailCodeResult(false, "邮箱格式错误");
-        return;
-    }
-    
-    try {
-        netDataSender(data);
-        AuthNetData response_data = AuthDataReceiver();
 
-        if (response_data.getData() == "EMAIL_SUCCESS") {
-            emit emailCodeResult(true, "验证码已发送至邮箱");
-        } else {
-            emit emailCodeResult(false, "验证码发送失败");
-        }
-    } catch (const std::exception& e) {
-        emit emailCodeResult(false, QString("验证码请求异常: ") + e.what());
-    }
-}
 
 // 网络发送封装
 void AuthWindow::netDataSender(AuthNetData data) {

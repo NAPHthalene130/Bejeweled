@@ -25,7 +25,6 @@ signals:
     // 从AuthNetData迁移过来的信号
     void loginResult(bool success, const QString& msg);
     void registerResult(bool success, const QString& msg);
-    void emailCodeResult(bool success, const QString& msg);
 
 private:
     LoginWidget* loginWidget;    // 登录界面
@@ -36,7 +35,6 @@ private:
     bool validate(AuthNetData& data) const;
     void handleLoginRequest(AuthNetData& data);
     void handleRegisterRequest(AuthNetData& data);
-    void handleRequestEmailCode(AuthNetData& data);
     
     // 网络收发封装
     void netDataSender(AuthNetData data);
