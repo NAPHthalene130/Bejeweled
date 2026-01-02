@@ -74,6 +74,7 @@ public:
     // 设置离线模式（离线模式下跳过网络同步）
     void setOfflineMode(bool offline) { offlineMode = offline; }
     bool isOfflineMode() const { return offlineMode; }
+    int sessionComboCount = 0;
 
 signals:
     void achievementUnlocked(int index, const QString& title);
@@ -94,7 +95,6 @@ private:
     std::string userId;
     
     bool achievements[10] = {false};
-    int sessionComboCount = 0;
     int sessionComboCount1 = 0;
     int totalCoinsEarned = 0;
     bool initialized = false;

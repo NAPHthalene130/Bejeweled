@@ -5,6 +5,7 @@
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../../utils/AudioManager.h"
+#include "GradientLevelLabel.h"
 #include "../data/AchievementSystem.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>

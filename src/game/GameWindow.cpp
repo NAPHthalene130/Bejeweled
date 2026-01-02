@@ -151,7 +151,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // [2] 连击艺术
     AchievementData achievement2("连击艺术", 
-        "在单局中累计实现 3 次三连消，展现精准操控与节奏感。", false);
+        "在单局中累计实现 1 次三连消，展现精准操控与节奏感。", false);
     achievement2.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement2);
 

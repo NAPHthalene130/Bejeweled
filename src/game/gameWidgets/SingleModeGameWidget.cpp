@@ -805,10 +805,6 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
             AchievementSystem::instance().triggerCombo(groupSize);
         }
         
-        // 四连消或以上生成特殊宝石
-        if (groupSize >= 4) {
-            AchievementSystem::instance().triggerSpecialGemCreated();
-        }
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         
@@ -866,6 +862,7 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
                     if (pos == specialPos) {
                         // 保留并设为特殊宝石
                         gem->setSpecial(true);
+                        AchievementSystem::instance().triggerSpecialGemCreated();
                         appendDebug(QString("Special gem created at (%1,%2)").arg(row).arg(col));
                     } else {
                         // 移除其他宝石
@@ -1037,6 +1034,7 @@ void SingleModeGameWidget::eliminate() {
     } else {
         comboCount = 0;
         // 没有匹配了，恢复操作
+        AchievementSystem::instance().sessionComboCount = 0;
         canOpe = true;
         resetInactivityTimer();
         appendDebug("No matches found, game can continue");
