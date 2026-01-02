@@ -39,7 +39,7 @@
 #include <QWidget>
 #include <queue>
 #include <set>
-
+#include "../data/OtherNetDataIO.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -647,6 +647,9 @@ void SingleModeGameWidget::triggerFinishIfNeeded() {
     if (isFinishing) return;
     if (gameScore < targetScore) return;
     finishToFinalWidget();
+    if (gameWindow->getUserID() != "$#SINGLE#$") {
+        gameWindow->getOtherNetDataIO()->sendNormalTime(gameWindow->getUserID(), gameTimeKeeper.totalSeconds()/60);
+    }
 }
 
 void SingleModeGameWidget::finishToFinalWidget() {
@@ -1439,7 +1442,7 @@ void SingleModeGameWidget::reset(int mode) {
     this->canOpe = true;
     this->isFinishing = false;
     this->gameScore = 0;
-    this->targetScore = 300;
+    this->targetScore = 1000;
     this->gameTimeKeeper.reset();
     this->nowTimeHave = 0;
 
