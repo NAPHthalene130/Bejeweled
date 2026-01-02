@@ -151,7 +151,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // [2] 连击艺术
     AchievementData achievement2("连击艺术", 
-        "在单局中累计实现 1 次三连消，展现精准操控与节奏感。", false);
+        "在单人模式-原版中累计实现 1 次三连消，展现精准操控与节奏感。", false);
     achievement2.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement2);
 
@@ -163,13 +163,13 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // [4] 四消突破
     AchievementData achievement4("四消突破", 
-        "首次达成四连消，解锁更高效的消除技巧。", false);
+        "在单人模式-原版中首次达成四连消，解锁更高效的消除技巧。", false);
     achievement4.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement4);
 
     // [5] 极速掌控
     AchievementData achievement5("极速掌控", 
-        "在单人模式下 5 分钟内完成一局，速度与效率并存。", false);
+        "在单人模式-原版下 5 分钟内完成一局，速度与效率并存。", false);
     achievement5.setDifficulty(AchievementData::Difficulty::Medium);
     addAchievement(achievement5);
 
@@ -187,7 +187,7 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
 
     // [8] 破除界限
     AchievementData achievement8("破除界限", 
-        "首次达成六连消，突破常规消除的极限，操作令人叹服。", false);
+        "在单人模式-原版中首次达成六连消，突破常规消除的极限，操作令人叹服。", false);
     achievement8.setDifficulty(AchievementData::Difficulty::Hard);
     addAchievement(achievement8);
 

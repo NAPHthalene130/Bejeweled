@@ -444,6 +444,7 @@ void PuzzleModeGameWidget::finishToNextLevel() {
     isFinishing = true;
     canOpe = false;
     
+    AchievementSystem::instance().triggerPuzzleModeComplete();
     
     if (timer && timer->isActive()) timer->stop();
     if (inactivityTimer) inactivityTimer->stop();
@@ -586,13 +587,6 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     
     for (const auto& group : groups) {
         int groupSize = static_cast<int>(group.size());
-        AchievementSystem::instance().triggerMatchCount(groupSize);
-        if (groupSize >= 3) {
-            AchievementSystem::instance().triggerCombo(groupSize);
-        }
-        if (groupSize >= 4) {
-            AchievementSystem::instance().triggerSpecialGemCreated();
-        }
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         

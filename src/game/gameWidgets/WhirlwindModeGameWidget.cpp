@@ -547,18 +547,6 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
     
     for (const auto& group : groups) {
         int groupSize = static_cast<int>(group.size());
-        // 触发连消成就检测（四连消、六连消）
-        AchievementSystem::instance().triggerMatchCount(groupSize);
-        
-        // 触发连击统计（三连消计数）
-        if (groupSize >= 3) {
-            AchievementSystem::instance().triggerCombo(groupSize);
-        }
-        
-        // 四连消或以上生成特殊宝石
-        if (groupSize >= 4) {
-            AchievementSystem::instance().triggerSpecialGemCreated();
-        }
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         
