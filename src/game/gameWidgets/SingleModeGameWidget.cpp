@@ -2346,45 +2346,57 @@ void SingleModeGameWidget::disableHammerMode() {
 // 将匹配的宝石分组（识别连续的匹配）
 std::vector<std::vector<std::pair<int, int>>> SingleModeGameWidget::groupMatches(
     const std::vector<std::pair<int, int>>& matches) {
-    
     std::vector<std::vector<std::pair<int, int>>> groups;
-    std::set<std::pair<int, int>> processed;
+    std::set<std::pair<int, int>> visited;
     
-    for (const auto& pos : matches) {
-        if (processed.count(pos)) continue;
+    for (const auto& match : matches) {
+        if (visited.count(match)) continue;
+        
+        // 【关键修复】获取当前宝石的类型
+        Gemstone* matchGem = gemstoneContainer[match.first][match.second];
+        if (!matchGem) continue;
+        int matchType = matchGem->getType();
         
         std::vector<std::pair<int, int>> group;
-        std::queue<std::pair<int, int>> queue;
-        queue.push(pos);
-        processed.insert(pos);
+        std::queue<std::pair<int, int>> q;
+        q.push(match);
+        visited.insert(match);
         
-        while (!queue.empty()) {
-            auto current = queue.front();
-            queue.pop();
+        while (!q.empty()) {
+            auto current = q.front();
+            q.pop();
             group.push_back(current);
             
-            // 检查4个方向的相邻宝石
-            int dx[] = {-1, 1, 0, 0};
-            int dy[] = {0, 0, -1, 1};
+            int dr[] = {-1, 1, 0, 0};
+            int dc[] = {0, 0, -1, 1};
             
-            for (int i = 0; i < 4; i++) {
-                int nr = current.first + dx[i];
-                int nc = current.second + dy[i];
+            for (int i = 0; i < 4; ++i) {
+                int nr = current.first + dr[i];
+                int nc = current.second + dc[i];
+                
                 std::pair<int, int> neighbor = {nr, nc};
                 
+                // 【关键修复】只有当邻居宝石类型相同时才加入组
                 if (std::find(matches.begin(), matches.end(), neighbor) != matches.end() &&
-                    !processed.count(neighbor)) {
-                    processed.insert(neighbor);
-                    queue.push(neighbor);
+                    !visited.count(neighbor)) {
+                    
+                    Gemstone* neighborGem = gemstoneContainer[nr][nc];
+                    if (neighborGem && neighborGem->getType() == matchType) {
+                        visited.insert(neighbor);
+                        q.push(neighbor);
+                    }
                 }
             }
         }
         
-        groups.push_back(group);
+        if (!group.empty()) {
+            groups.push_back(group);
+        }
     }
     
     return groups;
 }
+
 
 // 检查匹配组中是否包含特殊宝石
 bool SingleModeGameWidget::hasSpecialGem(const std::vector<std::pair<int, int>>& group) const {

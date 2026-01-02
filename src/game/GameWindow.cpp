@@ -269,9 +269,9 @@ void GameWindow::switchWidget(QWidget* widget)
         // 设置界面可以播放单独的背景音乐或暂停
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/setting_bgm.mp3"));
     } else if (widget == storeWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/store_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/store_bgm.mp3"));
     } else if (widget == rankListWidget) {
-        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.ogg"));
+        bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/rank_bgm.mp3"));
     } else if (widget == singleModeGameWidget || widget == whirlwindModeGameWidget || widget == multiplayerModeGameWidget) {
         bgmPath = QString::fromStdString(ResourceUtils::getPath("sounds/game_bgm.mp3"));
     }
