@@ -174,7 +174,7 @@ SettingWidget::SettingWidget(QWidget* parent, GameWindow* gameWindow)
     initParticles();
     animTimer = new QTimer(this);
     connect(animTimer, &QTimer::timeout, this, &SettingWidget::updateAnimation);
-    animTimer->start(16);
+    animTimer->start(10);
 
     // ====================== 2. 初始化控件 ======================
     
@@ -824,12 +824,12 @@ void SettingWidget::initParticles() {
     std::uniform_real_distribution<float> opacityDist(0.4f, 0.7f);
     std::uniform_real_distribution<float> driftDist(-0.0003f, 0.0003f);
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 6; ++i) {
         Particle p;
         p.pos = QPointF(posDist(gen), posDist(gen));
         p.size = QSizeF(leafSizeDist(gen) * width(), leafSizeDist(gen) * height() * 1.5f);
         p.angle = angleDist(gen);
-        p.speed = speedDist(gen) * 1.2f;
+        p.speed = speedDist(gen) * 0.9f;
         p.angleSpeed = angleSpeedDist(gen);
         p.opacity = opacityDist(gen);
         p.driftX = driftDist(gen);
@@ -838,7 +838,7 @@ void SettingWidget::initParticles() {
         particles.append(p);
     }
 
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < 4; ++i) {
         Particle p;
         p.pos = QPointF(posDist(gen), posDist(gen) * 0.6f);
         p.size = QSizeF(cloudSizeDist(gen) * 2 * width(), cloudSizeDist(gen) * 1.2f * height());
@@ -854,7 +854,7 @@ void SettingWidget::initParticles() {
 }
 
 void SettingWidget::updateAnimation() {
-    animTime += 0.016f;
+    animTime += 0.010f;
 
     std::random_device rd;
     std::mt19937 gen(rd());
