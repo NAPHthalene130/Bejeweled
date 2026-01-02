@@ -169,6 +169,18 @@ void AchievementSystem::triggerCombo(int comboCount) {
             qDebug() << "[AchievementSystem] Trigger: Combo Artist";
             unlock(AchievementIndex::COMBO_ARTIST);
         }
+
+        // 四连消
+        if (sessionComboCount >= 4 && !isUnlocked(AchievementIndex::FOUR_MATCH)) {
+            qDebug() << "[AchievementSystem] Trigger: Four Match";
+            unlock(AchievementIndex::FOUR_MATCH);
+        }
+        
+        // 六连消
+        if (sessionComboCount >= 6 && !isUnlocked(AchievementIndex::SIX_MATCH)) {
+            qDebug() << "[AchievementSystem] Trigger: Six Match";
+            unlock(AchievementIndex::SIX_MATCH);
+        }
     }
 }
 
@@ -185,18 +197,16 @@ void AchievementSystem::triggerCoinEarned(int coins) {
 
 void AchievementSystem::triggerMatchCount(int matchCount) {
     qDebug() << "[AchievementSystem] Match count:" << matchCount;
-    
-    // 四连消
-    if (matchCount >= 4 && !isUnlocked(AchievementIndex::FOUR_MATCH)) {
-        qDebug() << "[AchievementSystem] Trigger: Four Match";
-        unlock(AchievementIndex::FOUR_MATCH);
+    // 三连消及以上计数
+    if (matchCount >= 3) {
+        sessionComboCount1++;
+        qDebug() << "[AchievementSystem] Session combo count:" << sessionComboCount1;
+        
+        // 单局累计3次三连消
+        return ;
+
     }
     
-    // 六连消
-    if (matchCount >= 6 && !isUnlocked(AchievementIndex::SIX_MATCH)) {
-        qDebug() << "[AchievementSystem] Trigger: Six Match";
-        unlock(AchievementIndex::SIX_MATCH);
-    }
 }
 
 void AchievementSystem::triggerSingleModeComplete(int timeSeconds) {

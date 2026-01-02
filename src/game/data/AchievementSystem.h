@@ -95,6 +95,7 @@ private:
     
     bool achievements[10] = {false};
     int sessionComboCount = 0;
+    int sessionComboCount1 = 0;
     int totalCoinsEarned = 0;
     bool initialized = false;
     bool offlineMode = false;  // 离线模式标志
