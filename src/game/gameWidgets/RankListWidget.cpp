@@ -49,22 +49,6 @@ RankListWidget::RankListWidget(QWidget* parent, GameWindow* gameWindow)
     
     setupUI();
     
-    // 添加一些示例数据
-    addNormalModeRecord(15000);
-    addNormalModeRecord(12500);
-    addNormalModeRecord(18000);
-    addNormalModeRecord(9500);
-    addNormalModeRecord(21000);
-    
-    addRotateModeRecord(8000);
-    addRotateModeRecord(12000);
-    addRotateModeRecord(6500);
-    
-    addMultiplayerRecord(5000);
-    addMultiplayerRecord(4500);
-    addMultiplayerRecord(6200);
-    addMultiplayerRecord(3800);
-    
     refreshDisplay();
     
     // 初始化鎏金动画定时器
@@ -212,9 +196,9 @@ void RankListWidget::setupUI() {
     rotateModeTable = new QTableWidget(this);
     multiplayerTable = new QTableWidget(this);
     
-    setupTab(normalModeTable, {"排名", "时间(秒)"});
-    setupTab(rotateModeTable, {"排名", "时间(秒)"});
-    setupTab(multiplayerTable, {"排名", "分数"});
+    setupTab(normalModeTable, {"排名", "用户", "时间(秒)"});
+    setupTab(rotateModeTable, {"排名", "用户", "分数"});
+    setupTab(multiplayerTable, {"排名", "用户", "分数"});
     
     tabWidget->addTab(normalModeTable, "🎮 普通模式");
     tabWidget->addTab(rotateModeTable, "🌀 旋风模式");
@@ -298,6 +282,16 @@ void RankListWidget::updateTable(QTableWidget* table, const std::vector<RankReco
             if (i < 3) applyGoldenGlowEffect(rankItem, i);
             else rankItem->setForeground(dimColor);
             table->setItem(i, 0, rankItem);
+
+            // 用户ID
+            QTableWidgetItem* idItem = new QTableWidgetItem(QString::fromStdString(rec.id));
+            idItem->setTextAlignment(Qt::AlignCenter);
+            QFont idFont = idItem->font();
+            idFont.setPointSize(12);
+            idItem->setFont(idFont);
+            if (i < 3) applyGoldenGlowEffect(idItem, i);
+            else idItem->setForeground(dimColor);
+            table->setItem(i, 1, idItem);
             
             // 分数
             QTableWidgetItem* scoreItem = new QTableWidgetItem(QString::number(rec.score));
@@ -308,10 +302,10 @@ void RankListWidget::updateTable(QTableWidget* table, const std::vector<RankReco
             scoreItem->setFont(scoreFont);
             if (i < 3) applyGoldenGlowEffect(scoreItem, i);
             else scoreItem->setForeground(dimColor);
-            table->setItem(i, 1, scoreItem);
+            table->setItem(i, 2, scoreItem);
         } else {
             // 空行显示 "--"
-            for (int j = 0; j < 2; ++j) {
+            for (int j = 0; j < 3; ++j) {
                 QTableWidgetItem* emptyItem = new QTableWidgetItem(j == 0 ? QString::number(i + 1) : "--");
                 emptyItem->setTextAlignment(Qt::AlignCenter);
                 emptyItem->setForeground(QColor(100, 100, 100));
@@ -321,9 +315,10 @@ void RankListWidget::updateTable(QTableWidget* table, const std::vector<RankReco
     }
 }
 
-void RankListWidget::sortAndKeepTop10(std::vector<RankRecord>& records) {
-    // 按分数降序排序
-    std::sort(records.begin(), records.end(), [](const RankRecord& a, const RankRecord& b) {
+void RankListWidget::sortAndKeepTop10(std::vector<RankRecord>& records, bool ascending) {
+    // 排序
+    std::sort(records.begin(), records.end(), [ascending](const RankRecord& a, const RankRecord& b) {
+        if (ascending) return a.score < b.score;
         return a.score > b.score;
     });
     // 只保留前10条
@@ -433,22 +428,31 @@ void RankListWidget::updateBackgroundAnimation() {
     update();
 }
 
-void RankListWidget::addNormalModeRecord(int score) {
-    RankRecord rec(score);
-    normalModeRecords.push_back(rec);
-    sortAndKeepTop10(normalModeRecords);
+void RankListWidget::setNormalModeRecords(const std::vector<std::pair<std::string, int>>& records) {
+    normalModeRecords.clear();
+    for (const auto& p : records) {
+        normalModeRecords.emplace_back(p.first, p.second);
+    }
+    sortAndKeepTop10(normalModeRecords, true); // Ascending
+    updateTable(normalModeTable, normalModeRecords);
 }
 
-void RankListWidget::addRotateModeRecord(int score) {
-    RankRecord rec(score);
-    rotateModeRecords.push_back(rec);
-    sortAndKeepTop10(rotateModeRecords);
+void RankListWidget::setRotateModeRecords(const std::vector<std::pair<std::string, int>>& records) {
+    rotateModeRecords.clear();
+    for (const auto& p : records) {
+        rotateModeRecords.emplace_back(p.first, p.second);
+    }
+    sortAndKeepTop10(rotateModeRecords, false); // Descending
+    updateTable(rotateModeTable, rotateModeRecords);
 }
 
-void RankListWidget::addMultiplayerRecord(int score) {
-    RankRecord rec(score);
-    multiplayerRecords.push_back(rec);
-    sortAndKeepTop10(multiplayerRecords);
+void RankListWidget::setMultiplayerRecords(const std::vector<std::pair<std::string, int>>& records) {
+    multiplayerRecords.clear();
+    for (const auto& p : records) {
+        multiplayerRecords.emplace_back(p.first, p.second);
+    }
+    sortAndKeepTop10(multiplayerRecords, false); // Descending
+    updateTable(multiplayerTable, multiplayerRecords);
 }
 
 void RankListWidget::refreshDisplay() {

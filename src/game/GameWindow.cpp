@@ -97,7 +97,23 @@ GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent
     aboutWidget = new AboutWidget(this, this);
 
     // 连接排行榜信号
-    connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { this->switchWidget(rankListWidget); });
+    connect(menuWidget, &MenuWidget::openLeaderboard, this, [this]() { 
+        // 获取排行榜数据
+        if (otherNetDataIO) {
+            auto ranks = otherNetDataIO->getRanks();
+            // 确保有足够的数据
+            if (ranks.size() >= 1) {
+                rankListWidget->setNormalModeRecords(ranks[0]);
+            }
+            if (ranks.size() >= 2) {
+                rankListWidget->setRotateModeRecords(ranks[1]);
+            }
+            if (ranks.size() >= 3) {
+                rankListWidget->setMultiplayerRecords(ranks[2]);
+            }
+        }
+        this->switchWidget(rankListWidget); 
+    });
     connect(rankListWidget, &RankListWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
     connect(aboutWidget, &AboutWidget::backToMenu, this, [this]() { this->switchWidget(menuWidget); });
 

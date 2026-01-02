@@ -18,10 +18,11 @@ class QTableWidgetItem;
 
 // 单条排行记录
 struct RankRecord {
-    int score;              // 分数
+    std::string id;
+    int score;
     
     RankRecord() : score(0) {}
-    RankRecord(int s) : score(s) {}
+    RankRecord(std::string id, int s) : id(id), score(s) {}
 };
 
 class RankListWidget : public QWidget {
@@ -30,9 +31,9 @@ public:
     explicit RankListWidget(QWidget* parent = nullptr, GameWindow* gameWindow = nullptr);
     
     // 添加记录的接口
-    void addNormalModeRecord(int score);
-    void addRotateModeRecord(int score);
-    void addMultiplayerRecord(int score);
+    void setNormalModeRecords(const std::vector<std::pair<std::string, int>>& records);
+    void setRotateModeRecords(const std::vector<std::pair<std::string, int>>& records);
+    void setMultiplayerRecords(const std::vector<std::pair<std::string, int>>& records);
     
     // 刷新显示
     void refreshDisplay();
@@ -55,7 +56,7 @@ private:
     void setupUI();
     void setupTab(QTableWidget* table, const QStringList& headers);
     void updateTable(QTableWidget* table, const std::vector<RankRecord>& records);
-    void sortAndKeepTop10(std::vector<RankRecord>& records);
+    void sortAndKeepTop10(std::vector<RankRecord>& records, bool ascending = false);
     void applyGoldenGlowEffect(QTableWidgetItem* item, int rank);
     QColor getAnimatedGoldColor(int rank, float phase);
     
