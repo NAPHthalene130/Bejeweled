@@ -1544,6 +1544,7 @@ void MultiplayerModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int 
     swapData.setCoordinates(coords);
     sendNetData(swapData);
 
+    canOpe = false;
     // 先在逻辑容器中交换
     gemstoneContainer[row1][col1] = gem2;
     gemstoneContainer[row2][col2] = gem1;
@@ -1620,6 +1621,10 @@ void MultiplayerModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int 
     selectedNum = 0;
     selectionRing1->setVisible(false);
     selectionRing2->setVisible(false);
+
+    QTimer::singleShot(1000, this, [this]() {
+        canOpe = true;
+    });//恢复按键 和 选择
 
     appendDebug(QString("Swapped gems at (%1,%2) and (%3,%4)").arg(row1).arg(col1).arg(row2).arg(col2));
 }

@@ -1407,61 +1407,6 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             static int moveCount = 0;
             if (++moveCount % 50 == 0) { // 每50次移动输出一次
                 appendDebug("Mouse moving over 3D window");
-            // 锤子模式下的鼠标悬停处理
-            if (hammerMode) {
-                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-                QPoint mousePos = mouseEvent->pos();
-
-                // 遍历所有宝石，找到鼠标悬停的宝石
-                Gemstone* hoveredGem = nullptr;
-                float minDistance = std::numeric_limits<float>::max();
-
-                QSize windowSize = game3dWindow->size();
-                float centerX = windowSize.width() / 2.0f;
-                float centerY = windowSize.height() / 2.0f;
-                float scale = windowSize.height() / 18.0f;
-
-                for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
-                    for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
-                        Gemstone* gem = gemstoneContainer[i][j];
-                        if (!gem) continue;
-
-                        QVector3D gemPos3D = gem->transform()->translation();
-                        float screenX = centerX + gemPos3D.x() * scale;
-                        float screenY = centerY - gemPos3D.y() * scale;
-
-                        float dx = mousePos.x() - screenX;
-                        float dy = mousePos.y() - screenY;
-                        float distance = std::sqrt(dx * dx + dy * dy);
-
-                        if (distance < minDistance && distance < scale * 0.6f) {
-                            minDistance = distance;
-                            hoveredGem = gem;
-                        }
-                    }
-                }
-
-                // 更新悬停状态
-                if (hoveredGem != hammerHoverGem) {
-                    hammerHoverGem = hoveredGem;
-
-                    if (hoveredGem && hammerHoverRing) {
-                        hammerHoverRing->setPosition(hoveredGem->transform()->translation());
-                        hammerHoverRing->setVisible(true);
-                        static int debugCount = 0;
-                        if (debugCount++ % 10 == 0) {
-                            qDebug() << "[Hammer] Hover on gem at" << hoveredGem->transform()->translation();
-                        }
-                    } else if (hammerHoverRing) {
-                        hammerHoverRing->setVisible(false);
-                    }
-                }
-            } else {
-                // 非锤子模式，追踪鼠标移动以确认事件被接收
-                static int moveCount = 0;
-                if (++moveCount % 50 == 0) {
-                    appendDebug("Mouse moving over 3D window");
-                }
             }
             return false; // 不消费事件，让Qt3D也能处理
         } else if (event->type() == QEvent::MouseButtonRelease) {
