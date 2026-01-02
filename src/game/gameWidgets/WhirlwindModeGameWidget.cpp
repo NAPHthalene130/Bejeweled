@@ -6,6 +6,7 @@
 #include "../components/RotationSquare.h"
 #include "../data/CoinSystem.h"
 #include "../../utils/AudioManager.h"
+#include "../data/AchievementSystem.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -409,6 +410,12 @@ void WhirlwindModeGameWidget::finishToFinalWidget() {
     isFinishing = true;
     canOpe = false;
 
+    int survivalSeconds = gameTimeKeeper.totalSeconds();
+    
+    // 触发旋风试炼成就（坚持2分钟=120秒）
+    AchievementSystem::instance().triggerWhirlwindSurvival(survivalSeconds);
+
+
     if (timer && timer->isActive()) timer->stop();
     if (noEliminationTimer) noEliminationTimer->stop();
     if (rotationSquare) rotationSquare->setVisible(false);
@@ -525,6 +532,7 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
         appendDebug("No matches to remove");
         return;
     }
+    AchievementSystem::instance().triggerFirstElimination();
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
@@ -538,6 +546,19 @@ void WhirlwindModeGameWidget::removeMatches(const std::vector<std::pair<int, int
     // 修复后：直接处理groups，在处理过程中消除宝石
     
     for (const auto& group : groups) {
+        int groupSize = static_cast<int>(group.size());
+        // 触发连消成就检测（四连消、六连消）
+        AchievementSystem::instance().triggerMatchCount(groupSize);
+        
+        // 触发连击统计（三连消计数）
+        if (groupSize >= 3) {
+            AchievementSystem::instance().triggerCombo(groupSize);
+        }
+        
+        // 四连消或以上生成特殊宝石
+        if (groupSize >= 4) {
+            AchievementSystem::instance().triggerSpecialGemCreated();
+        }
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         
@@ -1201,6 +1222,7 @@ void WhirlwindModeGameWidget::setMode(int mode) {
 }
 
 void WhirlwindModeGameWidget::reset(int mode) {
+    AchievementSystem::instance().resetSessionStats();
     if (gameWindow) {
         difficulty = gameWindow->getDifficulty();
     }

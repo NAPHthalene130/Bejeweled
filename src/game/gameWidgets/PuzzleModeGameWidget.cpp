@@ -5,7 +5,7 @@
 #include "../components/Gemstone.h"
 #include "../components/SelectedCircle.h"
 #include "../../utils/AudioManager.h"
-#include "GradientLevelLabel.h"
+#include "../data/AchievementSystem.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -437,6 +437,7 @@ void PuzzleModeGameWidget::triggerFinishIfNeeded() {
 }
 
 void PuzzleModeGameWidget::finishToNextLevel() {
+    
     //此处应有 目标完成 前往下一关的弹幕生成
 
     /* ( ) */
@@ -543,6 +544,7 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
         appendDebug("No matches to remove");
         return;
     }
+    AchievementSystem::instance().triggerFirstElimination();
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
@@ -552,6 +554,14 @@ void PuzzleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     int removedCount = 0;
     
     for (const auto& group : groups) {
+        int groupSize = static_cast<int>(group.size());
+        AchievementSystem::instance().triggerMatchCount(groupSize);
+        if (groupSize >= 3) {
+            AchievementSystem::instance().triggerCombo(groupSize);
+        }
+        if (groupSize >= 4) {
+            AchievementSystem::instance().triggerSpecialGemCreated();
+        }
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         
@@ -1391,6 +1401,7 @@ void PuzzleModeGameWidget::generateSimpleMatch() {//Tem是 列 行 存储
 }
 
 void PuzzleModeGameWidget::reset(int mode) {
+    AchievementSystem::instance().resetSessionStats();
     this->mode = mode;
     this->canOpe = true;
     this->isFinishing = false;

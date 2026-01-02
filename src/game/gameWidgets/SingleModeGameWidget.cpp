@@ -7,6 +7,7 @@
 #include "../data/CoinSystem.h"
 #include "../data/ItemSystem.h"
 #include "../../utils/AudioManager.h"
+#include "../data/AchievementSystem.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -663,6 +664,7 @@ void SingleModeGameWidget::finishToFinalWidget() {
     if (selectionRing2) selectionRing2->setVisible(false);
 
     int total = gameTimeKeeper.totalSeconds();
+    AchievementSystem::instance().triggerSingleModeComplete(total);
     int m = total / 60;
     int s = total % 60;
     QString timeText = QString("%1:%2")
@@ -782,6 +784,8 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
 
     appendDebug(QString("Removing %1 gemstones").arg(matches.size()));
 
+    AchievementSystem::instance().triggerFirstElimination();
+
     // 将匹配分组
     auto groups = groupMatches(matches);
     
@@ -790,6 +794,21 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
     // 【关键修复】先处理分组逻辑，再消除宝石
     // 原代码的问题是先消除所有宝石，再处理分组，导致无法创建特殊宝石
     for (const auto& group : groups) {
+
+        int groupSize = static_cast<int>(group.size());
+        
+        // 触发连消成就检测（四连消、六连消）
+        AchievementSystem::instance().triggerMatchCount(groupSize);
+        
+        // 触发连击统计（三连消计数）
+        if (groupSize >= 3) {
+            AchievementSystem::instance().triggerCombo(groupSize);
+        }
+        
+        // 四连消或以上生成特殊宝石
+        if (groupSize >= 4) {
+            AchievementSystem::instance().triggerSpecialGemCreated();
+        }
         // 检查是否包含特殊宝石
         bool hasSpecial = hasSpecialGem(group);
         
@@ -1578,6 +1597,7 @@ void SingleModeGameWidget::setMode(int mode) {
 }
 
 void SingleModeGameWidget::reset(int mode) {
+    AchievementSystem::instance().resetSessionStats();
     if (gameWindow) {
         difficulty = gameWindow->getDifficulty();
     }
@@ -2116,6 +2136,8 @@ void SingleModeGameWidget::collectCoinGem(Gemstone* gem) {
 
     // 添加金币到系统
     CoinSystem::instance().addCoins(coinValue, true);
+
+    AchievementSystem::instance().triggerCoinEarned(coinValue);
 
     // 累加本局获得的金币
     earnedCoins += coinValue;
