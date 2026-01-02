@@ -39,6 +39,7 @@
 #include <iostream>
 #include <queue>
 #include <set>
+#include "../data/OtherNetDataIO.h"
 
 
 #ifndef M_PI
@@ -403,6 +404,9 @@ void WhirlwindModeGameWidget::triggerFinishIfNeeded() {
     if (isFinishing) return;
     if (gameScore < targetScore) return;
     finishToFinalWidget();
+    if (gameWindow->getUserID() != "$#SINGLE#$") {
+        gameWindow->getOtherNetDataIO()->sendWhirlTime(gameWindow->getUserID(), gameScore);
+    }
 }
 
 void WhirlwindModeGameWidget::finishToFinalWidget() {
@@ -416,6 +420,10 @@ void WhirlwindModeGameWidget::finishToFinalWidget() {
     AchievementSystem::instance().triggerWhirlwindSurvival(survivalSeconds);
 
 
+    if (gameWindow->getUserID() != "$#SINGLE#$") {
+        gameWindow->getOtherNetDataIO()->sendWhirlTime(gameWindow->getUserID(), gameScore);
+    }
+    
     if (timer && timer->isActive()) timer->stop();
     if (noEliminationTimer) noEliminationTimer->stop();
     if (rotationSquare) rotationSquare->setVisible(false);

@@ -87,6 +87,7 @@ public:
 protected:
     void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
     void showEvent(QShowEvent* event) override;
     void hideEvent(QHideEvent* event) override;
     bool eventFilter(QObject* obj, QEvent* event) override;
@@ -198,6 +199,8 @@ private:
     bool hammerMode = false;
     int freezeTimeRemaining = 0;
     QTimer* freezeTimer = nullptr;
+    SelectedCircle* hammerHoverRing = nullptr;  // 锤子模式下的悬停高亮圈
+    Gemstone* hammerHoverGem = nullptr;         // 当前鼠标悬停的宝石
 
     // 金币统计
     int initialCoins = 0;  // 游戏开始时的金币数
