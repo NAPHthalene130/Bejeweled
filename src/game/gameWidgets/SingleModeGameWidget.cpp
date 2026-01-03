@@ -688,6 +688,7 @@ void SingleModeGameWidget::finishToFinalWidget() {
 
     if (timer && timer->isActive()) timer->stop();
     if (inactivityTimer) inactivityTimer->stop();
+    if (freezeTimer && freezeTimer->isActive()) freezeTimer->stop();  // 停止冻结计时器
     clearHighlights();
     if (selectionRing1) selectionRing1->setVisible(false);
     if (selectionRing2) selectionRing2->setVisible(false);
@@ -2254,6 +2255,12 @@ void SingleModeGameWidget::useItemFreezeTime() {
     freezeTimer->disconnect();
 
     connect(freezeTimer, &QTimer::timeout, this, [this]() {
+        if (isFinishing) {
+            // 如果游戏已结束，停止计时器
+            if (freezeTimer) freezeTimer->stop();
+            return;
+        }
+
         freezeTimeRemaining--;
 
         if (timeBoardLabel) {
@@ -2265,7 +2272,7 @@ void SingleModeGameWidget::useItemFreezeTime() {
         if (freezeTimeRemaining <= 0) {
             freezeTimer->stop();
             // 恢复游戏计时器
-            if (timer) {
+            if (timer && !isFinishing) {
                 timer->start();
             }
             updateTimeBoard();
@@ -2402,12 +2409,12 @@ void SingleModeGameWidget::useItemClearAll() {
             Gemstone* gem = gemstoneContainer[i][j];
             if (gem) {
                 removedCount++;
-                
+
                 // 如果是金币宝石，先收集金币
                 if (gem->isCoinGem()) {
                     collectCoinGem(gem);
                 }
-                
+
                 eliminateAnime(gem);
                 gemstoneContainer[i][j] = nullptr;
             }
@@ -2424,10 +2431,15 @@ void SingleModeGameWidget::useItemClearAll() {
         appendDebug(QString("Used CLEAR_ALL item - Cleared %1 gems, bonus: %2")
                     .arg(removedCount).arg(bonus));
 
-        // 触发掉落
+        // 触发掉落，使用 QPointer 防止对象被删除后访问
         QTimer::singleShot(600, this, [this]() {
+            if (isFinishing) return;  // 如果游戏已结束，不继续操作
             drop();
         });
+    } else {
+        // 如果没有移除任何宝石，恢复操作
+        canOpe = true;
+        updateItemButtons();
     }
 }
 
