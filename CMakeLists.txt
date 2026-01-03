@@ -59,6 +59,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 # Qt6
 if(DEFINED ENV{QT_DIR})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_DIR}")
+    set(Qt6_DIR "$ENV{QT_DIR}/lib/cmake/Qt6")
+    message(STATUS "Forcing Qt6_DIR to: ${Qt6_DIR}")
 endif()
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network 3DCore 3DRender 3DExtras 3DInput Multimedia)
 
