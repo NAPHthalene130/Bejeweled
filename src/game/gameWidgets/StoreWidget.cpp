@@ -35,11 +35,11 @@ StoreWidget::StoreWidget(QWidget* parent, GameWindow* gameWindow)
 }
 
 void StoreWidget::setupUI() {
-    setMinimumSize(1600, 1000);
+    setMinimumSize(1280, 720);
 
     // 主布局
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(80, 60, 80, 60);
+    mainLayout->setContentsMargins(80, 40, 80, 40); // 减小垂直边距以适配720p
     mainLayout->setSpacing(20);
 
     // 顶部金币显示区域
@@ -136,7 +136,7 @@ void StoreWidget::setupUI() {
             itemsGrid->addWidget(card, row, col);
 
             col++;
-            if (col >= 2) {  // 每行2个道具
+            if (col >= 4) {  // 每行4个道具，适配16:9宽屏布局
                 col = 0;
                 row++;
             }
@@ -230,7 +230,10 @@ void StoreWidget::updateItemDisplay(ItemType type, int newCount) {
 
 QWidget* StoreWidget::createItemCard(const ItemInfo& info) {
     QWidget* card = new QWidget(mainPanel);
-    card->setFixedSize(320, 280);
+    // 设置大小策略为Expanding，使其能够随窗口调整大小
+    card->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // 设置最小尺寸以保证内容不被挤压，宽度减小以适配4列布局
+    card->setMinimumSize(220, 260); 
     card->setStyleSheet(R"(
         QWidget {
             background-color: rgba(40, 50, 80, 180);

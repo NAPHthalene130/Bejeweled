@@ -47,6 +47,8 @@ RankListWidget::RankListWidget(QWidget* parent, GameWindow* gameWindow)
         qDebug() << "Failed to load rank_bg.png from any path";
     }
     
+    setMinimumSize(1280, 720);
+
     setupUI();
     
     refreshDisplay();

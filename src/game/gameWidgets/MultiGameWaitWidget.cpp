@@ -109,7 +109,8 @@ void MultiGameWaitWidget::accept10(std::map<std::string, int> idToNum) {
 }
 
 void MultiGameWaitWidget::setupUI() {
-    setMinimumSize(1200, 800);
+    setMinimumSize(1280, 720);
+    setStyleSheet("background-color: darkgray;");
 
     // Main layout for the widget
     QVBoxLayout* mainLayout = new QVBoxLayout(this);

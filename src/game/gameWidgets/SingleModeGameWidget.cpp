@@ -286,8 +286,10 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
         difficulty = gameWindow->getDifficulty();
     }
     
+    setMinimumSize(1280, 720);
+
     // 设置主背景颜色
-    setStyleSheet("background-color: rgb(40, 40, 45);");
+    setStyleSheet("background-color: darkgray;");
 
     // 初始化3D窗口
     game3dWindow = new Qt3DExtras::Qt3DWindow();
