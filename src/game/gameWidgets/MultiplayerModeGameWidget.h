@@ -66,7 +66,7 @@ public:
     void switchGemstoneAnime(Gemstone* gemstone1, Gemstone* gemstone2);
 
     // 消除相关的辅助方法
-    std::vector<std::pair<int, int>> findMatches();
+    std::vector<std::pair<int, int>> findMatches(int x,int y,int T);
     std::vector<std::pair<int, int>> findPossibleMatches();
     void removeMatches(const std::vector<std::pair<int, int>>& matches);
 
@@ -196,7 +196,10 @@ private:
 
     QTimer* inactivityTimer;       // 无操作计时器
     int inactivityTimeout = 5000;  // 超时时间(毫秒)，这里设为5秒
-    std::vector<SelectedCircle*> highlightRings;  // 用于标记可消除宝石的高亮环
+    std::vector<Gemstone*> highlightGems;  // 用于标记可消除宝石的高亮环
+    
+    const int dx[4] = {0,0,1,-1};
+    const int dy[4] = {1,-1,0,0};
     
     int selectedNum;
 
