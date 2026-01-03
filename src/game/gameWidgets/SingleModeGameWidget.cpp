@@ -900,7 +900,7 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
         }
     }
 
-    if (removedCount > 0) {
+    if (removedCount > 0 && !isClear) {
         comboCount++;
         int comboBonus = comboCount > 1 ? (comboCount - 1) * 5 : 0;
         gameScore += removedCount * 10 + comboBonus;
@@ -2325,10 +2325,12 @@ void SingleModeGameWidget::useItemClearAll() {
     }
 
     if (!allGems.empty()) {
+        isClear = true;
         removeMatches(allGems);
-
+        isClear = false;
         // 增加大量分数作为奖励
-        int bonus = allGems.size() * 50;
+
+        int bonus = allGems.size() * 5;
         gameScore += bonus;
         updateScoreBoard();
 

@@ -208,6 +208,7 @@ private:
     
     //有关滑动交换
     bool isDragging = false;
+    bool isClear = false;
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H
