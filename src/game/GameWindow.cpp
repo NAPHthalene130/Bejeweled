@@ -25,8 +25,12 @@
 #include "../utils/ResourceUtils.h"
 #include "../utils/LogWindow.h"
 #include "data/OtherNetDataIO.h"
+#include "../Config.h"
+
 GameWindow::GameWindow(QWidget* parent, std::string userID) : QMainWindow(parent) {
     this->userID = userID;
+    this->ip = Config::getServerIp();
+    this->port = Config::getGameNetDataPort();
 
     // 初始化网络IO（需要在CoinSystem和ItemSystem之前初始化）
     otherNetDataIO = std::make_unique<OtherNetDataIO>(this);

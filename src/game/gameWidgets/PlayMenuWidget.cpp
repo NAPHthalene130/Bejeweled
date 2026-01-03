@@ -34,8 +34,9 @@
 #include <QRandomGenerator>
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QNetworkProxy>
 #include <json.hpp>
-
+#include "../../Config.h"
 
 PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -444,11 +445,12 @@ void PlayMenuWidget::multiModeButtonClicked() {
     }
 
     QTcpSocket socket;
-    socket.connectToHost(QString::fromStdString(gameWindow->getIp()), std::stoi(gameWindow->getPort()));
+    socket.setProxy(QNetworkProxy::NoProxy);
+    socket.connectToHost(QString::fromStdString(Config::getServerIp()), std::stoi(Config::getGameNetDataPort()));
 
     if (socket.waitForConnected(3000)) {
         socket.disconnectFromHost();
-        NetDataIO* net = new NetDataIO(gameWindow->getIp(), gameWindow->getPort(), gameWindow);
+        NetDataIO* net = new NetDataIO(Config::getServerIp(), Config::getGameNetDataPort(), gameWindow);
         gameWindow->setNetDataIO(net);
 
         GameNetData joinMsg;

@@ -1,5 +1,6 @@
 #include "AuthWindow.h"
 #include "AuthNetData.h"
+#include "../Config.h"
 #include "../game/GameWindow.h"
 #include "../game/TestWindow.h"
 #include "components/AuthNoticeDialog.h"
@@ -16,6 +17,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include <QFile>
+#include <QNetworkProxy>
 #include "../utils/ResourceUtils.h"
 #include <openssl/conf.h>
 #include <openssl/evp.h>
@@ -333,10 +335,25 @@ void AuthWindow::netDataSender(AuthNetData data) {
     if (socket->state() == QAbstractSocket::ConnectedState) {
         socket->disconnectFromHost();
     }
-    socket->connectToHost(QHostAddress("127.0.0.1"), 10086);
-    if (!socket->waitForConnected(3000)) {
-        throw std::runtime_error("无法连接到服务器");
+    
+    // 强制禁用代理并绑定 IPv6
+    socket->setProxy(QNetworkProxy::NoProxy);
+    
+    // 尝试显式绑定到 IPv6
+    if (!socket->bind(QHostAddress::AnyIPv6)) {
+        std::cerr << "[AuthWindow] Warning: Failed to bind to AnyIPv6: " << socket->errorString().toStdString() << std::endl;
     }
+
+    std::cout << "[AuthWindow] Connecting to server..." << std::endl;
+    std::cout << "[AuthWindow] Proxy type: " << socket->proxy().type() << " (0=NoProxy)" << std::endl;
+
+    socket->connectToHost(QHostAddress(QString::fromStdString(Config::getServerIp())), Config::getAuthPort());
+    if (!socket->waitForConnected(3000)) {
+        std::string errorDetails = socket->errorString().toStdString();
+        std::cerr << "[AuthWindow] Connection failed. Error: " << socket->error() << ", Msg: " << errorDetails << std::endl;
+        throw std::runtime_error("无法连接到服务器: " + errorDetails + " (Error Code: " + std::to_string(socket->error()) + ")");
+    }
+    std::cout << "[AuthWindow] Connected successfully!" << std::endl;
     AuthNetData rsaAuthData;
     rsaAuthData.setType(0);
     rsaAuthData.setData("KEY_REQUEST");

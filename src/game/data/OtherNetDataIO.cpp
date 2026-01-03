@@ -1,6 +1,7 @@
 #include "OtherNetDataIO.h"
 #include "OtherNetData.h"
 #include "../GameWindow.h"
+#include "../../Config.h"
 #include <boost/asio.hpp>
 #include <iostream>
 
@@ -19,8 +20,8 @@ bool OtherNetDataIO::setMoney(std::string id, int money) {
     otherNetData.setType(21); // Corrected to Type 21
     otherNetData.setId(id);
     otherNetData.setMoney(money);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
     
     bool success = false;
 
@@ -71,8 +72,8 @@ int OtherNetDataIO::getMoney(std::string id) {
     OtherNetData dataRequest;
     dataRequest.setType(20); // Corrected to Type 20
     dataRequest.setId(id);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
 
     int resultMoney = 0;
     bool success = false;
@@ -141,8 +142,8 @@ bool OtherNetDataIO::setAchievementStr(std::string id, std::string achievementSt
     otherNetData.setType(11);
     otherNetData.setId(id);
     otherNetData.setAchievementStr(achievementStr);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
     
     bool success = false;
 
@@ -190,8 +191,8 @@ std::string OtherNetDataIO::getAchievementStr(std::string id) {
     OtherNetData dataRequest;
     dataRequest.setType(10);
     dataRequest.setId(id);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
 
     std::string resultStr = "";
     bool success = false;
@@ -256,8 +257,8 @@ std::vector<std::vector<std::pair<std::string, int>>> OtherNetDataIO::getRanks()
 
     OtherNetData dataRequest;
     dataRequest.setType(30);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
 
     bool success = false;
 
@@ -325,8 +326,8 @@ bool OtherNetDataIO::setPropNums(std::string id, std::vector<int> propNums) {
     otherNetData.setType(41);
     otherNetData.setId(id);
     otherNetData.setPropNums(propNums);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
     
     bool success = false;
 
@@ -374,8 +375,8 @@ std::vector<int> OtherNetDataIO::getPropNums(std::string id) {
     OtherNetData dataRequest;
     dataRequest.setType(40);
     dataRequest.setId(id);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
 
     std::vector<int> resultProps;
     bool success = false;
@@ -441,8 +442,8 @@ bool OtherNetDataIO::sendNormalTime(std::string id, int time) {
     otherNetData.setType(50);
     otherNetData.setId(id);
     otherNetData.setNormalTime(time);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
     
     bool success = false;
     
@@ -494,8 +495,8 @@ bool OtherNetDataIO::sendWhirlTime(std::string id, int time) {
     otherNetData.setType(51);
     otherNetData.setId(id);
     otherNetData.setWhirlTime(time);
-    std::string ip = gameWindow->getIp();
-    int port = 10088;
+    std::string ip = Config::getServerIp();
+    int port = Config::getOtherNetDataPort();
 
     bool success = false;
 
