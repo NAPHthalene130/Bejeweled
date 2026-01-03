@@ -502,21 +502,26 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
 
         // 连接按钮点击事件
         connect(btn, &QPushButton::clicked, this, [this, type]() {
-            if(hammerMode == false)
-                switch (type) {
-                    case ItemType::FREEZE_TIME:
-                        useItemFreezeTime();
-                        break;
-                    case ItemType::HAMMER:
-                        useItemHammer();
-                        break;
-                    case ItemType::RESET_BOARD:
-                        useItemResetBoard();
-                        break;
-                    case ItemType::CLEAR_ALL:
-                        useItemClearAll();
-                        break;
-                }
+            // 双重检查：确保 canOpe=true 且不在锤子模式
+            if (!canOpe || hammerMode) {
+                qDebug() << "[ItemButton] Click ignored: canOpe=" << canOpe << "hammerMode=" << hammerMode;
+                return;
+            }
+
+            switch (type) {
+                case ItemType::FREEZE_TIME:
+                    useItemFreezeTime();
+                    break;
+                case ItemType::HAMMER:
+                    useItemHammer();
+                    break;
+                case ItemType::RESET_BOARD:
+                    useItemResetBoard();
+                    break;
+                case ItemType::CLEAR_ALL:
+                    useItemClearAll();
+                    break;
+            }
         });
 
         itemLayout->addWidget(itemRow);
@@ -531,11 +536,11 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     connect(&ItemSystem::instance(), &ItemSystem::itemCountChanged,
             this, [this](ItemType type, int newCount) {
         auto countIt = itemCountLabels.find(type);
-        auto btnIt = itemButtons.find(type);
-        if (countIt != itemCountLabels.end() && btnIt != itemButtons.end()) {
+        if (countIt != itemCountLabels.end()) {
             countIt->second->setText(QString("×%1").arg(newCount));
-            btnIt->second->setEnabled(newCount > 0);
         }
+        // 更新所有道具按钮状态（考虑canOpe和hammerMode）
+        updateItemButtons();
     });
 
     panelLayout->addWidget(itemPanel, 0, Qt::AlignTop);
@@ -652,6 +657,20 @@ void SingleModeGameWidget::updateTimeBoard() {
     timeBoardLabel->setText(gameTimeKeeper.displayText());
 }
 
+void SingleModeGameWidget::updateItemButtons() {
+    // 更新所有道具按钮的启用/禁用状态
+    // 只有在 canOpe=true 且道具数量>0 时才启用按钮
+    for (auto& pair : itemButtons) {
+        ItemType type = pair.first;
+        QPushButton* btn = pair.second;
+
+        int count = ItemSystem::instance().getItemCount(type);
+        // 按钮启用条件：canOpe=true 且 道具数量>0 且 不在锤子模式
+        bool shouldEnable = canOpe && count > 0 && !hammerMode;
+        btn->setEnabled(shouldEnable);
+    }
+}
+
 void SingleModeGameWidget::triggerFinishIfNeeded() {
     if (isFinishing) return;
     if (gameScore < targetScore) return;
@@ -665,6 +684,7 @@ void SingleModeGameWidget::finishToFinalWidget() {
     if (isFinishing) return;
     isFinishing = true;
     canOpe = false;
+    updateItemButtons();  // 更新道具按钮状态
 
     if (timer && timer->isActive()) timer->stop();
     if (inactivityTimer) inactivityTimer->stop();
@@ -1024,7 +1044,8 @@ void SingleModeGameWidget::eliminate() {
 
         // 禁止操作
         canOpe = false;
-        
+        updateItemButtons();  // 更新道具按钮状态
+
         // 移除匹配的宝石
         removeMatches(matches);
 
@@ -1039,6 +1060,7 @@ void SingleModeGameWidget::eliminate() {
         // 没有匹配了，恢复操作
         AchievementSystem::instance().sessionComboCount = 0;
         canOpe = true;
+        updateItemButtons();  // 更新道具按钮状态
         resetInactivityTimer();
         appendDebug("No matches found, game can continue");
     }
@@ -1228,6 +1250,10 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
         if (findGemstonePosition(gem, row, col)) {
             appendDebug(QString("🔨 Hammer used on gem at (%1, %2)").arg(row).arg(col));
 
+            // 禁止操作，防止在动画执行期间重复点击
+            canOpe = false;
+            updateItemButtons();  // 更新道具按钮状态
+
             // 播放锤击音效
             AudioManager::instance().playClickSound();
 
@@ -1240,8 +1266,10 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
             gameScore += 20;
             updateScoreBoard();
 
-            // 触发掉落
-            drop();
+            // 等待消除动画完成后触发掉落（600ms后）
+            QTimer::singleShot(600, this, [this]() {
+                drop();
+            });
         }
 
         // 退出锤子模式
@@ -1617,6 +1645,7 @@ void SingleModeGameWidget::reset(int mode) {
     }
     this->mode = mode;
     this->canOpe = true;
+    updateItemButtons();  // 更新道具按钮状态
     this->isFinishing = false;
     this->gameScore = 0;
     this->targetScore = 1000;
@@ -1741,6 +1770,7 @@ bool SingleModeGameWidget::areAdjacent(int row1, int col1, int row2, int col2) c
 void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2) {
     if (!gem1 || !gem2) return;
     canOpe = false;
+    updateItemButtons();  // 更新道具按钮状态
     // 先在逻辑容器中交换
     gemstoneContainer[row1][col1] = gem2;
     gemstoneContainer[row2][col2] = gem1;
@@ -1803,6 +1833,7 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
 
             connect(swapBackGroup, &QParallelAnimationGroup::finished, this, [this]() {
                 canOpe = true; // 恢复操作
+                updateItemButtons();  // 更新道具按钮状态
             });
 
             swapBackGroup->start(QAbstractAnimation::DeleteWhenStopped);
@@ -1817,9 +1848,8 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
     selectedNum = 0;
     selectionRing1->setVisible(false);
     selectionRing2->setVisible(false);
-    QTimer::singleShot(1000, this, [this]() {
-        canOpe = true;
-    });
+    // 注意：不在这里恢复 canOpe，因为可能会触发 eliminate() 连锁
+    // canOpe 会在 eliminate() 检查没有匹配时自动恢复，或在交换失败时恢复
 
     appendDebug(QString("Swapped gems at (%1,%2) and (%3,%4)").arg(row1).arg(col1).arg(row2).arg(col2));
 }
@@ -2182,7 +2212,7 @@ int SingleModeGameWidget::getEarnedCoins() const {
 // ========== 道具系统实现 ==========
 
 void SingleModeGameWidget::useItemFreezeTime() {
-    if (!ItemSystem::instance().useItem(ItemType::FREEZE_TIME)) {
+    if (!ItemSystem::instance().useItem(ItemType::FREEZE_TIME) || !canOpe) {
         qWarning() << "[SingleMode] Failed to use FREEZE_TIME item";
         return;
     }
@@ -2242,7 +2272,7 @@ void SingleModeGameWidget::useItemHammer() {
 }
 
 void SingleModeGameWidget::useItemResetBoard() {
-    if (!ItemSystem::instance().useItem(ItemType::RESET_BOARD)) {
+    if (!ItemSystem::instance().useItem(ItemType::RESET_BOARD) || !canOpe) {
         qWarning() << "[SingleMode] Failed to use RESET_BOARD item";
         return;
     }
@@ -2250,6 +2280,7 @@ void SingleModeGameWidget::useItemResetBoard() {
 
     // 禁止操作
     canOpe = false;
+    updateItemButtons();  // 更新道具按钮状态
 
     // 收集所有需要删除的宝石
     std::vector<Gemstone*> gemsToDelete;
@@ -2327,6 +2358,7 @@ void SingleModeGameWidget::useItemResetBoard() {
 
         // 恢复操作
         canOpe = true;
+        updateItemButtons();  // 更新道具按钮状态
         resetInactivityTimer();
 
         appendDebug("Used RESET_BOARD item - Board completely regenerated");
@@ -2335,13 +2367,14 @@ void SingleModeGameWidget::useItemResetBoard() {
 }
 
 void SingleModeGameWidget::useItemClearAll() {
-    if (!ItemSystem::instance().useItem(ItemType::CLEAR_ALL)) {
+    if (!ItemSystem::instance().useItem(ItemType::CLEAR_ALL) || !canOpe) {
         qWarning() << "[SingleMode] Failed to use CLEAR_ALL item";
         return;
     }
     showFloatingMessage("正在使用道具 : 清空棋盘" , true);
 
     canOpe = false;
+    updateItemButtons();  // 更新道具按钮状态
     int removedCount = 0;
 
     // 直接消除所有宝石，不调用 removeMatches
@@ -2382,6 +2415,7 @@ void SingleModeGameWidget::useItemClearAll() {
 
 void SingleModeGameWidget::enableHammerMode() {
     hammerMode = true;
+    updateItemButtons();  // 禁用其他道具按钮
 
     // 设置锤子高亮圈的颜色为红色/橙色
     if (hammerHoverRing) {
@@ -2411,6 +2445,7 @@ void SingleModeGameWidget::enableHammerMode() {
 
 void SingleModeGameWidget::disableHammerMode() {
     hammerMode = false;
+    updateItemButtons();  // 重新启用道具按钮
 
     // 隐藏悬停高亮圈
     if (hammerHoverRing) {

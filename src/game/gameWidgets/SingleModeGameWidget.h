@@ -109,6 +109,7 @@ private:
 
     void updateScoreBoard();
     void updateTimeBoard();
+    void updateItemButtons();  // 更新道具按钮的启用/禁用状态
     void triggerFinishIfNeeded();
     void finishToFinalWidget();
 
