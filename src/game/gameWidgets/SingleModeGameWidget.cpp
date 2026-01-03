@@ -688,6 +688,7 @@ void SingleModeGameWidget::finishToFinalWidget() {
 
     if (timer && timer->isActive()) timer->stop();
     if (inactivityTimer) inactivityTimer->stop();
+    if (freezeTimer && freezeTimer->isActive()) freezeTimer->stop();  // 停止冻结计时器
     clearHighlights();
     if (selectionRing1) selectionRing1->setVisible(false);
     if (selectionRing2) selectionRing2->setVisible(false);
@@ -2242,6 +2243,12 @@ void SingleModeGameWidget::useItemFreezeTime() {
     freezeTimer->disconnect();
 
     connect(freezeTimer, &QTimer::timeout, this, [this]() {
+        if (isFinishing) {
+            // 如果游戏已结束，停止计时器
+            if (freezeTimer) freezeTimer->stop();
+            return;
+        }
+
         freezeTimeRemaining--;
 
         if (timeBoardLabel) {
@@ -2253,7 +2260,7 @@ void SingleModeGameWidget::useItemFreezeTime() {
         if (freezeTimeRemaining <= 0) {
             freezeTimer->stop();
             // 恢复游戏计时器
-            if (timer) {
+            if (timer && !isFinishing) {
                 timer->start();
             }
             updateTimeBoard();
