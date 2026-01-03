@@ -12,6 +12,7 @@
 #include <Qt3DRender/QPointLight>
 #include <Qt3DInput/QInputAspect>
 #include "../data/ItemSystem.h"
+#include <QPropertyAnimation> // 新增
 
 class QTextEdit;
 class QLabel;
@@ -101,6 +102,9 @@ private:
 
     void clearHighlights();
     void highlightMatches();
+    void showFloatingMessage(const QString& text, bool isSuccess);
+    void removeFloatingMessage(QLabel* label);
+
     void resetInactivityTimer();
 
     void updateScoreBoard();

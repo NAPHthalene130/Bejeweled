@@ -389,9 +389,6 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     inactivityTimer->setInterval(inactivityTimeout);
     inactivityTimer->setSingleShot(true);
     
-    // 超时后高亮可消除的宝石
-    connect(inactivityTimer, &QTimer::timeout, this, &PuzzleModeGameWidget::highlightMatches);
-    
     // 任何用户操作后重置计时器
     connect(this, &PuzzleModeGameWidget::userActionOccurred, [this]() {
         resetInactivityTimer();
@@ -809,6 +806,10 @@ void PuzzleModeGameWidget::eliminate() {
         // 没有匹配了，恢复操作
         canOpe = true;
         resetInactivityTimer();
+
+        if(findPossibleMatches() == 0) {
+            showFloatingMessage("无可消除的宝石 , 请撤销寻找其他解决方案",false);
+        }
         appendDebug("No matches found, game can continue");
     }
 }
@@ -1035,7 +1036,6 @@ void PuzzleModeGameWidget::hideEvent(QHideEvent* event) {
     if (inactivityTimer) {
         inactivityTimer->stop();
     }
-    clearHighlights();
 }
 //————————————————————————————————————————————二、处理点击操作和点击拖动操作
 bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
@@ -1127,7 +1127,6 @@ bool PuzzleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
 }
 
 PuzzleModeGameWidget::~PuzzleModeGameWidget() {
-    clearHighlights();
     // inactivityTimer 是 this 的子对象，会自动析构，不需要手动 delete
     // delete inactivityTimer; 
 
@@ -1810,7 +1809,6 @@ void PuzzleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind)
 
 // 重置无操作计时器————————————————————————————————————————————————————————————————————————————————————————————————————————————
 void PuzzleModeGameWidget::resetInactivityTimer() {
-    clearHighlights();
     if (!inactivityTimer) return;
     if (!isVisible()) {
         inactivityTimer->stop();
@@ -1835,12 +1833,9 @@ void PuzzleModeGameWidget::resetInactivityTimer() {
     inactivityTimer->start(inactivityTimeout);
 }
 
-std::vector<std::pair<int, int>> PuzzleModeGameWidget::findPossibleMatches() {
-    std::vector<std::pair<int, int>> matches;
-    if (gemstoneContainer.size() != 8) return matches;
-    for (const auto& row : gemstoneContainer) {
-        if (row.size() != 8) return matches;
-    }
+int PuzzleModeGameWidget::findPossibleMatches() {
+    int matches = 0;
+    
     std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
     const int dx[4] = {0,0,1,-1};
     const int dy[4] = {1,-1,0,0};
@@ -1910,7 +1905,7 @@ std::vector<std::pair<int, int>> PuzzleModeGameWidget::findPossibleMatches() {
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             if (marked[i][j]) {
-                matches.push_back({i, j});
+                matches++;
             }
         }
     }
@@ -1918,52 +1913,51 @@ std::vector<std::pair<int, int>> PuzzleModeGameWidget::findPossibleMatches() {
     return matches;
 }
 
-// 高亮显示所有可消除的宝石
-void PuzzleModeGameWidget::highlightMatches() {
-    if (!canOpe) return; // 操作不可用时不高亮
-    if (!isVisible()) return;
-    if (gemstoneContainer.size() != 8) return;
-    for (const auto& row : gemstoneContainer) {
-        if (row.size() != 8) return;
-    }
-    
-    clearHighlights(); // 先清除现有高亮
-    
-    // 找到所有可消除的宝石
-    std::vector<std::pair<int, int>> matches = findPossibleMatches();
-    if (matches.empty()) {
-        appendDebug("No possible matches found,resetting the game");
-        reset(1);
-        return ;
-    }
-    
-    appendDebug(QString("No activity detected for %1 seconds, highlighting %2 matches")
-               .arg(inactivityTimeout/1000).arg(matches.size()));
-    
-    // 为随机一个可消除的宝石添加高亮环
-    int choice = QRandomGenerator::global()->bounded(matches.size()) ,num = 0;
-    for (const auto& pos : matches) {
-        int row = pos.first;
-        int col = pos.second;
-        Gemstone* gem = gemstoneContainer[row][col];
-        if (gem && num == choice) {
-            SelectedCircle* ring = new SelectedCircle(rootEntity);
-            ring->setVisible(true);
-            ring->setPosition(getPosition(row, col));
-            highlightRings.push_back(ring);
-            break;
+// 添加弹幕提示实现
+void PuzzleModeGameWidget::showFloatingMessage(const QString& text, bool isSuccess) {
+    // 创建提示标签
+    QLabel* msgLabel = new QLabel(text, this);
+    msgLabel->setStyleSheet(QString(R"(
+        QLabel {
+            background-color: %1;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-family: "Microsoft YaHei";
+            font-size: 16px;
+            font-weight: bold;
         }
-        num++;
-    }
+    )").arg(isSuccess ? "rgba(70, 180, 70, 200)" : "rgba(220, 80, 80, 200)"));
+
+    // 设置位置（屏幕顶部居中）
+    msgLabel->adjustSize();
+    int x = (width() + msgLabel->width() + 500) / 2;
+    int y = 100; // 距离顶部50像素
+    msgLabel->setGeometry(x, y, msgLabel->width(), msgLabel->height());
+    msgLabel->show();
+
+    // 2秒后开始淡出并销毁
+    QTimer::singleShot(2000, this, [this, msgLabel]() {
+        // 创建淡出动画
+        auto* opacityEffect = new QGraphicsOpacityEffect(msgLabel);
+        msgLabel->setGraphicsEffect(opacityEffect);
+        auto* animation = new QPropertyAnimation(opacityEffect, "opacity");
+        animation->setDuration(500);
+        animation->setStartValue(1.0);
+        animation->setEndValue(0.0);
+        animation->start(QAbstractAnimation::DeleteWhenStopped);
+
+        // 动画结束后删除标签
+        connect(animation, &QPropertyAnimation::finished, 
+                this, [this, msgLabel]() { removeFloatingMessage(msgLabel); });
+    });
 }
 
-// 清除所有高亮
-void PuzzleModeGameWidget::clearHighlights() {
-    for (SelectedCircle* ring : highlightRings) {
-        ring->setVisible(false);
-        delete ring;
+// 辅助函数：安全删除标签
+void PuzzleModeGameWidget::removeFloatingMessage(QLabel* label) {
+    if (label && label->parent() == this) {
+        label->deleteLater();
     }
-    highlightRings.clear();
 }
 
 void PuzzleModeGameWidget::setDifficulty(int diff) {

@@ -23,7 +23,7 @@ enum class GemstoneStyle {
     Planets,        // 八大行星
     FastFood,       // 美食风格
     // 预留扩展
-    Custom1,        // 自定义风格1
+    Custom1,        // 动物风格（原自定义风格1）
     Custom2         // 自定义风格2
 };
 
@@ -224,6 +224,9 @@ private:
     
     // 获取美食风格颜色
     QColor getFastFoodColor() const;
+    
+    // 获取动物风格颜色
+    QColor getAnimalsColor() const;
 };
 
 #endif // GEMSTONE_H

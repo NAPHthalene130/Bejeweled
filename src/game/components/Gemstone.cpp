@@ -81,7 +81,7 @@ void GemstoneModelManager::initStyleDirectories() {
     m_styleDirectories[GemstoneStyle::Gemstones] = "gemstones";
     m_styleDirectories[GemstoneStyle::Planets] = "planets";
     m_styleDirectories[GemstoneStyle::FastFood] = "fastfood";
-    m_styleDirectories[GemstoneStyle::Custom1] = "custom1";
+    m_styleDirectories[GemstoneStyle::Custom1] = "animals";  // 动物风格
     m_styleDirectories[GemstoneStyle::Custom2] = "custom2";
 }
 
@@ -91,7 +91,7 @@ QString GemstoneModelManager::styleToName(GemstoneStyle style) {
         case GemstoneStyle::Gemstones: return "宝石";
         case GemstoneStyle::Planets: return "八大行星";
         case GemstoneStyle::FastFood: return "美食";
-        case GemstoneStyle::Custom1: return "自定义风格1";
+        case GemstoneStyle::Custom1: return "动物";  // 改为动物
         case GemstoneStyle::Custom2: return "自定义风格2";
         default: return "几何体";
     }
@@ -102,7 +102,7 @@ GemstoneStyle GemstoneModelManager::nameToStyle(const QString& name) {
     if (name == "宝石" || name == "Gemstones") return GemstoneStyle::Gemstones;
     if (name == "八大行星" || name == "Planets") return GemstoneStyle::Planets;
     if (name == "美食" || name == "FastFood") return GemstoneStyle::FastFood;
-    if (name == "自定义风格1" || name == "Custom1") return GemstoneStyle::Custom1;
+    if (name == "动物" || name == "Animals") return GemstoneStyle::Custom1;  // 动物映射到Custom1
     if (name == "自定义风格2" || name == "Custom2") return GemstoneStyle::Custom2;
     return GemstoneStyle::Builtin;
 }
@@ -155,7 +155,7 @@ QStringList GemstoneModelManager::getAvailableStyles() const {
     
     if (m_modelCache.contains(GemstoneStyle::Custom1) && 
         !m_modelCache[GemstoneStyle::Custom1].isEmpty()) {
-        styles << "自定义风格1";
+        styles << "动物";  // 改为动物
     }
     
     if (m_modelCache.contains(GemstoneStyle::Custom2) && 
@@ -615,6 +615,8 @@ QColor Gemstone::getGemColor() const {
             return getPlanetColor();
         case GemstoneStyle::FastFood:
             return getFastFoodColor();
+        case GemstoneStyle::Custom1:
+            return getAnimalsColor();  // 动物风格
         default:
             return getBuiltinColor();
     }
@@ -680,6 +682,21 @@ QColor Gemstone::getFastFoodColor() const {
     }
 }
 
+QColor Gemstone::getAnimalsColor() const {
+    // 动物风格颜色
+    switch (type % 8) {
+        case 0: return QColor(240, 190, 100);   // 小猫 - 橙黄色
+        case 1: return QColor(180, 130, 80);    // 小狗 - 棕色
+        case 2: return QColor(76, 45, 26);    // 小熊 - 棕色
+        case 3: return QColor(255, 218, 225);   // 兔子 - 白色
+        case 4: return QColor(255, 105, 180);   // 小猪 - 深粉色
+        case 5: return QColor(128, 128, 128);   // 熊猫 - 灰色
+        case 6: return QColor(80, 180, 230);    // 小鸟 - 蓝色
+        case 7: return QColor(80, 180, 80);     // 青蛙 - 绿色
+        default: return Qt::white;
+    }
+}
+
 void Gemstone::setupMaterial() {
     QColor color = getGemColor();
     
@@ -699,6 +716,10 @@ void Gemstone::setupMaterial() {
         case GemstoneStyle::FastFood:
             m_material->setShininess(45.0f);   // 美食适中光泽
             m_material->setAmbient(color.lighter(110));  // 稍微明亮
+            break;
+        case GemstoneStyle::Custom1:  // 动物风格
+            m_material->setShininess(35.0f);   // 动物柔和光泽
+            m_material->setAmbient(color.lighter(115));  // 稍微明亮
             break;
         default:
             m_material->setShininess(50.0f);
@@ -722,6 +743,10 @@ void Gemstone::setHint(bool hint) {
 
 bool Gemstone::isSpecial() const {
     return special;
+}
+
+bool Gemstone::isHint() const {
+    return hint;
 }
 
 bool Gemstone::getCanBeChosen() const {

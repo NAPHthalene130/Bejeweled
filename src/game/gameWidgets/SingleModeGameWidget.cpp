@@ -41,6 +41,7 @@
 #include <queue>
 #include <set>
 #include <tuple>
+#include <QGraphicsOpacityEffect>
 
 #include "../data/OtherNetDataIO.h"
 
@@ -2024,6 +2025,53 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
     return matches;
 }
 
+// 添加弹幕提示实现
+void SingleModeGameWidget::showFloatingMessage(const QString& text, bool isSuccess) {
+    // 创建提示标签
+    QLabel* msgLabel = new QLabel(text, this);
+    msgLabel->setStyleSheet(QString(R"(
+        QLabel {
+            background-color: %1;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-family: "Microsoft YaHei";
+            font-size: 16px;
+            font-weight: bold;
+        }
+    )").arg(isSuccess ? "rgba(70, 180, 70, 200)" : "rgba(220, 80, 80, 200)"));
+
+    // 设置位置（屏幕顶部居中）
+    msgLabel->adjustSize();
+    int x = (width() + msgLabel->width() + 500) / 2;
+    int y = 150; // 距离顶部50像素
+    msgLabel->setGeometry(x, y, msgLabel->width(), msgLabel->height());
+    msgLabel->show();
+
+    // 2秒后开始淡出并销毁
+    QTimer::singleShot(2000, this, [this, msgLabel]() {
+        // 创建淡出动画
+        auto* opacityEffect = new QGraphicsOpacityEffect(msgLabel);
+        msgLabel->setGraphicsEffect(opacityEffect);
+        auto* animation = new QPropertyAnimation(opacityEffect, "opacity");
+        animation->setDuration(500);
+        animation->setStartValue(1.0);
+        animation->setEndValue(0.0);
+        animation->start(QAbstractAnimation::DeleteWhenStopped);
+
+        // 动画结束后删除标签
+        connect(animation, &QPropertyAnimation::finished, 
+                this, [this, msgLabel]() { removeFloatingMessage(msgLabel); });
+    });
+}
+
+// 辅助函数：安全删除标签
+void SingleModeGameWidget::removeFloatingMessage(QLabel* label) {
+    if (label && label->parent() == this) {
+        label->deleteLater();
+    }
+}
+
 // 高亮显示所有可消除的宝石
 void SingleModeGameWidget::highlightMatches() {
     if (!canOpe) return; // 操作不可用时不高亮
@@ -2039,6 +2087,7 @@ void SingleModeGameWidget::highlightMatches() {
     std::vector<std::pair<int, int>> matches = findPossibleMatches();
     if (matches.empty()) {
         appendDebug("No possible matches found,resetting the game");
+        showFloatingMessage(QString("没有可消除的宝石，重置棋盘。"), false);
         reset(1);
         return ;
     }
@@ -2185,6 +2234,7 @@ void SingleModeGameWidget::useItemFreezeTime() {
         qWarning() << "[SingleMode] Failed to use FREEZE_TIME item";
         return;
     }
+    showFloatingMessage("正在使用道具 : 冻结时间" , true);
 
     // 暂停游戏计时器10秒
     if (timer && timer->isActive()) {
@@ -2231,6 +2281,7 @@ void SingleModeGameWidget::useItemHammer() {
         qWarning() << "[SingleMode] Failed to use HAMMER item";
         return;
     }
+    showFloatingMessage("正在使用道具 : 锤子" , true);
 
     // 进入锤子模式
     enableHammerMode();
@@ -2243,6 +2294,7 @@ void SingleModeGameWidget::useItemResetBoard() {
         qWarning() << "[SingleMode] Failed to use RESET_BOARD item";
         return;
     }
+    showFloatingMessage("正在使用道具 : 重置棋盘" , true);
 
     // 清除所有现有宝石
     for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
@@ -2317,6 +2369,7 @@ void SingleModeGameWidget::useItemClearAll() {
         qWarning() << "[SingleMode] Failed to use CLEAR_ALL item";
         return;
     }
+    showFloatingMessage("正在使用道具 : 清空棋盘" , true);
 
     canOpe = false;
     int removedCount = 0;
