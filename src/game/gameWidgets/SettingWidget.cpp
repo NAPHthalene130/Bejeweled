@@ -678,8 +678,8 @@ void SettingWidget::onGemStyleChanged(int index) {
         gemStyleDescLabel->setText("太阳系行星：水星、金星、地球、火星...");
     } else if (styleName == "美食") {
         gemStyleDescLabel->setText("诱人的美食：薯条、汉堡、披萨、冰淇淋...");
-    } else if (styleName == "自定义风格1") {
-        gemStyleDescLabel->setText("用户自定义风格1");
+    } else if (styleName == "动物") {
+        gemStyleDescLabel->setText("可爱动物：小猫、小狗、小熊、兔子、熊猫...");
     } else if (styleName == "自定义风格2") {
         gemStyleDescLabel->setText("用户自定义风格2");
     } else {
