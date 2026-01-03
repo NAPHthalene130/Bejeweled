@@ -2316,34 +2316,44 @@ void SingleModeGameWidget::useItemClearAll() {
         return;
     }
 
-    // 消除所有宝石
-    std::vector<std::pair<int, int>> allGems;
+    canOpe = false;
+    int removedCount = 0;
+
+    // 直接消除所有宝石，不调用 removeMatches
     for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
         for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
-            if (gemstoneContainer[i][j]) {
-                allGems.push_back({i, j});
+            Gemstone* gem = gemstoneContainer[i][j];
+            if (gem) {
+                removedCount++;
+                
+                // 如果是金币宝石，先收集金币
+                if (gem->isCoinGem()) {
+                    collectCoinGem(gem);
+                }
+                
+                eliminateAnime(gem);
+                gemstoneContainer[i][j] = nullptr;
             }
         }
     }
 
-    if (!allGems.empty()) {
-        isClear = true;
-        removeMatches(allGems);
-        isClear = false;
-        // 增加大量分数作为奖励
-
-        int bonus = allGems.size() * 5;
+    if (removedCount > 0) {
+        // 增加分数奖励
+        int bonus = removedCount * 5;
         gameScore += bonus;
         updateScoreBoard();
+        triggerFinishIfNeeded();
 
         appendDebug(QString("Used CLEAR_ALL item - Cleared %1 gems, bonus: %2")
-                    .arg(allGems.size()).arg(bonus));
-        qDebug() << "[SingleMode] CLEAR_ALL item used, cleared" << allGems.size() << "gems";
+                    .arg(removedCount).arg(bonus));
 
         // 触发掉落
-        drop();
+        QTimer::singleShot(600, this, [this]() {
+            drop();
+        });
     }
 }
+
 
 void SingleModeGameWidget::enableHammerMode() {
     hammerMode = true;
