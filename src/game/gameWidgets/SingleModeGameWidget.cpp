@@ -2390,12 +2390,12 @@ void SingleModeGameWidget::useItemClearAll() {
             Gemstone* gem = gemstoneContainer[i][j];
             if (gem) {
                 removedCount++;
-                
+
                 // 如果是金币宝石，先收集金币
                 if (gem->isCoinGem()) {
                     collectCoinGem(gem);
                 }
-                
+
                 eliminateAnime(gem);
                 gemstoneContainer[i][j] = nullptr;
             }
@@ -2412,10 +2412,15 @@ void SingleModeGameWidget::useItemClearAll() {
         appendDebug(QString("Used CLEAR_ALL item - Cleared %1 gems, bonus: %2")
                     .arg(removedCount).arg(bonus));
 
-        // 触发掉落
+        // 触发掉落，使用 QPointer 防止对象被删除后访问
         QTimer::singleShot(600, this, [this]() {
+            if (isFinishing) return;  // 如果游戏已结束，不继续操作
             drop();
         });
+    } else {
+        // 如果没有移除任何宝石，恢复操作
+        canOpe = true;
+        updateItemButtons();
     }
 }
 
