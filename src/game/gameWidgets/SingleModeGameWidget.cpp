@@ -2074,10 +2074,22 @@ void SingleModeGameWidget::highlightMatches() {
     if (matches.empty()) {
         appendDebug("No possible matches found,resetting the game");
         showFloatingMessage(QString("没有可消除的宝石，重置棋盘。"), false);
-        int TmpScore = gameScore;
+            // 保存当前状态
+        int savedScore = gameScore;
+        int savedTimeSeconds = gameTimeKeeper.totalSeconds();
+        bool wasTimerActive = timer && timer->isActive();
         reset(1);
-        gameScore = TmpScore;
+            // 恢复状态
+        gameScore = savedScore;
+        gameTimeKeeper.setSeconds(savedTimeSeconds);  // 恢复时间
+        nowTimeHave = savedTimeSeconds;
         updateScoreBoard();
+        updateTimeBoard();
+    
+        // 重新启动计时器
+        if (wasTimerActive && timer && !timer->isActive()) {
+            timer->start();
+        }
         return ;
     }
     
