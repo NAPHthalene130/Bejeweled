@@ -64,7 +64,7 @@ public:
 
     // 消除相关的辅助方法
     std::vector<std::pair<int, int>> findMatches();
-    std::vector<std::pair<int, int>> findPossibleMatches();
+    int findPossibleMatches();
     void removeMatches(const std::vector<std::pair<int, int>>& matches);
 
     void syncGemstonePositions();
@@ -90,8 +90,6 @@ private:
     void appendDebug(const QString& text);
     void refreshDebugStatus();
 
-    void clearHighlights();
-    void highlightMatches();
     void resetInactivityTimer();
 
     void updateScoreBoard();
@@ -105,6 +103,9 @@ private:
     void changeIndex(int a,int b,int c,int d,int e,int f);
     void threeColumnOrVeticalBuild();
     void checkLenthT();
+    
+    void showFloatingMessage(const QString& text, bool isSuccess);
+    void removeFloatingMessage(QLabel* label);
 
     // 辅助函数：找到宝石在容器中的位置
     bool findGemstonePosition(Gemstone* gem, int& row, int& col) const;

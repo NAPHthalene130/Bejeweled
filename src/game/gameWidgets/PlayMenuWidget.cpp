@@ -76,7 +76,7 @@ void PlayMenuWidget::setupUI() {
     */
 
     //按钮5：解密模式
-    puzzleModeButton= new MenuButton(btnW, btnH, fontSize, QColor(255, 215, 0), "解密模式", this); // 金色
+    puzzleModeButton= new MenuButton(btnW, btnH, fontSize, QColor(255, 215, 0), "解谜模式", this); // 金色
     puzzleModeButton->setAttribute(Qt::WA_NativeWindow);
 
 
