@@ -342,50 +342,43 @@ void VictoryBanner::paintEvent(QPaintEvent* event) {
     if (m_infoOpacity > 0) {
         painter.save();
         painter.setOpacity(m_infoOpacity);
-        
+
         qreal infoY = m_bannerY + 80;
-        
-        // 信息背景卡片
-        QRectF infoRect(center.x() - 180, infoY, 360, 120);
-        
+
+        // 信息背景卡片（缩小高度，因为只显示关卡信息）
+        QRectF infoRect(center.x() - 180, infoY, 360, 80);
+
         // 绘制毛玻璃效果背景
         QPainterPath cardPath;
         cardPath.addRoundedRect(infoRect, 16, 16);
-        
+
         QLinearGradient cardBg(infoRect.topLeft(), infoRect.bottomRight());
         cardBg.setColorAt(0, QColor(80, 50, 120, 180));
         cardBg.setColorAt(1, QColor(40, 30, 80, 180));
         painter.fillPath(cardPath, cardBg);
-        
+
         // 金色边框
         QPen borderPen(QColor(255, 200, 100, 150));
         borderPen.setWidth(2);
         painter.setPen(borderPen);
         painter.drawPath(cardPath);
-        
+
         // 关卡文字
         QFont levelFont("Microsoft YaHei", 22, QFont::Bold);
         painter.setFont(levelFont);
         painter.setPen(QColor(255, 215, 0));
         painter.drawText(QRectF(infoRect.x(), infoY + 10, infoRect.width(), 40),
                         Qt::AlignCenter, QString("第 %1 关 完成！").arg(m_level));
-        
-        // 得分和时间
-        QFont detailFont("Microsoft YaHei", 14);
-        painter.setFont(detailFont);
-        painter.setPen(QColor(230, 230, 255));
-        painter.drawText(QRectF(infoRect.x(), infoY + 55, infoRect.width() / 2, 30),
-                        Qt::AlignCenter, QString("🏆 %1 分").arg(m_score));
-        painter.drawText(QRectF(infoRect.x() + infoRect.width() / 2, infoY + 55, infoRect.width() / 2, 30),
-                        Qt::AlignCenter, QString("⏱️ %1").arg(m_time));
-        
+
+        // 解谜模式不显示得分和时间
+
         // 提示文字
         QFont tipFont("Microsoft YaHei", 11);
         painter.setFont(tipFont);
         painter.setPen(QColor(180, 180, 200, 180));
-        painter.drawText(QRectF(infoRect.x(), infoY + 90, infoRect.width(), 25),
+        painter.drawText(QRectF(infoRect.x(), infoY + 50, infoRect.width(), 25),
                         Qt::AlignCenter, "点击任意处继续...");
-        
+
         painter.restore();
     }
     
