@@ -2,8 +2,6 @@
 #define RANK_LIST_WIDGET_H
 #include <QWidget>
 #include <QPixmap>
-#include <QMediaPlayer>
-#include <QAudioOutput>
 #include <vector>
 #include <QString>
 
@@ -44,8 +42,6 @@ signals:
 protected:
     void paintEvent(QPaintEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
-    void showEvent(QShowEvent* event) override;
-    void hideEvent(QHideEvent* event) override;
 
 private slots:
     void onBackClicked();
@@ -106,10 +102,6 @@ private:
     QTimer* goldenAnimTimer = nullptr;
     float goldenAnimPhase = 0.0f;
     std::vector<QTableWidgetItem*> goldenItems;  // 存储需要动画的item
-    
-    // 排行榜背景音乐
-    QMediaPlayer* bgmPlayer = nullptr;
-    QAudioOutput* bgmAudioOutput = nullptr;
 };
 
 #endif // RANK_LIST_WIDGET_H
