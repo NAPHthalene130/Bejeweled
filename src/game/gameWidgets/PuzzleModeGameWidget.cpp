@@ -1425,7 +1425,7 @@ void PuzzleModeGameWidget::reset(int mode) {
     debugText->setText(QString("Start\n")); // 刷新显示
     //目前关闭debug窗口
     
-    int MemberNum = std::max(5 , std::min(10,3*Level));
+    int MemberNum = std::max(5 , std::min(8,3*Level));
     bool SpecialComplete = false;
     while(MemberNum) {
         if(Level >= 2 && !SpecialComplete) {//可能 生成一个残缺匹配，需要特殊宝石来消除
