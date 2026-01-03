@@ -102,3 +102,5 @@ CMakeLists.txt.user*
 
 .idea/editor.xml
 .idea/workspace.xml
+.vscode/tasks.json
+.vscode/launch.json

@@ -174,8 +174,10 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
         updateTimeBoard();
     });
 
+    setMinimumSize(1280, 720);
+
     // 设置主背景颜色
-    setStyleSheet("background-color: rgb(40, 40, 45);");
+    setStyleSheet("background-color: darkgray;");
 
     // 初始化3D窗口
     game3dWindow = new Qt3DExtras::Qt3DWindow();
@@ -229,10 +231,10 @@ WhirlwindModeGameWidget::WhirlwindModeGameWidget(QWidget* parent, GameWindow* ga
     leftLayout->setContentsMargins(0, 0, 0, 0);
     leftLayout->setSpacing(15);
     leftLayout->addWidget(noEliminationProgressBar, 0, Qt::AlignTop | Qt::AlignHCenter);
-    leftLayout->addWidget(container3d, 1, Qt::AlignCenter);
+    leftLayout->addWidget(container3d, 1);
 
-    // 限制container3d为正方形
-    container3d->setFixedSize(960, 960);
+    // 限制container3d为正方形 (已移除固定大小限制，改为自适应)
+    // container3d->setFixedSize(960, 960);
 
     // 布局 - 左侧居中
     QHBoxLayout* mainLayout = new QHBoxLayout(this);

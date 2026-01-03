@@ -175,8 +175,10 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
         updateTimeBoard();
     });
     
+    setMinimumSize(1280, 720);
+
     // 设置主背景颜色
-    setStyleSheet("background-color: rgb(40, 40, 45);");
+    setStyleSheet("background-color: darkgray;");
 
     // 初始化3D窗口
     game3dWindow = new Qt3DExtras::Qt3DWindow();
@@ -247,49 +249,20 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     
     // 添加到面板布局（在分数面板上方）
     panelLayout->addWidget(levelLabel, 0, Qt::AlignHCenter | Qt::AlignTop);
-    
+
     // 添加一点间距
     panelLayout->addSpacing(8);
 
-    auto* infoCard = new QWidget(rightPanel);
-    infoCard->setStyleSheet(R"(
-        QWidget {
-            background-color: rgba(255, 255, 255, 18);
-            border: 1px solid rgba(255, 255, 255, 40);
-            border-radius: 16px;
-        }
-    )");
-    auto* infoShadow = new QGraphicsDropShadowEffect(infoCard);
-    infoShadow->setBlurRadius(18);
-    infoShadow->setOffset(0, 7);
-    infoShadow->setColor(QColor(0, 0, 0, 120));
-    infoCard->setGraphicsEffect(infoShadow);
-
-    auto* infoLayout = new QVBoxLayout(infoCard);
-    infoLayout->setContentsMargins(18, 16, 18, 16);
-    infoLayout->setSpacing(10);
-
-    scoreBoardLabel = new QLabel(infoCard);
-    QFont scoreFont = scoreBoardLabel->font();
-    scoreFont.setFamily("Microsoft YaHei");
-    scoreFont.setPointSize(16);
-    scoreFont.setBold(true);
-    scoreBoardLabel->setFont(scoreFont);
-    scoreBoardLabel->setStyleSheet("color: rgba(255,255,255,235); background: transparent;");
-
-    timeBoardLabel = new QLabel(infoCard);
-    QFont timeFont = timeBoardLabel->font();
-    timeFont.setFamily("Microsoft YaHei");
-    timeFont.setPointSize(12);
-    timeFont.setBold(true);
-    timeBoardLabel->setFont(timeFont);
-    timeBoardLabel->setStyleSheet("color: rgba(255,255,255,200); background: transparent;");
-
-    infoLayout->addWidget(scoreBoardLabel);
-    infoLayout->addWidget(timeBoardLabel);
-    panelLayout->addWidget(infoCard, 0, Qt::AlignTop);
-
+    // 解谜模式不显示时间和分数，直接添加伸缩空间
     panelLayout->addStretch(1);
+
+    // 仍然创建标签但不显示（避免代码其他地方引用时出错）
+    scoreBoardLabel = new QLabel(rightPanel);
+    scoreBoardLabel->setVisible(false);
+
+    timeBoardLabel = new QLabel(rightPanel);
+    timeBoardLabel->setVisible(false);
+
 // ———————————————————————————————————————————————————————————— debug
     debugText = new QTextEdit(this);
     debugText->setReadOnly(true);
@@ -298,9 +271,10 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
     panelLayout->addWidget(debugText);
     debugText->setVisible(false);//hide 一下
 
-    // 新增重置按钮
+    // 新增重置按钮 - 宽度自适应
     resetButton = new QPushButton("重置状态", rightPanel);
-    resetButton->setFixedSize(180, 54);
+    resetButton->setMinimumHeight(54);
+    resetButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     resetButton->setCursor(Qt::PointingHandCursor);
     resetButton->setStyleSheet(R"(
         QPushButton {
@@ -328,12 +302,13 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
 
     connect(resetButton, &QPushButton::clicked, this, &PuzzleModeGameWidget::checkLastGemState);
 
-    panelLayout->addWidget(resetButton, 0, Qt::AlignRight | Qt::AlignBottom);
+    panelLayout->addWidget(resetButton);
 
 
 
     backToMenuButton = new QPushButton("返回菜单", rightPanel);
-    backToMenuButton->setFixedSize(180, 54);
+    backToMenuButton->setMinimumHeight(54);
+    backToMenuButton->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     backToMenuButton->setCursor(Qt::PointingHandCursor);
     backToMenuButton->setStyleSheet(R"(
         QPushButton {
@@ -370,7 +345,7 @@ PuzzleModeGameWidget::PuzzleModeGameWidget(QWidget* parent, GameWindow* gameWind
         }
     });
 
-    panelLayout->addWidget(backToMenuButton, 0, Qt::AlignRight | Qt::AlignBottom);
+    panelLayout->addWidget(backToMenuButton);
 
     focusInfoLabel = new QLabel(rightPanel);
     focusInfoLabel->setVisible(false);

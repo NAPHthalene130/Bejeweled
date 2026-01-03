@@ -287,8 +287,10 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
         difficulty = gameWindow->getDifficulty();
     }
     
+    setMinimumSize(1280, 720);
+
     // 设置主背景颜色
-    setStyleSheet("background-color: rgb(40, 40, 45);");
+    setStyleSheet("background-color: darkgray;");
 
     // 初始化3D窗口
     game3dWindow = new Qt3DExtras::Qt3DWindow();
@@ -678,19 +680,25 @@ void SingleModeGameWidget::finishToFinalWidget() {
         .arg(m, 2, 10, QChar('0'))
         .arg(s, 2, 10, QChar('0'));
 
-    QString gradeText = QString("本局得分：%1\n用时：%2\n获得金币：%3\n评价：Excellent!")
-        .arg(gameScore)
-        .arg(timeText)
-        .arg(earnedCoins);
+    // 捕获需要显示的数据
+    int finalScore = gameScore;
+    int finalCoins = earnedCoins;
 
-    QTimer::singleShot(650, this, [this, total]() {
+    QTimer::singleShot(650, this, [this, total, timeText, finalScore, finalCoins]() {
         if (!gameWindow) return;
         auto* finalWidget = gameWindow->getFinalWidget();
         if (!finalWidget) return;
-        
+
         finalWidget->setTitleStr("游戏结束");
-        finalWidget->setContentStr(QString("花费时间:%1秒").arg(total/60).toStdString());
-        
+
+        // 构建包含分数、时间和金币的内容文本
+        QString contentText = QString("本局得分：%1\n用时：%2\n获得金币：%3\n评价：Excellent!")
+            .arg(finalScore)
+            .arg(timeText)
+            .arg(finalCoins);
+
+        finalWidget->setContentStr(contentText.toStdString());
+
         gameWindow->switchWidget(finalWidget);
     });
 }
@@ -2294,21 +2302,39 @@ void SingleModeGameWidget::useItemResetBoard() {
     }
     showFloatingMessage("正在使用道具 : 重置棋盘" , true);
 
-    // 清除所有现有宝石
+    // 禁止操作
+    canOpe = false;
+
+    // 收集所有需要删除的宝石
+    std::vector<Gemstone*> gemsToDelete;
     for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
         for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
             Gemstone* gem = gemstoneContainer[i][j];
             if (gem) {
-                eliminateAnime(gem);
+                gemsToDelete.push_back(gem);
+                // 创建缩小动画
+                QPropertyAnimation* animation = new QPropertyAnimation(gem->transform(), "scale");
+                animation->setDuration(500);
+                animation->setStartValue(gem->transform()->scale());
+                animation->setEndValue(0.0f);
+                animation->start(QAbstractAnimation::DeleteWhenStopped);
+
                 gemstoneContainer[i][j] = nullptr;
             }
         }
     }
 
-    // 禁止操作
-    canOpe = false;
+    // 延迟删除所有宝石对象（在动画完成后）
+    QTimer::singleShot(510, this, [gemsToDelete]() {
+        for (Gemstone* gem : gemsToDelete) {
+            if (gem) {
+                gem->setParent((Qt3DCore::QNode*)nullptr);
+                delete gem;
+            }
+        }
+    });
 
-    // 等待消除动画完成后重新生成棋盘
+    // 等待清除完成后重新生成棋盘
     QTimer::singleShot(600, this, [this]() {
         if (isFinishing) return;
 

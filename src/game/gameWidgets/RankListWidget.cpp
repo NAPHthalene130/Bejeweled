@@ -47,6 +47,8 @@ RankListWidget::RankListWidget(QWidget* parent, GameWindow* gameWindow)
         qDebug() << "Failed to load rank_bg.png from any path";
     }
     
+    setMinimumSize(1280, 720);
+
     setupUI();
     
     refreshDisplay();
@@ -84,27 +86,6 @@ RankListWidget::RankListWidget(QWidget* parent, GameWindow* gameWindow)
         s.wingPhase = (std::rand() % 628) / 100.0f;
         s.size = 15 + std::rand() % 10;  // 15-25
         seagulls.push_back(s);
-    }
-    
-    // 初始化排行榜背景音乐播放器
-    bgmPlayer = new QMediaPlayer(this);
-    bgmAudioOutput = new QAudioOutput(this);
-    bgmPlayer->setAudioOutput(bgmAudioOutput);
-    bgmAudioOutput->setVolume(0.5f);  // 设置音量为50%
-    bgmPlayer->setLoops(QMediaPlayer::Infinite);  // 循环播放
-    
-    // 加载音乐文件
-    QStringList bgmPaths = {
-        QCoreApplication::applicationDirPath() + "/resources/sounds/rank_bgm.mp3",
-        "D:/Bejeweled/build/resources/sounds/rank_bgm.mp3"
-    };
-    
-    for (const QString& path : bgmPaths) {
-        if (QFile::exists(path)) {
-            bgmPlayer->setSource(QUrl::fromLocalFile(path));
-            qDebug() << "Rank BGM loaded from:" << path;
-            break;
-        }
     }
 }
 
@@ -263,6 +244,14 @@ void RankListWidget::setupTab(QTableWidget* table, const QStringList& headers) {
 }
 
 void RankListWidget::updateTable(QTableWidget* table, const std::vector<RankRecord>& records) {
+    // 移除goldenItems中属于当前table的项，防止野指针
+    auto it = std::remove_if(goldenItems.begin(), goldenItems.end(), 
+        [table](QTableWidgetItem* item) {
+            // 检查item是否属于当前正在更新的table
+            return item && item->tableWidget() == table;
+        });
+    goldenItems.erase(it, goldenItems.end());
+
     table->clearContents();
     
     // 排名图标/奖牌
@@ -542,21 +531,4 @@ void RankListWidget::paintEvent(QPaintEvent* event) {
 void RankListWidget::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
     update(); // 重绘背景
-}
-
-void RankListWidget::showEvent(QShowEvent* event) {
-    QWidget::showEvent(event);
-    // 进入排行榜页面时播放背景音乐
-    if (bgmPlayer) {
-        bgmPlayer->play();
-        qDebug() << "Playing rank BGM";
-    }
-}
-
-void RankListWidget::hideEvent(QHideEvent* event) {
-    QWidget::hideEvent(event);
-    // 离开排行榜页面时停止音乐
-    if (bgmPlayer) {
-        bgmPlayer->stop();
-    }
 }
