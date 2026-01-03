@@ -456,6 +456,7 @@ std::vector<std::pair<int, int>> PuzzleModeGameWidget::findMatches(int x,int y,i
 
     // 检查水平方向
     for (int i = 0; i < 8; ++i) {
+        if(x != -1 && i != x) continue;
         for (int j = 0; j < 6; ++j) {  // 最多检查到j=5，这样j+2不会越界
             Gemstone* gem1 = gemstoneContainer[i][j];
             int gem1Type = -1;
@@ -477,6 +478,7 @@ std::vector<std::pair<int, int>> PuzzleModeGameWidget::findMatches(int x,int y,i
 
     // 检查垂直方向
     for (int j = 0; j < 8; ++j) {
+        if(y != -1 && j != y) continue;
         for (int i = 0; i < 6; ++i) {  // 最多检查到i=5
             Gemstone* gem1 = gemstoneContainer[i][j];
             int gem1Type = -1;
