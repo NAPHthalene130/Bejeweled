@@ -13,6 +13,7 @@
 #include <Qt3DInput/QInputAspect>
 #include "../data/ItemSystem.h"
 #include <QPropertyAnimation> // 新增
+#include <QPointer>
 
 class QTextEdit;
 class QLabel;
@@ -214,6 +215,12 @@ private:
     //有关滑动交换
     bool isDragging = false;
     bool isClear = false;
+
+    // 安全机制
+    long long m_operationId = 0;
+    QList<QAbstractAnimation*> m_activeAnimations;
+    void registerAnimation(QAbstractAnimation* anim);
+    void safeDeleteGem(Gemstone* gem);
 };
 
 #endif // SINGLE_MODE_GAME_WIDGET_H

@@ -704,8 +704,12 @@ void SingleModeGameWidget::finishToFinalWidget() {
     int finalScore = gameScore;
     int finalCoins = earnedCoins;
 
-    QTimer::singleShot(650, this, [this, total, timeText, finalScore, finalCoins]() {
+    long long currentOpId = m_operationId;
+    QTimer::singleShot(650, this, [this, total, timeText, finalScore, finalCoins, currentOpId]() {
+        if (currentOpId != m_operationId) return;
+        if (!isVisible()) return; // Don't switch if we are not visible (e.g. back to menu)
         if (!gameWindow) return;
+        
         auto* finalWidget = gameWindow->getFinalWidget();
         if (!finalWidget) return;
 
@@ -1054,7 +1058,9 @@ void SingleModeGameWidget::eliminate() {
         if (isFinishing) return;
 
         // 等待消除动画完成后执行下落（500ms）
-        QTimer::singleShot(600, this, [this]() {
+        long long currentOpId = m_operationId;
+        QTimer::singleShot(600, this, [this, currentOpId]() {
+            if (currentOpId != m_operationId) return;
             drop();
         });
     } else {
@@ -1072,7 +1078,8 @@ void SingleModeGameWidget::drop() {
     if (isFinishing) return;
     appendDebug("Starting drop animation");
 
-    QParallelAnimationGroup* dropAnimGroup = new QParallelAnimationGroup();
+    QParallelAnimationGroup* dropAnimGroup = new QParallelAnimationGroup(this);
+    registerAnimation(dropAnimGroup);
     bool hasDrops = false;
 
     for (int col = 0; col < 8; ++col) {
@@ -1100,7 +1107,9 @@ void SingleModeGameWidget::drop() {
 
     if (hasDrops) {
         appendDebug("Drop animation started");
-        connect(dropAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
+        long long currentOpId = m_operationId;
+        connect(dropAnimGroup, &QParallelAnimationGroup::finished, this, [this, currentOpId]() {
+            if (currentOpId != m_operationId) return;
             if (isFinishing) return;
             appendDebug("Drop animation finished, filling new gemstones");
             resetGemstoneTable();
@@ -1108,6 +1117,7 @@ void SingleModeGameWidget::drop() {
         });
         dropAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
     } else {
+        delete dropAnimGroup; // Not started, delete manually
         appendDebug("No drops needed, filling new gemstones");
         resetGemstoneTable();
         resetInactivityTimer();
@@ -1118,7 +1128,8 @@ void SingleModeGameWidget::resetGemstoneTable() {
     if (isFinishing) return;
     appendDebug("Filling empty positions with new gemstones");
 
-    QParallelAnimationGroup* fillAnimGroup = new QParallelAnimationGroup();
+    QParallelAnimationGroup* fillAnimGroup = new QParallelAnimationGroup(this);
+    registerAnimation(fillAnimGroup);
     bool hasFills = false;
 
     // 遍历所有位置，找到空位并填充新宝石
@@ -1176,7 +1187,9 @@ void SingleModeGameWidget::resetGemstoneTable() {
 
     if (hasFills) {
         appendDebug("Fill animation started");
-        connect(fillAnimGroup, &QParallelAnimationGroup::finished, this, [this]() {
+        long long currentOpId = m_operationId;
+        connect(fillAnimGroup, &QParallelAnimationGroup::finished, this, [this, currentOpId]() {
+            if (currentOpId != m_operationId) return;
             if (isFinishing) return;
             appendDebug("Fill animation finished, checking for new matches");
             // 填充完成后，递归检查是否有新的匹配
@@ -1184,6 +1197,7 @@ void SingleModeGameWidget::resetGemstoneTable() {
         });
         fillAnimGroup->start(QAbstractAnimation::DeleteWhenStopped);
     } else {
+        delete fillAnimGroup;
         appendDebug("No fills needed, checking for new matches");
         // 没有填充，直接检查匹配
         eliminate();
@@ -1193,17 +1207,16 @@ void SingleModeGameWidget::resetGemstoneTable() {
 void SingleModeGameWidget::eliminateAnime(Gemstone* gemstone) {
     if (!gemstone) return;
     
-    QPropertyAnimation* animation = new QPropertyAnimation(gemstone->transform(), "scale");
+    // Parent animation to gemstone so it dies with it
+    QPropertyAnimation* animation = new QPropertyAnimation(gemstone->transform(), "scale", gemstone);
     animation->setDuration(500); // 持续缩小直到不见
     animation->setStartValue(gemstone->transform()->scale());
     animation->setEndValue(0.0f);
     
-    connect(animation, &QPropertyAnimation::finished, [gemstone]() {
-        gemstone->setParent((Qt3DCore::QNode*)nullptr);
-        delete gemstone;
-    });
+    // Use deleteLater on gemstone when animation finishes
+    connect(animation, &QPropertyAnimation::finished, gemstone, &QObject::deleteLater);
     
-    animation->start(QAbstractAnimation::DeleteWhenStopped);
+    animation->start(QAbstractAnimation::KeepWhenStopped);
 }
 
 void SingleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* gemstone2) {
@@ -1212,7 +1225,8 @@ void SingleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     QVector3D pos1 = gemstone1->transform()->translation();
     QVector3D pos2 = gemstone2->transform()->translation();
     
-    QParallelAnimationGroup* group = new QParallelAnimationGroup();
+    QParallelAnimationGroup* group = new QParallelAnimationGroup(this); // Parent to this
+    registerAnimation(group);
     
     QPropertyAnimation* anim1 = new QPropertyAnimation(gemstone1->transform(), "translation");
     anim1->setDuration(500); // 0.5s
@@ -1227,7 +1241,9 @@ void SingleModeGameWidget::switchGemstoneAnime(Gemstone* gemstone1, Gemstone* ge
     group->addAnimation(anim1);
     group->addAnimation(anim2);
     
-    connect(group, &QParallelAnimationGroup::finished, [this]() {
+    long long currentOpId = m_operationId;
+    connect(group, &QParallelAnimationGroup::finished, this, [this, currentOpId]() {
+        if (currentOpId != m_operationId) return; // Operation invalidated
         syncGemstonePositions();
     });
     
@@ -1269,7 +1285,9 @@ void SingleModeGameWidget::handleGemstoneClicked(Gemstone* gem) {
             updateScoreBoard();
 
             // 等待消除动画完成后触发掉落（600ms后）
-            QTimer::singleShot(600, this, [this]() {
+            long long currentOpId = m_operationId;
+            QTimer::singleShot(600, this, [this, currentOpId]() {
+                if (currentOpId != m_operationId) return;
                 drop();
             });
         }
@@ -1493,6 +1511,16 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
 
 SingleModeGameWidget::~SingleModeGameWidget() {
     clearHighlights();
+    
+    // Stop and clear active animations
+    for (auto* anim : m_activeAnimations) {
+        if (anim) {
+            anim->stop();
+            delete anim;
+        }
+    }
+    m_activeAnimations.clear();
+
     delete inactivityTimer;
 
     if (rootEntity) {
@@ -1503,6 +1531,24 @@ SingleModeGameWidget::~SingleModeGameWidget() {
     }
     if (debugTimer && debugTimer->isActive()) {
         debugTimer->stop();
+    }
+}
+
+void SingleModeGameWidget::registerAnimation(QAbstractAnimation* anim) {
+    if (!anim) return;
+    m_activeAnimations.append(anim);
+    connect(anim, &QAbstractAnimation::finished, this, [this, anim]() {
+        m_activeAnimations.removeAll(anim);
+    });
+    connect(anim, &QObject::destroyed, this, [this, anim]() {
+        m_activeAnimations.removeAll(anim);
+    });
+}
+
+void SingleModeGameWidget::safeDeleteGem(Gemstone* gem) {
+    if (gem) {
+        gem->setParent((Qt3DCore::QNode*)nullptr);
+        delete gem;
     }
 }
 
@@ -1641,6 +1687,30 @@ void SingleModeGameWidget::setMode(int mode) {
 }
 
 void SingleModeGameWidget::reset(int mode) {
+    // 1. Invalidate all pending async operations
+    m_operationId++; 
+    
+    // 2. Stop and clear active animations
+    for (auto* anim : m_activeAnimations) {
+        if (anim) {
+            anim->stop();
+            // Delete manually if it was parented to this but we want it gone now
+            // or just let it die. 
+            // Better to just delete it to be sure.
+            delete anim; 
+        }
+    }
+    m_activeAnimations.clear();
+
+    // Reset item states
+    if (hammerMode) {
+        disableHammerMode();
+    }
+    if (freezeTimer && freezeTimer->isActive()) {
+        freezeTimer->stop();
+    }
+    freezeTimeRemaining = 0;
+
     AchievementSystem::instance().resetSessionStats();
     if (gameWindow) {
         difficulty = gameWindow->getDifficulty();
@@ -1662,16 +1732,15 @@ void SingleModeGameWidget::reset(int mode) {
     updateTimeBoard();
     appendDebug(QString("reset mode=%1").arg(mode));
     
-    // 清除现有的宝石（如果有）
-    for (auto& row : gemstoneContainer) {
-        for (auto* gem : row) {
-            if (gem) {
-                gem->setParent((Qt3DCore::QNode*)nullptr); // 从场景中分离
-                delete gem;
-            }
-        }
+    // 3. Recreate 3D Scene to clean up everything
+    if (rootEntity) {
+        delete rootEntity;
+        rootEntity = nullptr;
     }
     gemstoneContainer.clear();
+    
+    // Re-initialize 3D scene (creates new rootEntity)
+    setup3DScene();
     
     // 重建8x8网格
     gemstoneContainer.resize(8);
@@ -2290,18 +2359,18 @@ void SingleModeGameWidget::useItemResetBoard() {
     updateItemButtons();  // 更新道具按钮状态
 
     // 收集所有需要删除的宝石
-    std::vector<Gemstone*> gemsToDelete;
+    std::vector<QPointer<Gemstone>> gemsToDelete; // Use QPointer
     for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
         for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
             Gemstone* gem = gemstoneContainer[i][j];
             if (gem) {
                 gemsToDelete.push_back(gem);
-                // 创建缩小动画
-                QPropertyAnimation* animation = new QPropertyAnimation(gem->transform(), "scale");
+                // 创建缩小动画 - Parent to gem
+                QPropertyAnimation* animation = new QPropertyAnimation(gem->transform(), "scale", gem);
                 animation->setDuration(500);
                 animation->setStartValue(gem->transform()->scale());
                 animation->setEndValue(0.0f);
-                animation->start(QAbstractAnimation::DeleteWhenStopped);
+                animation->start(QAbstractAnimation::KeepWhenStopped);
 
                 gemstoneContainer[i][j] = nullptr;
             }
@@ -2309,17 +2378,20 @@ void SingleModeGameWidget::useItemResetBoard() {
     }
 
     // 延迟删除所有宝石对象（在动画完成后）
-    QTimer::singleShot(510, this, [gemsToDelete]() {
-        for (Gemstone* gem : gemsToDelete) {
+    long long currentOpId = m_operationId;
+    QTimer::singleShot(510, this, [this, gemsToDelete, currentOpId]() {
+        if (currentOpId != m_operationId) return; // Reset happened, gems already deleted or invalid
+        
+        for (auto gem : gemsToDelete) {
             if (gem) {
-                gem->setParent((Qt3DCore::QNode*)nullptr);
-                delete gem;
+                safeDeleteGem(gem);
             }
         }
     });
 
     // 等待清除完成后重新生成棋盘
-    QTimer::singleShot(600, this, [this]() {
+    QTimer::singleShot(600, this, [this, currentOpId]() {
+        if (currentOpId != m_operationId) return;
         if (isFinishing) return;
 
         // 重新生成整个棋盘（类似reset方法中的逻辑）
@@ -2413,7 +2485,9 @@ void SingleModeGameWidget::useItemClearAll() {
                     .arg(removedCount).arg(bonus));
 
         // 触发掉落
-        QTimer::singleShot(600, this, [this]() {
+        long long currentOpId = m_operationId;
+        QTimer::singleShot(600, this, [this, currentOpId]() {
+            if (currentOpId != m_operationId) return;
             drop();
         });
     }
