@@ -83,8 +83,8 @@ public:
     void setRankLists(const std::vector<std::vector<std::pair<std::string, int>>>& ranks);
 private:
     std::string userID;
-    std::string ip = "127.0.0.1";
-    std::string port = "10090";
+    std::string ip;
+    std::string port;
     int difficulty = 6;
     QWidget* currentWidget = nullptr;
     AchievementsWidget* achievementsWidget = nullptr;

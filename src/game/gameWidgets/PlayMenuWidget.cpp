@@ -34,8 +34,9 @@
 #include <QRandomGenerator>
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QNetworkProxy>
 #include <json.hpp>
-
+#include "../../Config.h"
 
 PlayMenuWidget::PlayMenuWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -69,8 +70,10 @@ void PlayMenuWidget::setupUI() {
     multiModeButton->setAttribute(Qt::WA_NativeWindow);
 
     // 按钮 4：多人测试
+    /*
     testMultiButton = new MenuButton(btnW, btnH, fontSize, QColor(60, 179, 113), "多人测试", this); // MediumSeaGreen
     testMultiButton->setAttribute(Qt::WA_NativeWindow);
+    */
 
     //按钮5：解密模式
     puzzleModeButton= new MenuButton(btnW, btnH, fontSize, QColor(255, 215, 0), "解密模式", this); // 金色
@@ -86,7 +89,7 @@ void PlayMenuWidget::setupUI() {
     mainLayout->addWidget(normalModeButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(rotateModeButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(multiModeButton, 0, Qt::AlignCenter);
-    mainLayout->addWidget(testMultiButton, 0, Qt::AlignCenter);
+    // mainLayout->addWidget(testMultiButton, 0, Qt::AlignCenter);
     mainLayout->addWidget(puzzleModeButton, 0, Qt::AlignCenter);
     mainLayout->addStretch(1);
     
@@ -106,13 +109,15 @@ void PlayMenuWidget::setupUI() {
     });
 
     connect(multiModeButton, &QPushButton::clicked, this, &PlayMenuWidget::multiModeButtonClicked);
-
+    
+    /*
     connect(testMultiButton, &QPushButton::clicked, this, [this]() {
         if (gameWindow && gameWindow->getMultiplayerModeGameWidget()) {
             gameWindow->getMultiplayerModeGameWidget()->reset(1);  // Normal mode for multiplayer
             gameWindow->switchWidget(gameWindow->getMultiplayerModeGameWidget());
         }
     });
+    */
 
     connect(puzzleModeButton, &QPushButton::clicked, this, [this]() {
         emit startPuzzleMode();
@@ -440,11 +445,12 @@ void PlayMenuWidget::multiModeButtonClicked() {
     }
 
     QTcpSocket socket;
-    socket.connectToHost(QString::fromStdString(gameWindow->getIp()), std::stoi(gameWindow->getPort()));
+    socket.setProxy(QNetworkProxy::NoProxy);
+    socket.connectToHost(QString::fromStdString(Config::getServerIp()), std::stoi(Config::getGameNetDataPort()));
 
     if (socket.waitForConnected(3000)) {
         socket.disconnectFromHost();
-        NetDataIO* net = new NetDataIO(gameWindow->getIp(), gameWindow->getPort(), gameWindow);
+        NetDataIO* net = new NetDataIO(Config::getServerIp(), Config::getGameNetDataPort(), gameWindow);
         gameWindow->setNetDataIO(net);
 
         GameNetData joinMsg;

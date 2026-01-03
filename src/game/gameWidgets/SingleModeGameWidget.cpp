@@ -1426,7 +1426,9 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             
             QCoreApplication::postEvent(this, forwardedEvent);
             return false; // 不消费事件，让Qt3D也能处理
-        } else if (event->type() == QEvent::MouseMove) {
+        }
+    } else if (obj == rightPanel) {
+        if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
             
             // 将事件转发到PuzzleModeGameWidget的mouseMoveEvent
