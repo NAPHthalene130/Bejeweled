@@ -152,6 +152,7 @@ private:
         void tick();
         int totalSeconds() const;
         QString displayText() const;
+        void setSeconds(int s) { seconds = s; }
     private:
         int seconds = 0;
     };
