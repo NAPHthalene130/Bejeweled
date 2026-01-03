@@ -2229,7 +2229,7 @@ void SingleModeGameWidget::useItemFreezeTime() {
 }
 
 void SingleModeGameWidget::useItemHammer() {
-    if (!ItemSystem::instance().useItem(ItemType::HAMMER)) {
+    if (!ItemSystem::instance().useItem(ItemType::HAMMER) || !canOpe) {
         qWarning() << "[SingleMode] Failed to use HAMMER item";
         return;
     }
