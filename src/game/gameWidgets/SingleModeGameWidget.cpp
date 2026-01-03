@@ -540,7 +540,6 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     panelLayout->addStretch(1);
 
     backToMenuButton = new QPushButton("返回菜单", rightPanel);
-    backToMenuButton->setFixedSize(180, 54);
     backToMenuButton->setCursor(Qt::PointingHandCursor);
     backToMenuButton->setStyleSheet(R"(
         QPushButton {
@@ -565,6 +564,7 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     backShadow->setOffset(0, 8);
     backShadow->setColor(QColor(0, 0, 0, 120));
     backToMenuButton->setGraphicsEffect(backShadow);
+    backToMenuButton->setFixedSize(180, 54);
 
     connect(backToMenuButton, &QPushButton::clicked, this, [this]() {
         GameBackDialog dlg(this);
@@ -582,6 +582,8 @@ SingleModeGameWidget::SingleModeGameWidget(QWidget* parent, GameWindow* gameWind
     focusInfoLabel = new QLabel(rightPanel);
     focusInfoLabel->setVisible(false);
     debugText = new QTextEdit(rightPanel);
+
+
     debugText->setVisible(false);
     debugText->setReadOnly(true);
     debugTimer = new QTimer(this);
@@ -898,7 +900,7 @@ void SingleModeGameWidget::removeMatches(const std::vector<std::pair<int, int>>&
         }
     }
 
-    if (removedCount > 0) {
+    if (removedCount > 0 && !isClear) {
         comboCount++;
         int comboBonus = comboCount > 1 ? (comboCount - 1) * 5 : 0;
         gameScore += removedCount * 10 + comboBonus;
@@ -1406,62 +1408,6 @@ bool SingleModeGameWidget::eventFilter(QObject* obj, QEvent* event) {
             if (++moveCount % 50 == 0) { // 每50次移动输出一次
                 appendDebug("Mouse moving over 3D window");
             }
-            // 锤子模式下的鼠标悬停处理
-            if (hammerMode) {
-                QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-                QPoint mousePos = mouseEvent->pos();
-
-                // 遍历所有宝石，找到鼠标悬停的宝石
-                Gemstone* hoveredGem = nullptr;
-                float minDistance = std::numeric_limits<float>::max();
-
-                QSize windowSize = game3dWindow->size();
-                float centerX = windowSize.width() / 2.0f;
-                float centerY = windowSize.height() / 2.0f;
-                float scale = windowSize.height() / 18.0f;
-
-                for (int i = 0; i < static_cast<int>(gemstoneContainer.size()); ++i) {
-                    for (int j = 0; j < static_cast<int>(gemstoneContainer[i].size()); ++j) {
-                        Gemstone* gem = gemstoneContainer[i][j];
-                        if (!gem) continue;
-
-                        QVector3D gemPos3D = gem->transform()->translation();
-                        float screenX = centerX + gemPos3D.x() * scale;
-                        float screenY = centerY - gemPos3D.y() * scale;
-
-                        float dx = mousePos.x() - screenX;
-                        float dy = mousePos.y() - screenY;
-                        float distance = std::sqrt(dx * dx + dy * dy);
-
-                        if (distance < minDistance && distance < scale * 0.6f) {
-                            minDistance = distance;
-                            hoveredGem = gem;
-                        }
-                    }
-                }
-
-                // 更新悬停状态
-                if (hoveredGem != hammerHoverGem) {
-                    hammerHoverGem = hoveredGem;
-
-                    if (hoveredGem && hammerHoverRing) {
-                        hammerHoverRing->setPosition(hoveredGem->transform()->translation());
-                        hammerHoverRing->setVisible(true);
-                        static int debugCount = 0;
-                        if (debugCount++ % 10 == 0) {
-                            qDebug() << "[Hammer] Hover on gem at" << hoveredGem->transform()->translation();
-                        }
-                    } else if (hammerHoverRing) {
-                        hammerHoverRing->setVisible(false);
-                    }
-                }
-            } else {
-                // 非锤子模式，追踪鼠标移动以确认事件被接收
-                static int moveCount = 0;
-                if (++moveCount % 50 == 0) {
-                    appendDebug("Mouse moving over 3D window");
-                }
-            }
             return false; // 不消费事件，让Qt3D也能处理
         } else if (event->type() == QEvent::MouseButtonRelease) {
             // 处理鼠标释放事件
@@ -1797,7 +1743,7 @@ bool SingleModeGameWidget::areAdjacent(int row1, int col1, int row2, int col2) c
 // 执行交换
 void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1, int col1, int row2, int col2) {
     if (!gem1 || !gem2) return;
-
+    canOpe = false;
     // 先在逻辑容器中交换
     gemstoneContainer[row1][col1] = gem2;
     gemstoneContainer[row2][col2] = gem1;
@@ -1874,12 +1820,16 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
     selectedNum = 0;
     selectionRing1->setVisible(false);
     selectionRing2->setVisible(false);
+    QTimer::singleShot(1000, this, [this]() {
+        canOpe = true;
+    });
 
     appendDebug(QString("Swapped gems at (%1,%2) and (%3,%4)").arg(row1).arg(col1).arg(row2).arg(col2));
 }
 
 // 手动处理鼠标点击 - 将屏幕坐标转换为世界坐标并找到最近的宝石
 void SingleModeGameWidget::handleManualClick(const QPoint& screenPos , int kind) {
+    if(canOpe == false) return ;
     if(kind == 2 && selectedNum == 0) {
         appendDebug("Startale says : release gem could not be the first selected.");
         return ;
@@ -2208,7 +2158,6 @@ void SingleModeGameWidget::collectCoinGem(Gemstone* gem) {
     // 添加金币到系统
     CoinSystem::instance().addCoins(coinValue, true);
 
-    AchievementSystem::instance().triggerCoinEarned(coinValue);
 
     // 累加本局获得的金币
     earnedCoins += coinValue;
@@ -2378,10 +2327,12 @@ void SingleModeGameWidget::useItemClearAll() {
     }
 
     if (!allGems.empty()) {
+        isClear = true;
         removeMatches(allGems);
-
+        isClear = false;
         // 增加大量分数作为奖励
-        int bonus = allGems.size() * 50;
+
+        int bonus = allGems.size() * 5;
         gameScore += bonus;
         updateScoreBoard();
 

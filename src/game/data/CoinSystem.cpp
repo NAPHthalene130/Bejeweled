@@ -84,6 +84,7 @@ int CoinSystem::getCoins() const {
 }
 
 void CoinSystem::setCoins(int amount, bool autoSave) {
+
     if (!m_initialized) {
         qWarning() << "[CoinSystem] Not initialized, cannot set coins";
         return;

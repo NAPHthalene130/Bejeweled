@@ -6,6 +6,7 @@
 #include "../data/ItemSystem.h"
 #include "../../utils/BackgroundManager.h"
 #include "../../utils/ResourceUtils.h"
+#include "../data/AchievementSystem.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
@@ -17,6 +18,8 @@
 #include <QFont>
 #include <QShowEvent>
 #include <QMessageBox>
+#include <QTimer>
+#include <QGraphicsOpacityEffect>
 
 StoreWidget::StoreWidget(QWidget* parent, GameWindow* gameWindow)
     : QWidget(parent), gameWindow(gameWindow) {
@@ -162,9 +165,59 @@ void StoreWidget::setupUI() {
     updateCoinDisplay(CoinSystem::instance().getCoins());
 }
 
+// 添加弹幕提示实现
+void StoreWidget::showFloatingMessage(const QString& text, bool isSuccess) {
+    // 创建提示标签
+    QLabel* msgLabel = new QLabel(text, this);
+    msgLabel->setStyleSheet(QString(R"(
+        QLabel {
+            background-color: %1;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-family: "Microsoft YaHei";
+            font-size: 16px;
+            font-weight: bold;
+        }
+    )").arg(isSuccess ? "rgba(70, 180, 70, 200)" : "rgba(220, 80, 80, 200)"));
+
+    // 设置阴影效果
+
+    // 设置位置（屏幕顶部居中）
+    msgLabel->adjustSize();
+    int x = (width() - msgLabel->width()) / 2;
+    int y = 50; // 距离顶部50像素
+    msgLabel->setGeometry(x, y, msgLabel->width(), msgLabel->height());
+    msgLabel->show();
+
+    // 2秒后开始淡出并销毁
+    QTimer::singleShot(2000, this, [this, msgLabel]() {
+        // 创建淡出动画
+        auto* opacityEffect = new QGraphicsOpacityEffect(msgLabel);
+        msgLabel->setGraphicsEffect(opacityEffect);
+        auto* animation = new QPropertyAnimation(opacityEffect, "opacity");
+        animation->setDuration(500);
+        animation->setStartValue(1.0);
+        animation->setEndValue(0.0);
+        animation->start(QAbstractAnimation::DeleteWhenStopped);
+
+        // 动画结束后删除标签
+        connect(animation, &QPropertyAnimation::finished, 
+                this, [this, msgLabel]() { removeFloatingMessage(msgLabel); });
+    });
+}
+
+// 辅助函数：安全删除标签
+void StoreWidget::removeFloatingMessage(QLabel* label) {
+    if (label && label->parent() == this) {
+        label->deleteLater();
+    }
+}
+
 void StoreWidget::updateCoinDisplay(int newCoins) {
     if (coinLabel) {
         coinLabel->setText(QString("金币: %1").arg(newCoins));
+        AchievementSystem::instance().triggerCoinEarned(newCoins);
     }
 }
 
@@ -280,17 +333,15 @@ QWidget* StoreWidget::createItemCard(const ItemInfo& info) {
 void StoreWidget::onPurchaseClicked(ItemType type) {
     // 购买道具
     if (ItemSystem::instance().purchaseItem(type)) {
-        // 购买成功
+        // 购买成功 - 显示成功弹幕
         ItemInfo info = ItemSystem::instance().getItemInfo(type);
-        QMessageBox::information(this, "购买成功",
-            QString("成功购买 %1！").arg(QString::fromStdString(info.name)));
+        showFloatingMessage(QString("成功购买 %1！").arg(QString::fromStdString(info.name)), true);
     } else {
-        // 购买失败（金币不足）
+        // 购买失败 - 显示失败弹幕
         ItemInfo info = ItemSystem::instance().getItemInfo(type);
-        QMessageBox::warning(this, "购买失败",
-            QString("金币不足！购买 %1 需要 %2 金币。")
-                .arg(QString::fromStdString(info.name))
-                .arg(info.price));
+        showFloatingMessage(QString("金币不足！购买 %1 需要 %2 金币。")
+            .arg(QString::fromStdString(info.name))
+            .arg(info.price), false);
     }
 }
 

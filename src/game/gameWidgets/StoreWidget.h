@@ -3,6 +3,8 @@
 #include <QWidget>
 #include <map>
 #include "../data/ItemSystem.h"
+#include <QTimer>           // 新增
+#include <QPropertyAnimation> // 新增
 
 class GameWindow;
 class QLabel;
@@ -26,6 +28,8 @@ private:
     void loadBackground();
     QWidget* createItemCard(const ItemInfo& info);
     void onPurchaseClicked(ItemType type);
+    void showFloatingMessage(const QString& text, bool isSuccess); // 新增声明
+    void removeFloatingMessage(QLabel* label); // 新增辅助函数
 
     GameWindow* gameWindow = nullptr;
     QLabel* coinLabel = nullptr;
