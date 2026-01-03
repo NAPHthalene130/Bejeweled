@@ -704,7 +704,7 @@ void SingleModeGameWidget::finishToFinalWidget() {
 }
 
 // 查找所有需要消除的宝石（三连或更多）
-std::vector<std::pair<int, int>> SingleModeGameWidget::findMatches() {
+std::vector<std::pair<int, int>> SingleModeGameWidget::findMatches(int x,int y,int T) {
     std::vector<std::pair<int, int>> matches;
     std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
 
@@ -712,24 +712,18 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findMatches() {
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 6; ++j) {  // 最多检查到j=5，这样j+2不会越界
             Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i][j+1];
-            Gemstone* gem3 = gemstoneContainer[i][j+2];
-
-            if (gem1 && gem2 && gem3 &&
-                gem1->getType() == gem2->getType() &&
-                gem2->getType() == gem3->getType()) {
-
-                // 标记这三个位置
-                marked[i][j] = true;
-                marked[i][j+1] = true;
-                marked[i][j+2] = true;
-
-                // 继续检查是否有更多连续的
-                int k = j + 3;
-                while (k < 8 && gemstoneContainer[i][k] &&
-                       gemstoneContainer[i][k]->getType() == gem1->getType()) {
-                    marked[i][k] = true;
+            int gem1Type = -1;
+            if(gem1 || (i == x&&j == y)) {
+                if(i == x&&j == y) gem1Type = T;
+                else gem1Type = gem1 -> getType();
+                int k = 0;
+                while( j + k + 1 < 8 &&
+                     ((gemstoneContainer[i][j+k+1] && gemstoneContainer[i][j+k+1] -> getType() == gem1Type) ||
+                      (i == x && j + k + 1 == y && T == gem1Type)) ) {
                     k++;
+                }
+                if(k >= 2) {
+                    for(; k>=0 ; k--) marked[i][j+k] = true;
                 }
             }
         }
@@ -739,24 +733,18 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findMatches() {
     for (int j = 0; j < 8; ++j) {
         for (int i = 0; i < 6; ++i) {  // 最多检查到i=5
             Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i+1][j];
-            Gemstone* gem3 = gemstoneContainer[i+2][j];
-
-            if (gem1 && gem2 && gem3 &&
-                gem1->getType() == gem2->getType() &&
-                gem2->getType() == gem3->getType()) {
-
-                // 标记这三个位置
-                marked[i][j] = true;
-                marked[i+1][j] = true;
-                marked[i+2][j] = true;
-
-                // 继续检查是否有更多连续的
-                int k = i + 3;
-                while (k < 8 && gemstoneContainer[k][j] &&
-                       gemstoneContainer[k][j]->getType() == gem1->getType()) {
-                    marked[k][j] = true;
+            int gem1Type = -1;
+            if(gem1 || (i == x&&j == y)) {
+                if(i == x&&j == y) gem1Type = T;
+                else gem1Type = gem1 -> getType();
+                int k = 0;
+                while( i + k + 1 < 8 &&
+                     ((gemstoneContainer[i+k+1][j] && gemstoneContainer[i+k+1][j] -> getType() == gem1Type) ||
+                      (i + k + 1 == x && j == y && T == gem1Type)) ) {
                     k++;
+                }
+                if(k >= 2) {
+                    for(; k>=0 ; k--) marked[i+k][j] = true;
                 }
             }
         }
@@ -1026,7 +1014,7 @@ int comboCount = 0;
 void SingleModeGameWidget::eliminate() {
     if (isFinishing) return;
     // 查找所有匹配
-    std::vector<std::pair<int, int>> matches = findMatches();
+    std::vector<std::pair<int, int>> matches = findMatches(-1,-1,-1);
     if (!matches.empty()) {
 
         comboCount++; // 增加连续消除计数
@@ -1780,7 +1768,7 @@ void SingleModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int row1,
         appendDebug("Swap animation finished, checking for matches");
 
         // 检查是否有匹配
-        std::vector<std::pair<int, int>> matches = findMatches();
+        std::vector<std::pair<int, int>> matches = findMatches(-1,-1,-1);
 
         if (!matches.empty()) {
             // 有匹配，触发消除
@@ -1952,68 +1940,23 @@ void SingleModeGameWidget::resetInactivityTimer() {
 
 std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
     std::vector<std::pair<int, int>> matches;
-    if (gemstoneContainer.size() != 8) return matches;
-    for (const auto& row : gemstoneContainer) {
-        if (row.size() != 8) return matches;
-    }
     std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
-    // 检查水平方向
-    for (int i = 0; i < 8; ++i) {
-        for (int j = 0; j < 7; ++j) {  // 最多检查到j=5，这样j+2不会越界
-            Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i][j+1];
 
-            if (gem1 && gem2 && gem1->getType() == gem2->getType()) {
-                int L = j-1,R=j+2;
-                for(int k = 0;k < 4; k++) {
-                    int Dx = i+dx[k],Dy1 = L+dy[k],Dy2 = R+dy[k];
-                    if(L>0) {
-                        if(Dx >= 0 && Dx < 8 && Dy1 >= 0 && Dy1 < 8 && k!=0) {
-                            Gemstone* g = gemstoneContainer[Dx][Dy1];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx][Dy1] = true;
-                            }
-                        }
-                    }
-                    if(R<8) {
-                        if(Dx >= 0 && Dx < 8 && Dy2 >= 0 && Dy2 < 8 && k!=1) {
-                            Gemstone* g = gemstoneContainer[Dx][Dy2];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx][Dy2] = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    for (int x = 0; x < 8; ++x) {
+        for (int y = 0; y < 8; ++y) { 
+            Gemstone* gem = gemstoneContainer[x][y];
+            if(gem == nullptr) {continue;}
+            for(int i=0 ; i<4 ; i++) {
+                if(x + dx[i] < 0||y + dy[i] < 0||x + dx[i] >= 8||y + dy[i] >= 8) continue;
 
-    // 检查垂直方向
-    for (int i = 0; i < 7; ++i) {
-        for (int j = 0; j < 8; ++j) {  // 最多检查到j=5，这样j+2不会越界
-            Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i+1][j];
+                int Type1 = gem -> getType();
+                gem -> setType(-1);
+                std::vector<std::pair<int,int>> TempMatches = findMatches(x+dx[i],y+dy[i],Type1);
+                gem -> setType(Type1);
 
-            if (gem1 && gem2 && gem1->getType() == gem2->getType()) {
-                int L = i-1,R=i+2;
-                for(int k = 0;k < 4; k++) {
-                    int Dx1 = L+dx[k],Dx2 = R+dx[k],Dy = j+dy[k];
-                    if(L>0) {
-                        if(Dx1 >= 0 && Dx1 < 8 && Dy >= 0 && Dy < 8 && k!=2) {
-                            Gemstone* g = gemstoneContainer[Dx1][Dy];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx1][Dy] = true;
-                            }
-                        }
-                    }
-                    if(R<8) {
-                        if(Dx2 >= 0 && Dx2 < 8 && Dy >= 0 && Dy < 8 && k!=3) {
-                            Gemstone* g = gemstoneContainer[Dx2][Dy];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx2][Dy] = true;
-                            }
-                        }
-                    }
+                if(!TempMatches.empty()) {
+                    marked[x][y] = true;
+                    break;
                 }
             }
         }
@@ -2023,7 +1966,7 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             if (marked[i][j]) {
-                matches.push_back({i, j});
+                matches.push_back({i,j});
             }
         }
     }
@@ -2094,7 +2037,10 @@ void SingleModeGameWidget::highlightMatches() {
     if (matches.empty()) {
         appendDebug("No possible matches found,resetting the game");
         showFloatingMessage(QString("没有可消除的宝石，重置棋盘。"), false);
+        int TmpScore = gameScore;
         reset(1);
+        gameScore = TmpScore;
+        updateScoreBoard();
         return ;
     }
     
@@ -2116,7 +2062,7 @@ void SingleModeGameWidget::highlightMatches() {
                 int gemType1 = gem -> getType() , gemType2 = gemstoneContainer[row+dx[i]][col+dy[i]] -> getType();
                 gem -> setType(-1);
                 gemstoneContainer[row+dx[i]][col+dy[i]] -> setType(gemType1);
-                std::vector<std::pair<int,int>> TempMatches = findMatches();
+                std::vector<std::pair<int,int>> TempMatches = findMatches(-1,-1,-1);
                 
                 gem -> setType(gemType1);
                 gemstoneContainer[row+dx[i]][col+dy[i]] -> setType(gemType2);
