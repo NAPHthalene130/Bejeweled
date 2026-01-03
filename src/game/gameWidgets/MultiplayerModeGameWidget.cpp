@@ -510,32 +510,27 @@ void MultiplayerModeGameWidget::finishToFinalWidget() {
 }
 
 // 查找所有需要消除的宝石（三连或更多）
-std::vector<std::pair<int, int>> MultiplayerModeGameWidget::findMatches() {
+std::vector<std::pair<int, int>> MultiplayerModeGameWidget::findMatches(int x,int y,int T) {
     std::vector<std::pair<int, int>> matches;
     std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
 
     // 检查水平方向
     for (int i = 0; i < 8; ++i) {
+        if(x != -1 && i != x) continue;
         for (int j = 0; j < 6; ++j) {  // 最多检查到j=5，这样j+2不会越界
             Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i][j+1];
-            Gemstone* gem3 = gemstoneContainer[i][j+2];
-
-            if (gem1 && gem2 && gem3 &&
-                gem1->getType() == gem2->getType() &&
-                gem2->getType() == gem3->getType()) {
-
-                // 标记这三个位置
-                marked[i][j] = true;
-                marked[i][j+1] = true;
-                marked[i][j+2] = true;
-
-                // 继续检查是否有更多连续的
-                int k = j + 3;
-                while (k < 8 && gemstoneContainer[i][k] &&
-                       gemstoneContainer[i][k]->getType() == gem1->getType()) {
-                    marked[i][k] = true;
+            int gem1Type = -1;
+            if(gem1 || (i == x&&j == y)) {
+                if(i == x&&j == y) gem1Type = T;
+                else gem1Type = gem1 -> getType();
+                int k = 0;
+                while( j + k + 1 < 8 &&
+                     ((gemstoneContainer[i][j+k+1] && gemstoneContainer[i][j+k+1] -> getType() == gem1Type) ||
+                      (i == x && j + k + 1 == y && T == gem1Type)) ) {
                     k++;
+                }
+                if(k >= 2) {
+                    for(; k>=0 ; k--) marked[i][j+k] = true;
                 }
             }
         }
@@ -543,26 +538,21 @@ std::vector<std::pair<int, int>> MultiplayerModeGameWidget::findMatches() {
 
     // 检查垂直方向
     for (int j = 0; j < 8; ++j) {
+        if(y != -1 && j != y) continue;
         for (int i = 0; i < 6; ++i) {  // 最多检查到i=5
             Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i+1][j];
-            Gemstone* gem3 = gemstoneContainer[i+2][j];
-
-            if (gem1 && gem2 && gem3 &&
-                gem1->getType() == gem2->getType() &&
-                gem2->getType() == gem3->getType()) {
-
-                // 标记这三个位置
-                marked[i][j] = true;
-                marked[i+1][j] = true;
-                marked[i+2][j] = true;
-
-                // 继续检查是否有更多连续的
-                int k = i + 3;
-                while (k < 8 && gemstoneContainer[k][j] &&
-                       gemstoneContainer[k][j]->getType() == gem1->getType()) {
-                    marked[k][j] = true;
+            int gem1Type = -1;
+            if(gem1 || (i == x&&j == y)) {
+                if(i == x&&j == y) gem1Type = T;
+                else gem1Type = gem1 -> getType();
+                int k = 0;
+                while( i + k + 1 < 8 &&
+                     ((gemstoneContainer[i+k+1][j] && gemstoneContainer[i+k+1][j] -> getType() == gem1Type) ||
+                      (i + k + 1 == x && j == y && T == gem1Type)) ) {
                     k++;
+                }
+                if(k >= 2) {
+                    for(; k>=0 ; k--) marked[i+k][j] = true;
                 }
             }
         }
@@ -781,7 +771,7 @@ void MultiplayerModeGameWidget::eliminate() {
     if (isStop) return;
     if (isFinishing) return;
     // 查找所有匹配
-    std::vector<std::pair<int, int>> matches = findMatches();
+    std::vector<std::pair<int, int>> matches = findMatches(-1,-1,-1);
     if (!matches.empty()) {
         // //DEBUG
         // QDialog* dialog = new QDialog(this);
@@ -1572,7 +1562,7 @@ void MultiplayerModeGameWidget::performSwap(Gemstone* gem1, Gemstone* gem2, int 
         appendDebug("Swap animation finished, checking for matches");
 
         // 检查是否有匹配
-        std::vector<std::pair<int, int>> matches = findMatches();
+        std::vector<std::pair<int, int>> matches = findMatches(-1,-1,-1);
 
         if (!matches.empty()) {
             // 有匹配，触发消除
@@ -1744,70 +1734,28 @@ void MultiplayerModeGameWidget::resetInactivityTimer() {
 
 std::vector<std::pair<int, int>> MultiplayerModeGameWidget::findPossibleMatches() {
     std::vector<std::pair<int, int>> matches;
+    std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
+
     if (gemstoneContainer.size() != 8) return matches;
     for (const auto& row : gemstoneContainer) {
         if (row.size() != 8) return matches;
     }
-    std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
-    const int dx[4] = {0,0,1,-1};
-    const int dy[4] = {1,-1,0,0};
-    // 检查水平方向
-    for (int i = 0; i < 8; ++i) {
-        for (int j = 0; j < 7; ++j) {  // 最多检查到j=5，这样j+2不会越界
-            Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i][j+1];
+    
+    for (int x = 0; x < 8; ++x) {
+        for (int y = 0; y < 8; ++y) { 
+            Gemstone* gem = gemstoneContainer[x][y];
+            if(gem == nullptr) {continue;}
+            for(int i=0 ; i<4 ; i++) {
+                if(x + dx[i] < 0||y + dy[i] < 0||x + dx[i] >= 8||y + dy[i] >= 8) continue;
 
-            if (gem1 && gem2 && gem1->getType() == gem2->getType()) {
-                int L = j-1,R=j+2;
-                for(int k = 0;k < 4; k++) {
-                    int Dx = i+dx[k],Dy1 = L+dy[k],Dy2 = R+dy[k];
-                    if(L>0) {
-                        if(Dx >= 0 && Dx < 8 && Dy1 >= 0 && Dy1 < 8 && k!=0) {
-                            Gemstone* g = gemstoneContainer[Dx][Dy1];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx][Dy1] = true;
-                            }
-                        }
-                    }
-                    if(R<8) {
-                        if(Dx >= 0 && Dx < 8 && Dy2 >= 0 && Dy2 < 8 && k!=1) {
-                            Gemstone* g = gemstoneContainer[Dx][Dy2];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx][Dy2] = true;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+                int Type1 = gem -> getType();
+                gem -> setType(-1);
+                std::vector<std::pair<int,int>> TempMatches = findMatches(x+dx[i],y+dy[i],Type1);
+                gem -> setType(Type1);
 
-    // 检查垂直方向
-    for (int i = 0; i < 7; ++i) {
-        for (int j = 0; j < 8; ++j) {  // 最多检查到j=5，这样j+2不会越界
-            Gemstone* gem1 = gemstoneContainer[i][j];
-            Gemstone* gem2 = gemstoneContainer[i+1][j];
-
-            if (gem1 && gem2 && gem1->getType() == gem2->getType()) {
-                int L = i-1,R=i+2;
-                for(int k = 0;k < 4; k++) {
-                    int Dx1 = L+dx[k],Dx2 = R+dx[k],Dy = j+dy[k];
-                    if(L>0) {
-                        if(Dx1 >= 0 && Dx1 < 8 && Dy >= 0 && Dy < 8 && k!=2) {
-                            Gemstone* g = gemstoneContainer[Dx1][Dy];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx1][Dy] = true;
-                            }
-                        }
-                    }
-                    if(R<8) {
-                        if(Dx2 >= 0 && Dx2 < 8 && Dy >= 0 && Dy < 8 && k!=3) {
-                            Gemstone* g = gemstoneContainer[Dx2][Dy];
-                            if(g && g->getType() == gem1->getType()) {
-                                marked[Dx2][Dy] = true;
-                            }
-                        }
-                    }
+                if(!TempMatches.empty()) {
+                    marked[x][y] = true;
+                    break;
                 }
             }
         }
@@ -1817,7 +1765,7 @@ std::vector<std::pair<int, int>> MultiplayerModeGameWidget::findPossibleMatches(
     for (int i = 0; i < 8; ++i) {
         for (int j = 0; j < 8; ++j) {
             if (marked[i][j]) {
-                matches.push_back({i, j});
+                matches.push_back({i,j});
             }
         }
     }
@@ -1840,7 +1788,10 @@ void MultiplayerModeGameWidget::highlightMatches() {
     std::vector<std::pair<int, int>> matches = findPossibleMatches();
     if (matches.empty()) {
         appendDebug("No possible matches found,resetting the game");
+        int TmpScore = gameScore;
         reset(1);
+        gameScore = TmpScore;
+        updateScoreBoard();
         return ;
     }
     
@@ -1849,15 +1800,39 @@ void MultiplayerModeGameWidget::highlightMatches() {
     
     // 为随机一个可消除的宝石添加高亮环
     int choice = QRandomGenerator::global()->bounded(matches.size()) ,num = 0;
+    std::vector <Gemstone*> ChosenGems;
     for (const auto& pos : matches) {
         int row = pos.first;
         int col = pos.second;
         Gemstone* gem = gemstoneContainer[row][col];
         if (gem && num == choice) {
-            SelectedCircle* ring = new SelectedCircle(rootEntity);
-            ring->setVisible(true);
-            ring->setPosition(getPosition(row, col));
-            highlightRings.push_back(ring);
+            appendDebug(QString("Choose   Position of Gems %1  %2").arg(row).arg(col));
+            for(int i=0 ; i<4 ; i++) {
+                if(row + dx[i] < 0||col + dy[i] < 0||row + dx[i] >= 8||col + dy[i] >= 8) continue;
+
+                int gemType1 = gem -> getType() , gemType2 = gemstoneContainer[row+dx[i]][col+dy[i]] -> getType();
+                gem -> setType(-1);
+                gemstoneContainer[row+dx[i]][col+dy[i]] -> setType(gemType1);
+                std::vector<std::pair<int,int>> TempMatches = findMatches(-1,-1,-1);
+                
+                gem -> setType(gemType1);
+                gemstoneContainer[row+dx[i]][col+dy[i]] -> setType(gemType2);
+                
+                if(!TempMatches.empty()) {
+                    for(const auto& TempPos : TempMatches) {
+                        ChosenGems.push_back(gemstoneContainer[TempPos.first][TempPos.second]);
+                        appendDebug(QString("Position of Gems %1  %2").arg(TempPos.first).arg(TempPos.second));
+                    }
+                    break;
+                }
+            }
+            ChosenGems.push_back(gem);
+            for(Gemstone* chosengem : ChosenGems) {
+                if(chosengem -> getType() != gem ->getType()) continue;
+                chosengem -> setHint(true);
+                highlightGems.push_back(chosengem);
+            }
+            ChosenGems.clear();
             break;
         }
         num++;
@@ -1866,11 +1841,10 @@ void MultiplayerModeGameWidget::highlightMatches() {
 
 // 清除所有高亮
 void MultiplayerModeGameWidget::clearHighlights() {
-    for (SelectedCircle* ring : highlightRings) {
-        ring->setVisible(false);
-        delete ring;
+    for (Gemstone* gem : highlightGems) {
+        gem->setHint(false);
     }
-    highlightRings.clear();
+    highlightGems.clear();
 }
 
 void MultiplayerModeGameWidget::setDifficulty(int diff) {

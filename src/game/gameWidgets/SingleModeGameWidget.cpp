@@ -1944,6 +1944,11 @@ std::vector<std::pair<int, int>> SingleModeGameWidget::findPossibleMatches() {
     std::vector<std::pair<int, int>> matches;
     std::vector<std::vector<bool>> marked(8, std::vector<bool>(8, false));
 
+    if (gemstoneContainer.size() != 8) return matches;
+    for (const auto& row : gemstoneContainer) {
+        if (row.size() != 8) return matches;
+    }
+    
     for (int x = 0; x < 8; ++x) {
         for (int y = 0; y < 8; ++y) { 
             Gemstone* gem = gemstoneContainer[x][y];
