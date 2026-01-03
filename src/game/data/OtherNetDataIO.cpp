@@ -38,7 +38,7 @@ bool OtherNetDataIO::setMoney(std::string id, int money) {
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, otherNetData);
@@ -91,7 +91,7 @@ int OtherNetDataIO::getMoney(std::string id) {
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, dataRequest);
@@ -158,7 +158,7 @@ bool OtherNetDataIO::setAchievementStr(std::string id, std::string achievementSt
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, otherNetData);
@@ -208,7 +208,7 @@ std::string OtherNetDataIO::getAchievementStr(std::string id) {
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, dataRequest);
@@ -273,7 +273,7 @@ std::vector<std::vector<std::pair<std::string, int>>> OtherNetDataIO::getRanks()
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, dataRequest);
@@ -342,7 +342,7 @@ bool OtherNetDataIO::setPropNums(std::string id, std::vector<int> propNums) {
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, otherNetData);
@@ -392,7 +392,7 @@ std::vector<int> OtherNetDataIO::getPropNums(std::string id) {
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, dataRequest);
@@ -460,7 +460,7 @@ bool OtherNetDataIO::sendNormalTime(std::string id, int time) {
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, otherNetData);
@@ -513,7 +513,7 @@ bool OtherNetDataIO::sendWhirlTime(std::string id, int time) {
         });
 
         boost::asio::ip::tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, std::to_string(port));
+        auto endpoints = resolver.resolve(boost::asio::ip::tcp::v4(), ip, std::to_string(port));
 
         nlohmann::json j;
         to_json(j, otherNetData);

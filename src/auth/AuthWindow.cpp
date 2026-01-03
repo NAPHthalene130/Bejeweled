@@ -339,9 +339,9 @@ void AuthWindow::netDataSender(AuthNetData data) {
     // 强制禁用代理并绑定 IPv6
     socket->setProxy(QNetworkProxy::NoProxy);
     
-    // 尝试显式绑定到 IPv6
-    if (!socket->bind(QHostAddress::AnyIPv6)) {
-        std::cerr << "[AuthWindow] Warning: Failed to bind to AnyIPv6: " << socket->errorString().toStdString() << std::endl;
+    // 尝试显式绑定到 IPv4
+    if (!socket->bind(QHostAddress::AnyIPv4)) {
+        std::cerr << "[AuthWindow] Warning: Failed to bind to AnyIPv4: " << socket->errorString().toStdString() << std::endl;
     }
 
     std::cout << "[AuthWindow] Connecting to server..." << std::endl;

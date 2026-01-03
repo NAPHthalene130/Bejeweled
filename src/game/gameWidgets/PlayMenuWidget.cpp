@@ -446,7 +446,7 @@ void PlayMenuWidget::multiModeButtonClicked() {
 
     QTcpSocket socket;
     socket.setProxy(QNetworkProxy::NoProxy);
-    socket.connectToHost(QString::fromStdString(Config::getServerIp()), std::stoi(Config::getGameNetDataPort()));
+    socket.connectToHost(QString::fromStdString(Config::getServerIp()), std::stoi(Config::getGameNetDataPort()), QIODevice::ReadWrite, QAbstractSocket::IPv4Protocol);
 
     if (socket.waitForConnected(3000)) {
         socket.disconnectFromHost();

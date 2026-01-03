@@ -5,7 +5,7 @@
 
 class Config {
 public:
-    // Server IP Address (IPv6)
+    // Server IP Address (IPv4)
     static std::string getServerIp() {
         return "127.0.0.1";
     }

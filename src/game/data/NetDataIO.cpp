@@ -19,7 +19,7 @@ NetDataIO::NetDataIO(std::string ip, std::string port, GameWindow* gameWindow)
     log("INFO", "NetDataIO", "Connecting to " + ip + ":" + port);
     try {
         tcp::resolver resolver(io_context);
-        auto endpoints = resolver.resolve(ip, port);
+        auto endpoints = resolver.resolve(tcp::v4(), ip, port);
         boost::asio::connect(socket, endpoints);
         log("INFO", "NetDataIO", "Connected successfully");
     } catch (std::exception& e) {
