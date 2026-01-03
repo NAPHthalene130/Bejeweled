@@ -689,6 +689,15 @@ void SingleModeGameWidget::finishToFinalWidget() {
     if (timer && timer->isActive()) timer->stop();
     if (inactivityTimer) inactivityTimer->stop();
     if (freezeTimer && freezeTimer->isActive()) freezeTimer->stop();  // 停止冻结计时器
+
+    // 停止所有正在进行的动画，防止在游戏结束后继续访问宝石对象
+    QList<QPropertyAnimation*> animations = this->findChildren<QPropertyAnimation*>();
+    for (QPropertyAnimation* anim : animations) {
+        if (anim && anim->state() == QAbstractAnimation::Running) {
+            anim->stop();
+        }
+    }
+
     clearHighlights();
     if (selectionRing1) selectionRing1->setVisible(false);
     if (selectionRing2) selectionRing2->setVisible(false);
@@ -1193,17 +1202,22 @@ void SingleModeGameWidget::resetGemstoneTable() {
 
 void SingleModeGameWidget::eliminateAnime(Gemstone* gemstone) {
     if (!gemstone) return;
-    
+
     QPropertyAnimation* animation = new QPropertyAnimation(gemstone->transform(), "scale");
     animation->setDuration(500); // 持续缩小直到不见
     animation->setStartValue(gemstone->transform()->scale());
     animation->setEndValue(0.0f);
-    
-    connect(animation, &QPropertyAnimation::finished, [gemstone]() {
-        gemstone->setParent((Qt3DCore::QNode*)nullptr);
-        delete gemstone;
+
+    // 捕获原始指针，但由于我们在 reset() 和 finishToFinalWidget() 中会停止动画，
+    // 所以这里的回调不会在对象被删除后执行
+    connect(animation, &QPropertyAnimation::finished, this, [gemstone, this]() {
+        // 检查游戏是否已经结束，如果是则不删除（已经在其他地方清理了）
+        if (!isFinishing && gemstone) {
+            gemstone->setParent((Qt3DCore::QNode*)nullptr);
+            delete gemstone;
+        }
     });
-    
+
     animation->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
@@ -1662,7 +1676,17 @@ void SingleModeGameWidget::reset(int mode) {
     updateScoreBoard();
     updateTimeBoard();
     appendDebug(QString("reset mode=%1").arg(mode));
-    
+
+    // 停止所有正在进行的动画，防止双重删除
+    QList<QPropertyAnimation*> animations = this->findChildren<QPropertyAnimation*>();
+    for (QPropertyAnimation* anim : animations) {
+        if (anim && anim->state() == QAbstractAnimation::Running) {
+            anim->stop();
+            // 断开信号连接，防止 finished 回调执行
+            anim->disconnect();
+        }
+    }
+
     // 清除现有的宝石（如果有）
     for (auto& row : gemstoneContainer) {
         for (auto* gem : row) {

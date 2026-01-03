@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(timeout:*)",
-      "Bash(cmake --build:*)"
+      "Bash(cmake --build:*)",
+      "Bash(dir:*)",
+      "Bash(start Bejeweled.exe)"
     ],
     "deny": [],
     "ask": []
