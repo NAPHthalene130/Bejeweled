@@ -11,7 +11,6 @@ class GameWindow;
 class OtherNetDataIO {
 private:
     GameWindow* gameWindow = nullptr;;
-    bool sendRequest(const OtherNetData& request, OtherNetData* response = nullptr);
 public:
     OtherNetDataIO(GameWindow* gameWindow);
     ~OtherNetDataIO();
